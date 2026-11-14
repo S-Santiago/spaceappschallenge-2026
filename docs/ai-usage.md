@@ -4,9 +4,9 @@ NASA Space Apps allows AI. The team stays responsible for decisions, verificatio
 
 ## 1. Summary (copy to the Project page)
 
-<!-- DRAFT 2026-11-14 — update on Sunday before submission: add any other AI tools teammates used, and say whether the app itself uses AI (e.g. for explanations). Keep it consistent with the log below. -->
+<!-- Confirmed by the team on 2026-11-14: Claude Code is the only AI tool used; the app itself does not use AI. Before submitting, re-check: if any AI-generated image/video/audio is added (e.g. in the slides), remove the "No AI-generated images" sentence and label it visibly. -->
 
-> We used **Claude Code** (Anthropic, model Claude Opus 5.5) as a coding and documentation assistant. It helped us set up the repository and its documentation, adapt the official challenge and event guides into English checklists, write the first versions of the NASA POWER and MODIS data clients and the Streamlit app skeleton, draft the README, and review our work against the UX, data-traceability and submission rules.
+> We used **Claude Code** (Anthropic, model Claude Opus 5.5) as a coding and documentation assistant. It helped us set up the repository and its documentation, adapt the official challenge and event guides into English checklists, write the first versions of the NASA POWER and MODIS data clients and the Streamlit app skeleton, draft the README, and review our work against the UX, data-traceability and submission rules. No other AI tools were used, and **FarmLens itself does not use AI**: its rotation suggestions come from documented rules and scores.
 >
 > Every AI output was reviewed by the team: code was run and tested against the live NASA APIs and in the browser (desktop and mobile width); dataset versions, units and citations were checked on the official NASA pages; scientific thresholds are documented with their sources. **All climate and vegetation values shown by FarmLens come from NASA POWER and MODIS, not from the AI.** Example values used during development are labelled as mock data. No AI-generated images, video or audio are used. The full log of AI use is in this file.
 
@@ -15,7 +15,8 @@ NASA Space Apps allows AI. The team stays responsible for decisions, verificatio
 | Tool | Provider | Model / version | Used for |
 |---|---|---|---|
 | Claude Code | Anthropic | Claude Opus 5.5 (`claude-opus-5-5`) | Repo scaffolding, documentation, agents/skills, code assistance |
-| _Teammates: add any other tool you used (ChatGPT, Copilot, Gemini, image generators…)_ | | | |
+
+No other AI tools were used by the team (confirmed 2026-11-14). The FarmLens app does not include any AI model.
 
 ## 3. Rules we follow
 - No AI output is presented as verified without human review (code run/tested, numbers checked against the source data, references opened).
