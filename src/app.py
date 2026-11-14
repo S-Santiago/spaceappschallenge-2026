@@ -1,4 +1,4 @@
-"""FarmLens — Streamlit app skeleton (issue #12).
+"""FarmLens — Streamlit app (skeleton #12, results view #13 in fieldshift.ui_results).
 
 Run: streamlit run src/app.py
 
@@ -8,12 +8,11 @@ fieldshift.mock_data until issue #14 wires in the real modules.
 
 from __future__ import annotations
 
-import calendar
-
 import streamlit as st
 
 from fieldshift import mock_data as data
 from fieldshift.mock_data import FarmerInputs
+from fieldshift.ui_results import render_results
 
 st.set_page_config(page_title="FarmLens", page_icon="🌱", layout="centered")
 
@@ -134,46 +133,19 @@ if st.button("🔎 Analyze my field", type="primary", width="stretch"):
             "profile": profile,
             "strategies": data.get_strategies(profile, inputs),
         }
+        st.session_state["just_analyzed"] = True
 
-# ---------------------------------------------------------------- Results (placeholder, full view = #13)
+# ---------------------------------------------------------------- Results (#13)
 results = st.session_state.get("results")
 if not results:
     st.caption("Your results will appear here after you tap **Analyze my field**.")
     st.stop()
 
+st.divider()
+st.header("✅ Results")
+if st.session_state.pop("just_analyzed", False):
+    st.success("Done ✓ Your results are ready.")
 if results["inputs"] != inputs.to_dict():
     st.warning("You changed some answers. Tap **Analyze my field** again to update the results.")
 
-st.divider()
-st.subheader("✅ Results")
-if data.IS_MOCK:
-    st.warning("⚠️ **MOCK DATA** — example values for testing the app, not real results for your field.")
-st.write("This tool supports, and does not replace, local expertise.")
-
-profile = results["profile"]
-st.markdown("**Your field through the year**")
-rows = [
-    {
-        "Month": calendar.month_abbr[m["month"]],
-        "Rain (mm)": f"{m['rain_mm']:.0f}",
-        "Water balance (mm)": f"{m['water_balance_mm']:+.0f}",
-        "Hot days": f"{m['heat_days']:.1f}",
-        "Frost days": f"{m['frost_days']:.1f}",
-        "Bare field?": "Yes" if m["likely_bare"] else "No",
-    }
-    for m in profile["months"]
-]
-st.table(rows)
-
-st.markdown("**Rotation options**")
-for s in results["strategies"]:
-    with st.container(border=True):
-        st.markdown(f"**{s['name']}** · Score **{s['scores']['overall']}/100**")
-        st.write("Years: " + " → ".join(CROP_NAMES.get(c, c) for c in s["years"]))
-        st.write(f"Why: {s['why']}")
-
-sources = " · ".join(profile["sources"])
-if data.IS_MOCK:
-    st.caption(f"Data sources (planned — the mock values above do not come from them yet): {sources}")
-else:
-    st.caption(f"Data sources: {sources}")
+render_results(results, CROP_NAMES, is_mock=data.IS_MOCK)
