@@ -9,6 +9,7 @@ Loaded into the `crops` table of the SQLite database on start-up (`src/fieldshif
 | Column | Meaning | Unit / allowed values |
 |---|---|---|
 | `crop` | Identifier used in rotations (English, lowercase snake_case) | text, e.g. `durum_wheat` |
+| `name`, `name_es` | Display name in English / Spanish (shown in the app) | text |
 | `scientific_name` | Latin name | text |
 | `family` | Botanical family (key for breaking pest/disease cycles) | e.g. Poaceae, Fabaceae, Brassicaceae, Asteraceae |
 | `type` | Role | cereal / legume / oilseed / forage / cover / other |
@@ -17,6 +18,7 @@ Loaded into the `crops` table of the SQLite database on start-up (`src/fieldshif
 | `cycle_days_min`, `cycle_days_max` | Sowing to harvest | days |
 | `water_need_mm_min`, `water_need_mm_max` | Seasonal crop water requirement **without water stress** (FAO irrigation-planning value). Not what a rain-fed crop actually uses, and not a suitability threshold | mm per cycle |
 | `drought_tolerance` | | low / medium / high |
+| `frost_tolerance`, `heat_tolerance` | Tolerance to frost days (Tmin < 0 °C) / heat days (Tmax > 35 °C) **during this crop's season in Andalusia**, used by the rotation engine's climate penalties. Indicative (R-IND), set with the `agro-domain-advisor` agent so no winter crop is excluded by the usual frosts of the demo fields | low / medium / high |
 | `t_base_c` | Base temperature for growing degree days | °C |
 | `frost_damage_c` | Temperature below which frost damage is likely (sensitive stage) | °C |
 | `heat_stress_c` | Max temperature above which heat stress is likely (sensitive stage) | °C |

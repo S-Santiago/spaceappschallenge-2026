@@ -66,6 +66,28 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
 ```
 `id` is `current` or a strategy kind (`legume_break`, `cover_crop`, `water_saving`, `forage_diversification`). `cover_crop` is `null` or `{"after_year": 2, "crop": "vetch_cover"}`. Call `rotations.compare(profile, current, crops, priorities, irrigated, slope, lang="en"|"es")`; use `rotations.label(score, lang)` for good/neutral/poor and `rotations.DISCLAIMER[lang]` at the end of the cards. Scope: Málaga province only; inland farmland such as Vega de Antequera (37.05, -4.60) gives a much more realistic profile than Málaga city, whose MODIS pixel is urban and whose NASA cell is coastal (no heat days).
 
+## API (decision 0004 · #36 — owner @HectorLopGar-Dev)
+`src/fieldshift/api.py` (FastAPI). Run from the repo root: `PYTHONPATH=src uvicorn fieldshift.api:app --reload` → interactive docs at `/docs`. The same service serves the PWA from `web/` (override with `FIELDSHIFT_WEB_DIR`), so there is no CORS. No logic in the API: data from `db.py`, profile from `climate.py`, strategies from `rotations.py`.
+
+| Method & path | Returns |
+|---|---|
+| `GET /api/health` | `{"status": "ok"}` (use it to wake the free host before the pitch) |
+| `GET /api/fields` | Demo fields: `[{"slug", "name", "lat", "lon", "elevation_m", "description"}]` |
+| `GET /api/crops?lang=en\|es` | `[{"id", "name", "type", "family", "n_fixing", "sow_month", "harvest_month", "confidence"}]` |
+| `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "disclaimer"}` |
+| `GET /api/analyses/{id}` | A stored analysis: `{"id", "lat", "lon", "inputs", "strategies", "created_at"}` |
+
+```json
+POST /api/analyze
+{"field": "antequera",                       // demo field slug, or "lat" + "lon" instead
+ "rotation": ["durum_wheat", "durum_wheat", "sunflower"],   // 1-4 crop ids from /api/crops
+ "priorities": {"water": 3, "soil": 1, "income": 1, "risk": 0},  // 0-3 each, default 1
+ "irrigation": "none",                       // none | supplementary | full (anything but none = irrigated)
+ "slope": "flat",                            // flat | moderate | steep
+ "lang": "es"}                               // en | es: language of the card texts
+```
+Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`rotations.label`). Errors: `422` invalid input or unknown crop, `404` unknown field/analysis, `503` NASA unreachable for a non-demo point. Demo fields never call NASA (data pre-loaded); the climate profile is computed once and stored in `climate_profiles` (recomputed when `climate.py` changes). Every analysis is stored in `analyses` (no personal data).
+
 ## Suggested timeline (Europe/Madrid)
 | When | Milestone |
 |---|---|

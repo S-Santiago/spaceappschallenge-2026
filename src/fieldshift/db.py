@@ -27,7 +27,16 @@ SAMPLES_DIR = ROOT / "data" / "samples"
 LOCATIONS_CSV = SAMPLES_DIR / "locations.csv"
 
 # Each entry is one migration; PRAGMA user_version stores how many have been applied.
-MIGRATIONS = [(Path(__file__).with_name("schema.sql")).read_text(encoding="utf-8")]
+MIGRATIONS = [
+    (Path(__file__).with_name("schema.sql")).read_text(encoding="utf-8"),
+    # 2: display names and season-specific frost/heat tolerance levels used by the rotation engine
+    """
+    ALTER TABLE crops ADD COLUMN name TEXT;
+    ALTER TABLE crops ADD COLUMN name_es TEXT;
+    ALTER TABLE crops ADD COLUMN frost_tolerance TEXT CHECK (frost_tolerance IN ('low', 'medium', 'high'));
+    ALTER TABLE crops ADD COLUMN heat_tolerance TEXT CHECK (heat_tolerance IN ('low', 'medium', 'high'));
+    """,
+]
 
 _ready: set[Path] = set()
 
@@ -140,6 +149,22 @@ def get_crop(crop: str) -> dict | None:
     with connect() as conn:
         row = conn.execute("SELECT * FROM crops WHERE crop = ?", (crop,)).fetchone()
     return dict(row) if row else None
+
+
+def get_engine_crops() -> dict[str, dict]:
+    """Crop catalogue in the format rotations.py expects: {crop_id: traits}.
+
+    Renames `crop` -> `crop_id`, `root_depth_m_max` -> `root_depth_m`, `market_value` -> `market_value_illustrative`,
+    and gives perennials without a harvest month (alfalfa) a 12-month window.
+    """
+    out = {}
+    for c in get_crops():
+        c = {**c, "crop_id": c["crop"], "root_depth_m": c["root_depth_m_max"],
+             "market_value_illustrative": c["market_value"]}
+        if c["sow_month"] is not None and c["harvest_month"] is None:
+            c["harvest_month"] = (c["sow_month"] - 2) % 12 + 1  # occupies the field all year
+        out[c["crop_id"]] = c
+    return out
 
 
 def get_locations(demo_only: bool = False) -> list[dict]:
