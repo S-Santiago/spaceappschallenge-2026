@@ -68,7 +68,8 @@ At least one NASA resource listed by the challenge is **mandatory** for Global A
 
 ## 5. How to run it
 
-**Public demo (no install, no login):** _TODO (#15): public link to the mobile web app (PWA)._
+**Public demo (no install, no login):** PUBLIC_URL — open it on a phone and tap *Add to Home screen* to install the app.
+Hosted free on Hugging Face Spaces ([decision 0006](docs/decisions/0006-public-demo-hosting.md)). If nobody opened it for ~48 h it is asleep: the first visit then takes about COLD_START while it wakes up; after that the demo fields answer in well under a second.
 
 **Run locally** (Python 3.11+):
 
@@ -83,9 +84,13 @@ uvicorn fieldshift.api:app --app-dir src --port 8000
 
 Then open http://localhost:8000 on a phone-sized window. One service runs the API (`/api/...`, interactive docs at `/docs`) and serves the mobile web app from `web/`. No API keys are needed: NASA POWER and the ORNL DAAC MODIS service are open, and the three demo fields answer from the NASA data pre-loaded in `data/samples/`. A new point on the map fetches NASA data live (the first time can take a minute or more).
 
-**Port:** always run it on **8000** — the team's Cloudflare tunnel points at that port, so no other port is allowed. If 8000 is busy, stop the process using it (macOS/Linux: `lsof -ti tcp:8000 | xargs kill`) and start the API again on 8000.
+**Port:** always run it on **8000** — the team's backup Cloudflare tunnel points at that port, so no other port is allowed. If 8000 is busy, stop the process using it (macOS/Linux: `lsof -ti tcp:8000 | xargs kill`) and start the API again on 8000.
 
 **Tests:** `pip install -r requirements-dev.txt`, then `PYTHONPATH=src pytest` (engine, API and PWA checks) and `node --test "tests/web/*.test.mjs"` (PWA helpers, Node 18+, no packages).
+
+**Deploying the public demo:** automatic. Every merge to `main` runs [`.github/workflows/deploy-space.yml`](.github/workflows/deploy-space.yml), which uploads the code to the Hugging Face Space; the Space rebuilds in about 2–4 minutes. To redeploy by hand: GitHub → *Actions* → *Deploy public demo* → *Run workflow*. Settings (repo admin): Actions secret `HF_TOKEN`, Actions variable `HF_SPACE`. **`main` freezes on Sun 15 Nov at 15:00** — any later merge would redeploy the judged demo. Same image locally: `docker build -t farmlens . && docker run --rm -p 8000:7860 farmlens`.
+
+**Backup link:** if the Space is down, a teammate runs the app locally on port 8000 and the team's Cloudflare tunnel exposes it (works only while that laptop is awake).
 
 ## 6. Repository map
 
@@ -94,14 +99,16 @@ Then open http://localhost:8000 on a phone-sized window. One service runs the AP
 ├── .claude/            # Claude Code agents & skills used by the team (see docs/tools.md)
 │   ├── agents/
 │   └── skills/
-├── .github/            # Issue & PR templates
+├── .github/            # Issue & PR templates; workflows/deploy-space.yml deploys the public demo
 ├── assets/             # Images/icons we created or can legally reuse (see docs/third-party.md)
+├── deploy/             # Hugging Face Space header (README copied into the Space on deploy)
 ├── data/               # Data folder — raw/processed are git-ignored; see data/README.md
 ├── docs/               # ALL documentation (index: docs/README.md)
 ├── notebooks/          # Exploratory analysis
 ├── src/
 │   └── fieldshift/     # API (api.py), NASA clients (power.py, modis.py), indicators, rotation engine, predictions, DB
 ├── web/                # Mobile web app (PWA): HTML/CSS/JS modules, service worker, no build step
+├── Dockerfile          # Image of the public demo (API + PWA), decision 0006
 ├── CLAUDE.md           # Instructions for AI agents working in this repo
 ├── CONTRIBUTING.md     # Team workflow
 └── README.md

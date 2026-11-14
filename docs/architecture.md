@@ -21,18 +21,18 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 | API | FastAPI | `src/fieldshift/api.py` | @HectorLopGar-Dev | ✅ built (#36, PR #47) |
 | App (PWA) | HTML + CSS + vanilla JS modules, manifest, hand-written service worker, no build step | `web/` | @S-Santiago | ✅ #35 · #14 · #40 (real API, loading/error states, offline analyses and predictions; real-phone check pending) |
 | ~~Internal test harness~~ | ~~Streamlit~~ | ~~`src/app.py`~~ | @S-Santiago | Retired 2026-11-14 (decision 0004) |
-| Hosting | Free Python host (Render / HF Spaces / Fly.io) | — | @HectorLopGar-Dev | 🔴 #39 |
+| Hosting | Hugging Face Spaces (Docker), auto-deploy from `main` via GitHub Actions — [0006](decisions/0006-public-demo-hosting.md) | `Dockerfile`, `.github/workflows/deploy-space.yml`, `deploy/` | @S-Santiago | ✅ #75 |
 
 ## Data flow
 ```
-1. Farmer picks a demo field (or a point on the map), current rotation, priorities, irrigation, slope   [app.py]
+1. Farmer picks a demo field (or a point on the map), current rotation, priorities, irrigation, slope   [web/ PWA → POST /api/analyze]
 2. db.get_profile(lat, lon) ── hit ──────────────────────────────────────────────┐
         │ miss                                                                    │
         ▼                                                                         │
    power.fetch_daily + modis.fetch_ndvi (NASA APIs) → climate.py → Shape 1 → db.save_profile
                                                                                   │
 3. rotations.py(Shape 1, crops from db.get_crops(), farmer inputs) → Shape 2 ◄────┘
-4. app.py renders: 12-month climate calendar · trends · 4 strategy cards (current + 3) · sources & limits
+4. The PWA (web/js/app.js) renders: 12-month climate calendar · trends · 4 strategy cards (current + 3) · sources & limits
 5. db.save_analysis(...)  (not persistent on the hosted demo)
 ```
 

@@ -108,7 +108,7 @@
   --fast: 140ms;
   --spin-time: 0.9s;
   --press: 0.98;
-  --disabled: 0.75;
+  --disabled: 0.6;
 
   color-scheme: light;
 }
@@ -299,7 +299,7 @@ select, .crop-select, .crop-input, .place-search input {
 }
 .plot { padding: var(--s2); color: var(--strip-ink); min-height: var(--plot-h); }
 .plot .yr { display: block; font-size: var(--t-small); }
-.plot .crop { display: block; font-size: var(--t-small); font-weight: 700; line-height: var(--lh-tight); overflow-wrap: break-word; hyphens: auto; }
+.plot .crop { display: block; font-size: var(--t-small); font-weight: 700; line-height: var(--lh-tight); overflow-wrap: anywhere; }
 .f-cereal { background: var(--f-cereal); }
 .f-legume { background: var(--f-legume); }
 .f-oilseed { background: var(--f-oilseed); }
@@ -384,7 +384,7 @@ select, .crop-select, .crop-input, .place-search input {
 .bar--poor > i { background: var(--poor); outline: var(--bw) solid var(--poor-edge); outline-offset: calc(-1 * var(--bw)); }
 
 .card {
-  background: var(--surface); border: var(--bw) solid var(--line); border-radius: var(--r-lg);
+  background: var(--surface); border: var(--bw) solid var(--hairline); border-radius: var(--r-lg);
   padding: var(--s4); margin-top: var(--s4);
 }
 .card.is-best { border: var(--bw-strong) solid var(--accent); padding: calc(var(--s4) - var(--bw)); }
@@ -492,7 +492,6 @@ h4.sub { font-size: var(--t-h3); margin: var(--s5) 0 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
   .btn:active { transform: none; }
 }
-
 /* ---- flow and results additions (one step at a time, answer first) */
 .gap-top { margin-top: var(--s4); }
 .segmented--grid { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }

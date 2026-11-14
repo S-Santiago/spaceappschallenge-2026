@@ -1,0 +1,10 @@
+# Only src/, web/, data/crops.csv, data/samples/ and requirements.txt go into the image.
+*
+!requirements.txt
+!src/
+!web/
+!data/crops.csv
+!data/samples/
+**/__pycache__
+**/*.py[cod]
+**/.DS_Store

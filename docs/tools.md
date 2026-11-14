@@ -11,7 +11,7 @@ Every tool that took part in building the project: what for, how, and under whic
 | Claude Code (Anthropic) | AI coding agent (CLI) | Repo scaffolding, documentation, agents & skills, code assistance — see [ai-usage.md](ai-usage.md) | Anthropic Commercial/Consumer Terms (proprietary). Outputs owned by the user per Anthropic terms | 2026-11-14 |
 | Python 3.11+ · FastAPI · SQLite | Language / backend | NASA data clients, indicator and rotation engine, JSON API — decisions [0002](decisions/0002-tech-stack.md), [0004](decisions/0004-mobile-pwa.md) | PSF / MIT / public domain (details in [third-party.md](third-party.md)) | 2026-11-14 |
 | HTML, CSS, vanilla JavaScript (no framework, no build step) | Frontend (PWA) | Mobile app, offline cache via a hand-written service worker — decision [0005](decisions/0005-pwa-vanilla-js.md) | Web standards; no third-party code | 2026-11-14 |
-| _TBD_ | Hosting of demo | | | |
+| Hugging Face Spaces (Docker SDK, free CPU) + GitHub Actions | Hosting of demo | Public demo link: Docker image of the API + PWA, redeployed automatically on every push to `main` — decision [0006](decisions/0006-public-demo-hosting.md) | Hugging Face Terms of Service · GitHub Terms of Service (proprietary services); our code stays MIT | 2026-11-14 |
 | _TBD_ | Slides / video editor for Project Demo | | | |
 
 > Libraries and packages go in [third-party.md](third-party.md), not here.
