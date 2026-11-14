@@ -29,6 +29,32 @@ ALERT_PROB = 0.2  # P-07: a >= 20 mm day in that month in at least 1 year in 5
 HIGH_PROB = 0.4  # P-07: ... in at least 2 years in 5 -> "high"
 LEVELS = ("medium", "high")
 
+# One short limits sentence per prediction (#44), keyed like the build_predictions output. Shown on each card.
+PREDICTION_LIMITS = {
+    "rain_weeks": {  # P-01
+        "en": "Share of the last 20 years with rain in that week; it does not forecast this year's weather.",
+        "es": "Parte de los últimos 20 años con lluvia esa semana; no predice el tiempo de este año.",
+    },
+    "heavy_rain": {  # P-02
+        "en": "Rain averaged over an area of about 50 km and only 21 years of data: local storms can be stronger, "
+              "and storms rarer than once in 10 years are not estimated.",
+        "es": "Lluvia media de una zona de unos 50 km y solo 21 años de datos: las tormentas locales pueden ser más "
+              "fuertes, y no se estiman las que llegan menos de una vez cada 10 años.",
+    },
+    "frost": {  # P-03
+        "en": "Air temperature for the area; ground frost and cold valley bottoms can freeze later in spring "
+              "and harder than shown.",
+        "es": "Temperatura del aire de la zona; la helada en el suelo y los fondos de valle fríos pueden helar más "
+              "tarde en primavera y más fuerte de lo que se ve.",
+    },
+    "alerts": {  # P-07
+        "en": "Heavy-rain days often fall when the field is bare; this is a warning sign, not measured soil loss, "
+              "and your field may be covered differently this year.",
+        "es": "Los días de lluvia fuerte suelen caer con la parcela desnuda; es una señal de aviso, no una medida "
+              "de pérdida de suelo, y este año tu parcela puede estar cubierta de otra forma.",
+    },
+}
+
 
 def _parse(days: dict) -> dict[int, dict[date, dict]]:
     """{year: {date: values}} from the POWER 'days' mapping."""
@@ -335,4 +361,5 @@ def build_predictions(power_data: dict, modis_data: dict | None = None,
         "heavy_rain": heavy,
         "frost": frost_dates(days),
         "alerts": alerts,
+        "limits": PREDICTION_LIMITS,
     }

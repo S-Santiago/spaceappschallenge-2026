@@ -77,17 +77,17 @@ Every number in the UI gets one short sentence saying what it cannot tell. Texts
 | Score | `risk` | Frost, heat and dry seasons against general crop tolerances; pests, diseases and market risk are not included. | 〃 |
 | Score | `overall` | Weighted by your priorities; it orders the options but does not say which one is best for you. | 〃 |
 
-**Predictions (P-01…P-07): draft sentences, not in code yet.** The owners of #37/#38/#39 should adapt them to the final method and add them next to each prediction in the API. Every prediction also carries "Based on the last 20 years of NASA data, not a weather forecast."
+**Predictions.** P-01, P-02, P-03 and P-07 are in code: `predictions.PREDICTION_LIMITS` → `limits` in the predictions payload (`GET /api/predictions`), keyed like the payload, in English and Spanish. Wording follows the caveats in [indicators.md → Predictions](indicators.md#predictions-p-01p-07--statistics-over-nasa-history-not-ai). Every card also carries the `basis` line ("Not a weather forecast").
 
-| ID | Draft limit |
-|---|---|
-| P-01 | Share of the last 20 years with rain in that week; it does not forecast this year's weather. |
-| P-02 | Built from about 20 yearly maxima for a ~50 km area; return periods longer than ~20 years are very uncertain, and a local storm can be stronger. |
-| P-03 | Frost dates for the area over 20 years; frost hollows can freeze later in spring and earlier in autumn. |
-| P-04 | A 20-year slope with its confidence interval; if the interval includes zero we cannot say the climate is changing. |
-| P-05 | Compares this season's rain with the last 20 years for the area; the most recent days of NASA data may be missing. |
-| P-06 | Combines rain and frost odds with general crop limits; soil condition and local advice decide the real sowing date. |
-| P-07 | Uses the bare months seen in 2024-2025; your field may be covered differently this year. |
+| ID | Key | Limit (English; Spanish in code) |
+|---|---|---|
+| P-01 | `rain_weeks` | Share of the last 20 years with rain in that week; it does not forecast this year's weather. |
+| P-02 | `heavy_rain` | Rain averaged over an area of about 50 km and only 21 years of data: local storms can be stronger, and storms rarer than once in 10 years are not estimated. |
+| P-03 | `frost` | Air temperature for the area; ground frost and cold valley bottoms can freeze later in spring and harder than shown. |
+| P-07 | `alerts` | Heavy-rain days often fall when the field is bare; this is a warning sign, not measured soil loss, and your field may be covered differently this year. |
+| P-04 *(stretch, not built)* | — | Draft: a 20-year slope with its confidence interval; if the interval includes zero we cannot say the climate is changing. |
+| P-05 *(stretch, not built)* | — | Draft: compares this season's rain with the last 20 years for the area; the most recent days of NASA data may be missing. |
+| P-06 *(stretch, not built)* | — | Draft: combines rain and frost odds with general crop limits; soil condition and local advice decide the real sowing date. |
 
 The general statements (`climate.LIMITS`, `rotations.DISCLAIMER`) stay as they are, at the end of the results.
 
