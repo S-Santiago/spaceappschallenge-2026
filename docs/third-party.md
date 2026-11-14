@@ -12,6 +12,7 @@ Everything in (or used by) this project that the team did not create: libraries,
 | streamlit | 1.67.0 | Web UI framework for the app (`src/app.py`) | Apache-2.0 | https://github.com/streamlit/streamlit | No (keep license notice if redistributed) |
 | folium | 0.20.0 | Builds the Leaflet map for "Point on a map" (step 1) | MIT | https://github.com/python-visualization/folium | No |
 | streamlit-folium | 0.27.4 | Embeds the folium map in Streamlit and returns the clicked point | MIT (from GitHub repo; PyPI metadata has no license field) | https://github.com/randyzwitch/streamlit-folium | No |
+| altair | 6.3.0 | Charts in the results view (`src/fieldshift/ui_results.py`); already installed as a Streamlit dependency, pinned because we import it directly. Rendered by the Vega/Vega-Lite JS bundled in Streamlit (BSD-3-Clause) | BSD-3-Clause | https://github.com/vega/altair | No |
 | Leaflet (JS, loaded by folium from a CDN) | 1.9.3 | Interactive map in the browser | BSD-2-Clause | https://github.com/Leaflet/Leaflet | "Leaflet" link shown in the map corner (kept by default) |
 
 ## 2. Assets (images, icons, fonts, audio, map tiles)
