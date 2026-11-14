@@ -167,3 +167,12 @@ test("basis line follows the API period", () => {
   assert.equal(basisFor("2006-2025"), "Based on 20 years of NASA data (2006–2025) — not a weather forecast.");
   assert.equal(basisFor(null), BASIS);
 });
+
+test("renderExpect shows the prediction limits from the API, collapsed in the footer (#44)", () => {
+  const limits = { rain_weeks: { en: "Share of the past 21 years." }, frost: { en: "Ground frost can be harder." },
+    heavy_rain: { en: "Local storms can be stronger." }, alerts: { en: "A warning sign, not measured soil loss." } };
+  const html = renderExpect({ ...PRED, limits }, heatProfile(ANTEQUERA_HEAT), TODAY);
+  assert.ok(html.includes("What each prediction can&#39;t tell"));
+  assert.ok(html.includes("<strong>Heavy rain on bare soil:</strong> A warning sign, not measured soil loss."));
+  assert.ok(!renderExpect(PRED, heatProfile(ANTEQUERA_HEAT), TODAY).includes("limits-box"));  // older payload: nothing
+});

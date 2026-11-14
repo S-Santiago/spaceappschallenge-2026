@@ -5,7 +5,8 @@
 
 import * as api from "./api.js";
 import {
-  MONTH_ABBR, MONTHS, cropName, cropOption, errorMessage, esc, matchCrops, fmt, formatDate, keyFacts, levelText, ndviMissing, num, trendFacts,
+  FIELD_LIMIT_ROWS, MONTH_ABBR, MONTHS, cropName, cropOption, errorMessage, esc, matchCrops, fmt, formatDate, keyFacts, levelText,
+  limitsDetails, ndviMissing, num, trendFacts,
 } from "./format.js";
 import { inMalaga, mountMap } from "./map.js";
 
@@ -517,6 +518,7 @@ function renderResults(tab = "results") {
     <h2 id="h-opt">Rotation options</h2>
     <p class="small muted">Your current rotation first, then other options by overall score. Scores out of 100 (Good 67 or more · Fair 34–66 · Poor under 34), weighted by your priorities: ${esc(weights)}.</p>
     <div style="margin-top:12px">${compare}</div>
+    ${limitsDetails("What the scores can't tell", [...SCORE_ROWS.map(([k, , l]) => [l, data?.score_limits?.[k]]), ["Overall", data?.score_limits?.overall]])}
     ${cards}
   </section>
 
@@ -525,11 +527,12 @@ function renderResults(tab = "results") {
     ${facts.length ? `<ul class="facts">${facts.map((f) => `<li><span class="ico" aria-hidden="true">${f.icon}</span><span>${esc(f.text)}</span></li>`).join("")}</ul>` : `<p class="muted">The climate summary for this field is not available. Try again later.</p>`}
     ${climateChart(profile)}
     ${calendar(profile, noNdvi)}
+    ${limitsDetails("What these numbers can't tell", FIELD_LIMIT_ROWS.map(([k, l]) => [l, profile.field_limits?.[k]?.en]))}
   </section>
 
   <section class="section" aria-labelledby="h-trend">
     <h2 id="h-trend">Then and now</h2>
-    <p class="small muted">2016–2025 compared with 2005–2014.</p>
+    <p class="small muted">${esc(profile.field_limits?.rain_change_pct?.en || "2016–2025 compared with 2005–2014.")}</p>
     ${trends.length ? `<ul class="facts" style="margin-top:8px">${trends.map((f) => `<li><span class="ico" aria-hidden="true">${f.icon}</span><span>${esc(f.text)}</span></li>`).join("")}</ul>` : `<p class="muted">The comparison with earlier years is not available for this field.</p>`}
   </section>
 

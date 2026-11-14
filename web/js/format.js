@@ -286,3 +286,20 @@ export function matchCrops(text, crops) {
   }
   return [];
 }
+
+// Limits per value (#44): the API sends one "what this can't tell" sentence per climate value (profile.field_limits),
+// per score (score_limits) and per prediction (predictions.limits). Shown collapsed, next to the values they describe.
+export const FIELD_LIMIT_ROWS = [
+  ["rain_mm", "Rain"], ["et0_mm", "Water the air takes (ET₀)"], ["water_balance_mm", "Water balance"],
+  ["soil_wetness", "Soil wetness"], ["frost_days", "Frost days"], ["heat_days", "Very hot days"],
+  ["heavy_rain_days", "Heavy-rain days"], ["ndvi", "Greenness"], ["likely_bare", "Bare months"],
+];
+
+/** Collapsed list of [label, sentence] rows; rows without a sentence are skipped; "" when none is left
+ * (e.g. an analysis saved offline before the API sent limits). */
+export function limitsDetails(summary, rows) {
+  const items = rows.filter(([, text]) => typeof text === "string" && text.trim());
+  if (!items.length) return "";
+  return `<details class="limits-box"><summary>${esc(summary)}</summary><ul class="limits">${
+    items.map(([label, text]) => `<li><strong>${esc(label)}:</strong> ${esc(text)}</li>`).join("")}</ul></details>`;
+}
