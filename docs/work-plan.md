@@ -51,7 +51,8 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
               "soil_wetness": 0.6, "frost_days": 0.2, "heat_days": 0, "heavy_rain_days": 0.4,
               "ndvi": 0.15, "likely_bare": true}],
   "trends": {"rain_change_pct": -8, "heat_days_change": 3.1},
-  "sources": ["NASA POWER 2005-2025", "MODIS MOD13Q1 2024-2025"]
+  "sources": ["NASA POWER 2005-2025", "MODIS MOD13Q1 2024-2025"],
+  "limits": ["Climate values are NASA satellite and model estimates for an area of about 50 km, ..."]
 }
 ```
 

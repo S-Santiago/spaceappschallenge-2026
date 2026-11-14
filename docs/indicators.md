@@ -27,6 +27,7 @@ Common to all POWER-based indicators: source NASA POWER daily point API (`commun
 - If MODIS fails, the profile is still built with `ndvi` and `likely_bare` set to `null`.
 
 ## Limits to show in the UI
+Farmer-friendly versions are returned in the profile as `limits` (`climate.LIMITS`).
 - POWER: modelled/derived data for a ~50 km cell; local microclimate (valleys, slopes) is not captured.
 - `soil_wetness`: model estimate (MERRA-2), not satellite-measured soil moisture.
 - NDVI: only two years (2024–2025); a 250 m pixel can mix several plots.

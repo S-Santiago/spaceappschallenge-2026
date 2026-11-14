@@ -21,6 +21,15 @@ MAX_MISSING = 0.10  # skip a month-year when more than 10 % of its days are miss
 BASELINE = (2005, 2014)  # I-10, I-11
 RECENT = (2016, 2025)
 
+# Plain-language uncertainty statements for the UI (docs/indicators.md -> Limits to show in the UI).
+LIMITS = [
+    "Climate values are NASA satellite and model estimates for an area of about 50 km, not measurements on your plot.",
+    "Soil wetness is a model estimate, not a measurement.",
+    "Field greenness (NDVI) covers only 2024-2025 and a 250 m square that may include other plots.",
+    "Comparing two 10-year periods shows a change, not a proven long-term climate trend.",
+    "Frost, heat, heavy-rain and bare-field thresholds are general rules, not specific to your crop.",
+]
+
 GSC = 0.0820  # solar constant, MJ m-2 min-1 (FAO-56)
 MJ_TO_MM = 0.408  # MJ m-2 day-1 -> mm day-1 equivalent evaporation (FAO-56)
 
@@ -166,6 +175,7 @@ def build_profile(lat: float, lon: float, power_data: dict, modis_data: dict | N
         "months": months,
         "trends": trends(stats),
         "sources": sources,
+        "limits": LIMITS,
         "quality": {
             "missing_days": sum(s["missing_days"] for s in stats.values()),
             "skipped_month_years": sum(any(v is None for v in s.values()) for s in stats.values()),
