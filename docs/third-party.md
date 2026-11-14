@@ -9,6 +9,8 @@ Everything in (or used by) this project that the team did not create: libraries,
 | Name | Version | Purpose | License | Link | Notes (attribution required?) |
 |---|---|---|---|---|---|
 | httpx | 0.28.1 | HTTP client for NASA POWER and ORNL MODIS APIs | BSD-3-Clause | https://www.python-httpx.org/ | No |
+| SQLite (Python `sqlite3`) | bundled with Python | Local database (`src/fieldshift/db.py`) | Public domain | https://www.sqlite.org/copyright.html | No |
+| pytest | 9.2.0 | Tests (dev only, `requirements-dev.txt`) | MIT | https://docs.pytest.org/ | No |
 | streamlit | 1.67.0 | Web UI framework for the app (`src/app.py`) | Apache-2.0 | https://github.com/streamlit/streamlit | No (keep license notice if redistributed) |
 | folium | 0.20.0 | Builds the Leaflet map for "Point on a map" (step 1) | MIT | https://github.com/python-visualization/folium | No |
 | streamlit-folium | 0.27.4 | Embeds the folium map in Streamlit and returns the clicked point | MIT (from GitHub repo; PyPI metadata has no license field) | https://github.com/randyzwitch/streamlit-folium | No |
@@ -28,6 +30,9 @@ Everything in (or used by) this project that the team did not create: libraries,
 |---|---|---|---|
 | NASA POWER Daily API v2.10.3 (D-01) | NASA LaRC POWER Project | No license stated; cite POWER's Reference + Data Reference; publication/redistribution notification requested | [nasa-data.md §4](nasa-data.md#4-citation-list) |
 | MODIS MOD13Q1 v061 NDVI (D-02) via ORNL DAAC TESViS | NASA LP DAAC / ORNL DAAC | Openly shared without restriction (EOSDIS Data Use and Citation Guidance); citation required | [nasa-data.md §4](nasa-data.md#4-citation-list) |
+| Crop traits from FAO-56 Tables 11 and 22 (`data/crops.csv`, R-01) | FAO | © FAO; values cited, no text reproduced | Allen et al. (1998), FAO Irrigation and Drainage Paper 56 |
+| Crop water needs from FAO Training Manual 3 (`data/crops.csv`, R-02) | FAO | © FAO; values cited | Brouwer & Heibloem (1986), FAO Irrigation Water Management Training Manual 3 |
+| Crop temperature parameters from FAO-66 (`data/crops.csv`, R-03) | FAO | © FAO; values cited | Steduto et al. (2012), FAO Irrigation and Drainage Paper 66 |
 
 ## 4. Code snippets copied or adapted
 

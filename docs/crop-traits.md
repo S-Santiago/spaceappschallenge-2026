@@ -1,37 +1,46 @@
-# Crop catalogue (`data/crops.csv`)
+# Crop traits table (`data/crops.csv`)
 
-Seed data for the `crops` table of the SQLite database (issue #7, owner @HectorLopGar-Dev). The CSV is the committed source of truth; `src/fieldshift/db.py` loads it into the database at startup. Maintained with the `/crop-traits` skill.
-
-> **Schema owner: @HectorLopGar-Dev.** If the `crops` table changes, update this file, the CSV header and the `/crop-traits` skill in the same PR.
-
-**Every value must trace to a reference below or be marked `indicative` in `confidence`.** Empty cells are allowed and honest; invented values are not.
+Characteristics of every crop that may appear in a rotation. Maintained with the `/crop-traits` skill. **Every value must trace to a reference in the list below.** Empty cells are allowed and honest; invented values are not.
 
 ## Columns
 
+Loaded into the `crops` table of the SQLite database on start-up (`src/fieldshift/db.py`); the column list must match `src/fieldshift/schema.sql`.
+
 | Column | Meaning | Unit / allowed values |
 |---|---|---|
-| `crop_id` | Identifier used in rotations (Shape 2 `years[]`) | lowercase snake_case, e.g. `durum_wheat`, `chickpea`, `fallow` |
-| `name` | Common name (English) | text |
-| `scientific_name` | Latin name | text (empty for `fallow`) |
-| `family` | Botanical family — rotating families breaks pest/disease cycles | e.g. Poaceae, Fabaceae, Brassicaceae, Asteraceae |
-| `type` | Role in the rotation | cereal / legume / oilseed / forage / cover / fallow / other |
+| `crop` | Identifier used in rotations (English, lowercase snake_case) | text, e.g. `durum_wheat` |
+| `scientific_name` | Latin name | text |
+| `family` | Botanical family (key for breaking pest/disease cycles) | e.g. Poaceae, Fabaceae, Brassicaceae, Asteraceae |
+| `type` | Role | cereal / legume / oilseed / forage / cover / other |
 | `season` | Sowing season in the target region | autumn / spring / summer |
-| `sow_month`, `harvest_month` | Growing months in Andalusia (rain-fed unless stated) | 1–12 |
-| `water_need_mm_min`, `water_need_mm_max` | Seasonal crop water need | mm per cycle |
-| `drought_tolerance`, `heat_tolerance`, `frost_tolerance` | | low / medium / high |
+| `sow_month`, `harvest_month` | Typical sowing and harvest (or termination) month in the target region | 1–12 |
+| `cycle_days_min`, `cycle_days_max` | Sowing to harvest | days |
+| `water_need_mm_min`, `water_need_mm_max` | Seasonal crop water requirement **without water stress** (FAO irrigation-planning value). Not what a rain-fed crop actually uses, and not a suitability threshold | mm per cycle |
+| `drought_tolerance` | | low / medium / high |
+| `t_base_c` | Base temperature for growing degree days | °C |
+| `frost_damage_c` | Temperature below which frost damage is likely (sensitive stage) | °C |
+| `heat_stress_c` | Max temperature above which heat stress is likely (sensitive stage) | °C |
+| `root_depth_m_max` | Maximum effective rooting depth | m |
 | `n_fixing` | Biological nitrogen fixation | yes / no |
-| `root_depth_m` | Maximum effective rooting depth | m |
-| `residue_organic_matter` | Contribution of residues to soil organic matter | low / medium / high |
 | `ground_cover` | Protection against erosion while growing | low / medium / high |
 | `forage_value` | | low / medium / high |
-| `market_value_illustrative` | **Illustrative only** — must be shown as such in the UI | low / medium / high |
-| `sources` | Reference IDs separated by `;` | e.g. `R-01;R-02` |
-| `confidence` | | high / medium / low / indicative |
-| `notes` | Caveats (generic vs Mediterranean values, irrigated vs rain-fed…) | text |
-
-Target list (issue #7): durum wheat, barley, oats, chickpea, lentil, faba bean, vetch–oat, sunflower, sorghum, maize, alfalfa, camelina, mustard/vetch cover, fallow.
+| `residue_organic_matter` | Contribution of residues to soil organic matter | low / medium / high |
+| `market_value` | Relative market value of the harvest — **illustrative only**, not a price | low / medium / high |
+| `sources` | Reference IDs, separated by `;` | e.g. `R-01;R-02` |
+| `confidence` | | low / medium / high |
+| `notes` | Caveats (generic vs Mediterranean values, stage, etc.) | text |
 
 ## References
 | ID | Reference | Link | License / terms |
 |---|---|---|---|
-| R-01 | _TODO — e.g. FAO Irrigation and Drainage Paper No. 56 (Allen et al., 1998)_ | | |
+| R-01 | Allen, R.G., Pereira, L.S., Raes, D., Smith, M. (1998). *Crop evapotranspiration — Guidelines for computing crop water requirements*. FAO Irrigation and Drainage Paper 56. Used: Table 11 (lengths of crop development stages), Table 22 (maximum effective rooting depth). | https://www.fao.org/4/x0490e/x0490e00.htm | © FAO. Numeric values cited with reference; no text or figures reproduced |
+| R-02 | Brouwer, C., Heibloem, M. (1986). *Irrigation Water Management: Irrigation Water Needs*. FAO Training Manual No. 3. Used: Table 4 (total growing period), Table 5 (seasonal crop water need, mm). | https://www.fao.org/4/s2022e/s2022e02.htm | © FAO. Numeric values cited with reference |
+| R-03 | Steduto, P., Hsiao, T.C., Fereres, E., Raes, D. (2012). *Crop yield response to water*. FAO Irrigation and Drainage Paper 66, chapter 4 (wheat, barley, maize, sorghum, sunflower). Used: base temperatures (AquaCrop calibration values, not universal field thresholds), heat effects, drought tolerance statements. | https://www.fao.org/4/i2800e/i2800e07.pdf | © FAO. Numeric values cited with reference |
+| R-IND | **Indicative team classification** (sowing/harvest months for Andalusia, qualitative levels, `market_value`). Not from a published source; reviewed with the `agro-domain-advisor` agent (2026-11-14). Must be checked by a local agronomist (e.g. Junta de Andalucía / IFAPA sowing calendars). | — | — |
+
+## Known limitations of the table
+- Several FAO cycle lengths are for spring sowing; where they do not apply to autumn/winter sowing in Andalusia the cell is left empty.
+- Rooting depths are maxima for non-limiting soils; shallow or calcareous Málaga soils will limit them.
+- Summer crops (maize, sorghum) and alfalfa require irrigation in Andalusia.
+- Rain-fed cover crops compete for stored soil water; summer soil protection relies on stubble retention rather than cover crops.
+- `market_value` is illustrative and ignores prices, CAP eco-schemes and contracts.

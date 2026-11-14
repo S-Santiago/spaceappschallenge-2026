@@ -37,6 +37,20 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 ## Indicators and scoring
 Defined in [indicators.md](indicators.md). Thresholds and formulas must be documented there before implementation.
 
+## Database (SQLite)
+Module `src/fieldshift/db.py`, schema `src/fieldshift/schema.sql` (migrations tracked with `PRAGMA user_version`).
+The DB file is **generated** and git-ignored (`FIELDSHIFT_DB`, default `data/processed/fieldshift.db`); it is rebuilt from committed seeds on start-up, so the app works offline. Rebuild by hand: `python -m fieldshift.db reset` (with `src` on `PYTHONPATH`).
+
+| Table | Key | Content | Seeded from | Written by |
+|---|---|---|---|---|
+| `crops` | `crop` | Crop traits (columns in `docs/crop-traits.md`) | `data/crops.csv` (reloaded on every start) | — |
+| `locations` | `slug` | Named fields; `is_demo=1` for the demo fields | `data/samples/locations.csv` | — |
+| `nasa_raw` | `source, lat, lon` | Raw NASA POWER / MODIS payloads (replaces the old JSON file cache) | `data/samples/{power,modis}_<lat>_<lon>.json` | `power.py`, `modis.py` via `cache.py` |
+| `climate_profiles` | `lat, lon` | Monthly profile, shape 1 in `docs/work-plan.md`, plus the `version` of the code that computed it | — | `climate.py` |
+| `analyses` | `id` | Inputs (rotation, priorities, irrigation, slope) + resulting strategies (shape 2). No personal data | — | app |
+
+Coordinates are rounded to 2 decimals (~1 km) everywhere. Main functions: `get_crops()`, `get_crop()`, `get_locations()`, `get_location()`, `get_raw()`/`save_raw()`, `get_profile(lat, lon, version=None)`/`save_profile()`, `save_analysis()`/`get_analysis()`/`list_analyses()`.
+
 ## Known limitations
 - NASA POWER is modelled/derived data on a ~50 km grid: describes the area, not the plot.
 - `GWETROOT` is model-based root-zone wetness, not satellite-measured soil moisture.
