@@ -34,6 +34,27 @@ Farmer-friendly versions in English and Spanish are returned in the profile as `
 - NDVI: only two years (2024–2025); a 250 m pixel can mix several plots.
 - 10-year vs 10-year comparison shows a change, not a proven long-term climate trend.
 
+## Predictions (P-01…P-07) — statistics over NASA history, not AI
+Defined for issues #37/#38 (owner today @sebasbarrabaja-cmyk). Code: `src/fieldshift/predictions.py`; tests: `tests/test_predictions.py`. Input: NASA POWER daily data 2005–2025 for the field's cell (same payload as I-01…I-11), plus MODIS NDVI for P-07. **Always shown as "based on the last 20 years of NASA data", never as a weather forecast.** Must-have: P-01, P-02, P-03, P-07 · stretch: P-04, P-05, P-06.
+
+| ID | Field | Plain meaning | Method | Unit | Threshold origin | Status |
+|---|---|---|---|---|---|---|
+| P-01 | `rain_weeks[]` | How likely it is to rain in each week of the year | For each of 52 weeks (week 1 = 1–7 Jan; days 365–366 in week 52) and each year: rainy if any day `PRECTOTCORR ≥ 1 mm`; useful rain if the weekly total ≥ 10 mm. `prob_rain`, `prob_useful_rain` = share of years; `mean_rain_mm` = mean weekly total. A week-year with any missing day is skipped | 0–1, mm | 1 mm = ETCCDI wet-day threshold. 10 mm/week: team assumption for rain that wets the topsoil enough for sowing/germination. Indicative | ✅ implemented |
+| P-02 | `heavy_rain` | How likely a storm is each month, and how often a very big one comes | Monthly share of years with ≥ 1 day ≥ 30 mm (same threshold as I-07); return period of the yearly maximum daily rain from a Gumbel fit (method of moments) → "a storm of X mm comes about once every N years" | 0–1, mm, years | 30 mm as I-07. Gumbel = standard extreme-value method in hydrology; 21 years limits the reliability beyond ~10-year return periods | #38 |
+| P-03 | `frost` | When frosts usually stop in spring and start in autumn | Per year: last day with `T2M_MIN < 0 °C` in Jan–Jun and first in Jul–Dec. Years without frost count as "no frost" (earliest for spring, latest for autumn). Spring: median and **90th percentile** of the last-frost date; autumn: median and **10th percentile** of the first-frost date; `safe_days` = days between them. Half-years with > 10 % missing Tmin are skipped | date (MM-DD), 0–1, days | Freezing point as I-05. 9-in-10 years = common agro-climatic planning risk level. Air Tmin at 2 m for a ~50 km cell: ground frost in valley bottoms can happen with Tmin above 0 °C → real risk is higher | ✅ implemented |
+| P-04 *(stretch)* | `trends` | Is it getting hotter / drier, and how sure are we | Sen's slope per decade of annual rain and heat days, with a 95 % confidence interval (Mann-Kendall) | mm/decade, days/decade | Standard non-parametric trend method; 21 years is short → wide intervals | stretch |
+| P-05 *(stretch)* | `dryness` | Is this season drier than usual | Rain accumulated since 1 September vs the same window in past years → percentile (SPI-style, empirical) | percentile | Empirical percentile instead of a fitted SPI because of the short record | stretch |
+| P-06 *(stretch)* | `sowing_window` | Best weeks to sow each crop | Weeks after `last_frost_p90` (P-03) and with `prob_useful_rain` (P-01) ≥ 0.5 within the crop's sowing months (`data/crops.csv`) | weeks | Combines P-01, P-03 and the crop catalogue | stretch |
+| P-07 | `alerts[]` | When heavy rain usually hits while the field is bare | Months with `likely_bare` (I-09) **and** P-02 monthly storm probability ≥ 0.2 → alert card "high erosion risk"; slope from the farmer increases the level | list of months + level | Supervisor request. 0.2 = at least 1 year in 5: team assumption | #38 |
+
+**Farmer sentences (UI, P-01 and P-03):**
+- P-01: "In the week of 26 Nov it rained in **76 %** of the last 21 years (**43 %** with more than 10 mm)."
+- P-03 spring: "In **9 out of 10** years the last frost came **before 14 March**." · No frost: "No frost in the last 21 years at this place."
+- P-03 autumn: "In **9 out of 10** years the first autumn frost came **after 3 December**."
+- Always add: "Based on 21 years of NASA data for an area of about 50 km. Not a weather forecast."
+
+**Real results (demo fields, 2005–2025):** Vega de Antequera — spring frost in 17/21 years, last frost before 14 Mar in 9/10 years; Campillos — same spring date, autumn frost in 15/21 years (first after 28 Nov in 9/10); Guadalhorce valley — no frost in 21 years. Late November: rain in 76 % (inland) to 90 % (Guadalhorce) of years; July: ≤ 5 %.
+
 ## Scoring (Shape 2 `scores`)
 Implemented in `src/fieldshift/rotations.py` (issue #10). All sub-scores are 0–100, **higher = better for the farmer**. Inputs: Shape 1 profile, crop traits from `data/crops.csv`, farmer inputs (rotation of 1–4 crops, priorities, irrigation yes/no, slope flat/moderate/steep). These are **team assumptions, indicative, not reviewed** by an agronomist yet.
 
