@@ -1,29 +1,47 @@
-# Work plan — proposal for a team of 4
+# Work plan — team of 4
 
-> **Proposal, not a decision.** Discuss it in the team, adjust names and scope, then record the stack choice with `/record-decision` (`docs/decisions/0002-tech-stack.md`).
+> **Agreed.** Stack: **Python 3.11+ · Streamlit · SQLite** — see [decisions/0002-tech-stack.md](decisions/0002-tech-stack.md). Tasks and owners live in the GitHub issues (epic #16); this page is the summary.
 
-## Proposed product (MVP)
-A web tool where a farmer picks a field on a map, enters the current rotation and their priorities (save water, soil health, income, low risk). The tool then shows:
+## Product (MVP)
+A Streamlit tool where a farmer picks a field (demo field or map), enters the current rotation and their priorities (save water, soil health, income, low risk). The tool then shows:
 1. **Field climate calendar** (12 months): rain, water deficit, soil moisture, frost and heat days, and months when the field is bare, all taken from NASA data.
 2. **Long-term trends**: 2005–2014 vs 2016–2025 (rainfall, heat days).
 3. **Rotation comparison**: the current rotation plus **3 alternatives** (legume break, cover crop in the bare window, water-saving swap, forage/diversification). Each one shows *why · evidence · benefits · information gaps · risks to review locally*.
 
-## Already built (branch `feat/rotation-mvp`)
+> 📱 **Target user:** farmer with at most a low/mid-range phone and poor mobile data → mobile-first, lightweight, works at 360 px. See `docs/ux-guidelines.md`.
+
+## Already built (on `main`)
 | File | What it does | Status |
 |---|---|---|
 | `src/fieldshift/power.py` | NASA POWER daily point data 2005–2025 (Tmax, Tmin, precipitation, root-zone soil wetness) | ✅ built, tested on Málaga (7,670 days) |
 | `src/fieldshift/modis.py` | MODIS MOD13Q1 NDVI 2024–2025 via ORNL DAAC (no login), parallel requests | ✅ built, tested (45 composites, ~25 s first call) |
-| `src/fieldshift/cache.py` | JSON cache: `data/processed/cache` (ignored) → `data/samples` (committed demo data) | ✅ built |
+| `src/fieldshift/cache.py` | JSON cache: `data/processed/cache` (ignored) → `data/samples` (committed demo data) — **to be replaced by `db.py`** (#6) | ✅ built |
 
 ## Work split (4 people, 4 independent tracks)
-Each track owns its own files, so the four can work in parallel without conflicts. Interfaces between tracks are the JSON shapes below. Agree on them first (15 min).
+Each track owns its own files, so the four can work in parallel without conflicts. Interfaces between tracks are Shape 1, Shape 2 and the DB functions below.
 
-| # | Track | Owner | Files | Done when |
-|---|---|---|---|---|
-| A | **Climate indicators** (data) | _TBD_ | `src/fieldshift/climate.py` | From `power.fetch_daily` + `modis.fetch_ndvi`, returns the monthly profile and trends (shape 1). Also registers POWER + MODIS with `/nasa-dataset-check` and saves demo samples in `data/samples/`. |
-| B | **Crops & rotation engine** (agronomy) | _TBD_ | `src/fieldshift/crops.py`, `src/fieldshift/rotations.py` | Given shape 1 + rotation + priorities, returns current + 3 strategies (shape 2). Crop table checked with the `agro-domain-advisor` agent; values marked "indicative". |
-| C | **API + frontend** (dev/UX) | _TBD_ | `src/fieldshift/api.py`, `src/web/` | Map → form → results screens; uses mock JSON until A and B land; passes `/ux-review`. Records the stack decision. |
-| D | **Story, docs & submission** | _TBD_ | `README.md`, `docs/`, `docs/pitch/` | README sections 1–5, Project page texts, ≤7 slides or ≤30 s video (`/demo-builder`), `/submission-check` green, Submit for Judging before Sun 23:59. Also collects the farmer persona and the demo field. |
+| Track | Owner | Files | Issues |
+|---|---|---|---|
+| **App & integration** (full-stack) | @S-Santiago | `src/app.py`, wiring, deployment | #12 · #13 · #14 · #15 |
+| **Database** | @HectorLopGar-Dev | `src/fieldshift/db.py`, schema/seed SQL, `data/crops.csv`, demo-field seed in `data/samples/` | #6 · #7 · #8 |
+| **Backend** (indicators + rotation engine) | @HaoJunnnzhang | `src/fieldshift/climate.py`, `src/fieldshift/rotations.py`, `tests/` | #9 · #10 · #11 |
+| **General** (decisions, data registry, docs, demo, submission) | @sebasbarrabaja-cmyk | `README.md`, `docs/`, `docs/pitch/` | #1 · #3 · #4 · #5 |
+
+**Reviews (#2, `.github/CODEOWNERS`):** code → @S-Santiago · visuals/UX, docs, README, pitch → @sebasbarrabaja-cmyk.
+
+### Data flow
+```
+NASA POWER API ─┐                         data/crops.csv (seed)
+                ├─ power.py / modis.py ─→ db.py (SQLite) ←──────────────┘
+MODIS (ORNL) ───┘                           │      ▲
+                                            ▼      │ save_profile / save_analysis
+                              climate.py → Shape 1 → rotations.py → Shape 2
+                                            │                         │
+                                            └──────→ src/app.py (Streamlit) ←┘
+```
+
+### DB interface (proposal in #6 — owner @HectorLopGar-Dev)
+Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_crops()`, `get_profile(lat, lon)`, `save_profile(...)`, `save_analysis(...)`. The `.db` file is git-ignored and rebuilt at startup from the committed schema + seed (needed on Streamlit Community Cloud, whose disk is reset on restart).
 
 ### Shape 1 — climate profile (A → B, C)
 ```json
