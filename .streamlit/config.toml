@@ -3,3 +3,9 @@ gatherUsageStats = false
 
 [client]
 toolbarMode = "minimal"
+
+[server]
+# Always 8501: the shared Cloudflare tunnel points here. Never start a second instance on another port.
+port = 8501
+# Reload the app for every open browser as soon as a source file is saved.
+runOnSave = true
