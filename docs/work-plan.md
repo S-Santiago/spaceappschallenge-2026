@@ -101,9 +101,9 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
    {"week": 48, "start": "11-26", "prob_rain": 0.76, "prob_useful_rain": 0.43, "mean_rain_mm": 20.1, "years": 21}],
  "frost": {       // P-03: null dates = no frost in most years / never
    "spring": {"years": 21, "years_with_frost": 17, "probability": 0.81,
-              "last_frost_median": "02-06", "last_frost_p90": "03-14"},
+              "last_frost_median": "02-06", "last_frost_p90": "03-14", "years_by_p90": 19},
    "autumn": {"years": 21, "years_with_frost": 5, "probability": 0.24,
-              "first_frost_median": null, "first_frost_p10": "12-03"},
+              "first_frost_median": null, "first_frost_p10": "12-03", "years_from_p10": 19},
    "safe_days": 264}}
 ```
 Values above are the real output for Vega de Antequera. UI wording (farmer sentences) in `docs/indicators.md` → Predictions.
