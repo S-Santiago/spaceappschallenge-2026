@@ -5,8 +5,8 @@ Every function is a pure function over the daily NASA POWER payload returned by 
 last ~20 years at the field's POWER cell and must be shown as "based on the last 20 years of
 NASA data", never as a weather forecast.
 
-Implemented: P-01 weekly rain probability, P-03 frost dates. P-02, P-07 (and stretch P-04..P-06)
-come in issue #38.
+Implemented: P-01 weekly rain probability, P-02 heavy rain (monthly probability + Gumbel return
+levels), P-03 frost dates, P-07 bare-soil x heavy-rain alerts. Stretch P-04..P-06 not implemented.
 """
 
 from __future__ import annotations
@@ -22,6 +22,12 @@ FROST_C = 0.0  # P-03: same frost rule as climate.FROST_C (I-05)
 MAX_MISSING = 0.10  # skip a week / half-year when more than 10 % of its days are missing
 WEEKS = 52  # 52 weeks of 7 days; the last 1-2 days of the year are added to week 52
 REF_YEAR = 2001  # non-leap year used to turn day-of-year into a calendar date (MM-DD)
+HEAVY_DAY_MM = 20.0  # P-02/P-07: ETCCDI R20mm "very heavy precipitation day" (cell-averaged rain)
+RETURN_PERIODS = (2, 5, 10)  # P-02: only up to 10 years with ~21 annual maxima (agro review)
+EULER_GAMMA = 0.5772156649
+ALERT_PROB = 0.2  # P-07: a >= 20 mm day in that month in at least 1 year in 5
+HIGH_PROB = 0.4  # P-07: ... in at least 2 years in 5 -> "high"
+LEVELS = ("medium", "high")
 
 
 def _parse(days: dict) -> dict[int, dict[date, dict]]:
@@ -175,15 +181,158 @@ def frost_dates(days: dict) -> dict:
     }
 
 
+# ------------------------------------------------------------------ P-02 heavy rain
+
+def gumbel_lmoments(sample: list[float]) -> tuple[float, float] | None:
+    """Gumbel (EV1) location xi and scale alpha fitted by L-moments (Hosking & Wallis 1997).
+
+    l1 = b0, l2 = 2*b1 - b0 with b1 = mean((i-1)/(n-1) * x_(i)) over the sorted sample;
+    alpha = l2 / ln 2, xi = l1 - 0.5772 * alpha. Needs at least 5 values.
+    """
+    n = len(sample)
+    if n < 5:
+        return None
+    x = sorted(sample)
+    b0 = sum(x) / n
+    b1 = sum(i / (n - 1) * v for i, v in enumerate(x)) / n
+    l2 = 2 * b1 - b0
+    if l2 <= 0:
+        return None
+    alpha = l2 / math.log(2)
+    return b0 - EULER_GAMMA * alpha, alpha
+
+
+def gumbel_return_level(xi: float, alpha: float, years: float) -> float:
+    """Value exceeded on average once every `years` years: xi - alpha * ln(-ln(1 - 1/T))."""
+    return xi - alpha * math.log(-math.log(1 - 1 / years))
+
+
+def heavy_rain(days: dict) -> dict:
+    """P-02. Heavy-rain risk from daily NASA POWER rain (cell average, ~50 km).
+
+    - months[m]: share of years with at least one day >= HEAVY_DAY_MM in that calendar month
+      (a month-year with > 10 % missing rain is skipped), plus the count of years
+    - return_levels: daily rain reached on average once every 2, 5, 10 years (Gumbel, L-moments
+      on the annual maxima of years with <= 10 % missing days); `observed_years` = how many years
+      actually reached it (a quick check of the fit)
+    - annual_max: median and largest yearly maximum, and the year of the largest
+    """
+    by_month: dict[int, list[bool]] = defaultdict(list)
+    maxima: dict[int, float] = {}
+    for year, items in _parse(days).items():
+        rain_by_month: dict[int, list[float]] = defaultdict(list)
+        for d, v in items.items():
+            if v.get("PRECTOTCORR") is not None:
+                rain_by_month[d.month].append(v["PRECTOTCORR"])
+        for m in range(1, 13):
+            expected = calendar.monthrange(year, m)[1]
+            rain = rain_by_month.get(m, [])
+            if rain and (expected - len(rain)) / expected <= MAX_MISSING:
+                by_month[m].append(any(r >= HEAVY_DAY_MM for r in rain))
+        n_valid = sum(len(r) for r in rain_by_month.values())
+        if n_valid and ((366 if calendar.isleap(year) else 365) - n_valid) / 365 <= MAX_MISSING:
+            maxima[year] = max(r for rs in rain_by_month.values() for r in rs)
+
+    fit = gumbel_lmoments(list(maxima.values()))
+    levels = []
+    if fit:
+        for t in RETURN_PERIODS:
+            mm = gumbel_return_level(*fit, t)
+            levels.append({"years": t, "mm": round(mm), "observed_years": sum(v >= mm for v in maxima.values())})
+    wettest = max(maxima, key=maxima.get) if maxima else None
+    return {
+        "threshold_mm": HEAVY_DAY_MM,
+        "months": [{"month": m, "prob": round(sum(by_month[m]) / len(by_month[m]), 2) if by_month[m] else None,
+                    "years": len(by_month[m])} for m in range(1, 13)],
+        "return_levels": levels,
+        "annual_max": {
+            "years": len(maxima),
+            "median_mm": round(percentile_median(list(maxima.values())), 1) if maxima else None,
+            "max_mm": round(maxima[wettest], 1) if wettest else None,
+            "max_year": wettest,
+        },
+        "method": f"Gumbel fitted by L-moments on {len(maxima)} annual maxima of cell-averaged daily rain",
+    }
+
+
+def percentile_median(values: list[float]) -> float:
+    s = sorted(values)
+    n = len(s)
+    return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2
+
+
+# ------------------------------------------------------------------ P-07 bare soil x heavy rain
+
+def bare_months(modis_points: list[dict]) -> dict[int, bool]:
+    """I-08/I-09 reused: {month: likely bare} from the MODIS NDVI points (2024-2025)."""
+    from .climate import likely_bare, monthly_ndvi  # local import: climate imports the network clients
+
+    return {m: bool(likely_bare(v)) for m, v in monthly_ndvi(modis_points).items()}
+
+
+def rotation_bare_months(rotation: list[dict]) -> set[int]:
+    """Calendar months with no crop in at least one year of the rotation (crop calendar from
+    data/crops.csv, same window() as the rotation engine). Fallow years leave every month bare."""
+    from .rotations import window
+
+    bare: set[int] = set()
+    for crop in rotation:
+        bare |= set(range(1, 13)) - set(window(crop))
+    return bare
+
+
+def soil_alerts(heavy: dict, observed_bare: dict[int, bool] | None = None,
+                planned_bare: set[int] | None = None) -> list[dict]:
+    """P-07. Months when the field is bare and a >= 20 mm day happened in at least ALERT_PROB of the
+    years (P-02). Bare comes from two sources, reported in `sources`:
+    - "satellite": MODIS NDVI says likely bare (2024-2025, I-09) — observed but only two years and a
+      fixed NDVI threshold (stubble, weeds and early emergence can hide a bare seedbed);
+    - "crop_calendar": no crop of the farmer's rotation occupies that month (planned).
+    Level "high" from HIGH_PROB, else "medium"; before the farmer's slope (see raise_for_slope).
+    Wording: heavy-rain days often fall when the field is bare — a proxy, not measured erosion."""
+    observed_bare = observed_bare or {}
+    planned_bare = planned_bare or set()
+    alerts = []
+    for row in heavy["months"]:
+        m, prob = row["month"], row["prob"]
+        sources = [name for name, hit in (("satellite", observed_bare.get(m)), ("crop_calendar", m in planned_bare))
+                   if hit]
+        if prob is not None and prob >= ALERT_PROB and sources:
+            alerts.append({"month": m, "prob": prob, "years": row["years"], "sources": sources,
+                           "level": "high" if prob >= HIGH_PROB else "medium"})
+    return alerts
+
+
+def raise_for_slope(level: str, slope: str) -> str:
+    """P-07: a steep field raises an alert one level (medium -> high); other slopes keep it."""
+    if slope == "steep" and level in LEVELS:
+        return LEVELS[min(LEVELS.index(level) + 1, len(LEVELS) - 1)]
+    return level
+
+
 # ------------------------------------------------------------------ bundle
 
-def build_predictions(power_data: dict) -> dict:
-    """Predictions payload for one field (shape documented in docs/work-plan.md)."""
+def build_predictions(power_data: dict, modis_data: dict | None = None,
+                      rotation: list[dict] | None = None) -> dict:
+    """Predictions payload for one field (shape documented in docs/work-plan.md).
+
+    `modis_data` (MODIS payload) and `rotation` (crop dicts of the farmer's current rotation, from
+    db.get_crops / rotations.load_crops) are both optional. With neither, `alerts` is None (bare
+    months unknown), never an empty list.
+    """
     days = power_data["days"]
     years = sorted({int(k[:4]) for k in days})
+    heavy = heavy_rain(days)
+    alerts = None
+    if modis_data or rotation:
+        alerts = soil_alerts(heavy,
+                             bare_months(modis_data["points"]) if modis_data else None,
+                             rotation_bare_months(rotation) if rotation else None)
     return {
         "period": f"{years[0]}-{years[-1]}" if years else None,
         "basis": "Statistics of NASA POWER daily data for the field's ~50 km cell. Not a weather forecast.",
         "rain_weeks": rain_weeks(days),
+        "heavy_rain": heavy,
         "frost": frost_dates(days),
+        "alerts": alerts,
     }

@@ -91,7 +91,7 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
 
 **Points that are not demo fields.** NASA POWER answers in ~3 s, but the MODIS service (ORNL) can take minutes for a new point. The API waits for POWER (up to 60 s) and for MODIS only 3 s (`FIELDSHIFT_MODIS_WAIT_S`); if MODIS is not ready it answers anyway with `"pending": ["ndvi"]` and `likely_bare: null` in every month (bare-soil months unknown), while the MODIS download continues in the background. A retry joins that download instead of starting a new one; once it lands, the full profile is stored and `"pending": []`. **PWA:** show the results, say "satellite greenness still loading" when `pending` contains `ndvi`, and ask again after ~1 minute. Measured: new point ~6 s, same point afterwards < 0.3 s.
 
-### Predictions shape (P-01, P-03 — #37; P-02, P-07 in #38)
+### Predictions shape (P-01, P-03 — #37; P-02, P-07 — #38)
 `predictions.build_predictions(power_payload)` in `src/fieldshift/predictions.py` (pure function over the same POWER payload `climate.py` uses; no network). Proposed endpoint for #39: `GET /api/predictions?field=<slug>` (or `lat`, `lon`).
 
 ```json
@@ -104,8 +104,18 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
               "last_frost_median": "02-06", "last_frost_p90": "03-14", "years_by_p90": 19},
    "autumn": {"years": 21, "years_with_frost": 5, "probability": 0.24,
               "first_frost_median": null, "first_frost_p10": "12-03", "years_from_p10": 19},
-   "safe_days": 264}}
+   "safe_days": 264},
+ "heavy_rain": {  // P-02
+   "threshold_mm": 20,
+   "months": [{"month": 11, "prob": 0.52, "years": 21}],
+   "return_levels": [{"years": 2, "mm": 33, "observed_years": 11}, {"years": 5, "mm": 42, "observed_years": 4},
+                     {"years": 10, "mm": 48, "observed_years": 3}],
+   "annual_max": {"years": 21, "median_mm": 33.0, "max_mm": 52.7, "max_year": 2024},
+   "method": "Gumbel fitted by L-moments on 21 annual maxima of cell-averaged daily rain"},
+ "alerts": [      // P-07; null if neither MODIS nor a rotation was given
+   {"month": 11, "prob": 0.52, "years": 21, "sources": ["crop_calendar"], "level": "high"}]}
 ```
+Call `build_predictions(power, modis, rotation)` with `rotation` = list of crop dicts of the farmer's **current** rotation (`[db.get_engine_crops()[c] for c in rotation_ids]`). Apply `predictions.raise_for_slope(level, slope)` with the farmer's slope before showing the alert.
 Values above are the real output for Vega de Antequera. UI wording (farmer sentences) in `docs/indicators.md` → Predictions.
 
 ## Suggested timeline (Europe/Madrid)
