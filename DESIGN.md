@@ -12,13 +12,14 @@ The visual direction of the app and the rules that keep it consistent. Read with
 
 | What | File |
 |---|---|
-| Theme tokens Streamlit understands (colours, fonts, heading scale, radius) | `.streamlit/config.toml` |
-| The same colours as CSS variables, the one CSS layer, HTML components | `src/fieldshift/ui_theme.py` |
-| Results view (sections and HTML builders) | `src/fieldshift/ui_results.py` |
-| Page flow (masthead, four steps, button, feedback) | `src/app.py` |
+| Tokens (colours for light and dark, type scale, spacing, radius) and every component style | `web/styles.css` |
+| Page flow (masthead, four steps, button, feedback) and results view | `web/js/app.js` |
+| What to expect (predictions and alert cards) | `web/js/expect.js`, `web/js/expect-format.js` |
+| Plain-English sentences and number formatting | `web/js/format.js` |
 
-Change a colour in **both** `config.toml` and `ui_theme.TOKENS`. Never write a colour, size or radius directly in a
-page; add a token instead. Every data string placed in HTML goes through `html.escape` (`t.e`).
+The early Streamlit harness (`.streamlit/config.toml`, `ui_theme.py`, `ui_results.py`, `src/app.py`) was retired;
+its tokens and components were ported to `web/styles.css`. Never write a colour, size or radius directly in a
+component; add a token in `:root` instead. Every data string placed in HTML goes through `esc()` (`web/js/format.js`).
 
 ## 2. Palette
 
@@ -61,10 +62,10 @@ font. One family; fixed rem scale, ratio ≈ 1.2: h1 28 px, step h2 22 px, secti
 | Comparison list | Rotation options in the same order as the cards (current first, then by overall fit), score + bar. The answer before the evidence. |
 | Score bars | One bar style (6 px) for overall and the four dimensions, filled by level: good = pine `--good`, fair = ochre `--fair`, poor = clay `--poor`. The number and level word are always printed (colour is never the only cue); the bar is hidden from screen readers. |
 | Tags | Only "Best fit for your priorities" (filled accent). The current rotation needs no tag: its title says it. |
-| Alerts | Streamlit `st.info / warning / success` with Material icons; feedback appears right under the button that caused it. |
-| Banners (PWA) | 1 px border in the state colour + tinted background (no thick coloured side stripe). |
-| Disclosures (PWA) | `<details>` with a drawn chevron on the right, accent-ink label, 48 px row; the chevron turns when open. |
-| Icons | Interface chrome uses Material Symbols (bundled in Streamlit). Data pictograms (💧 🌱 💶 🛡️, 🔻, 🟫) stay in content because they link the priorities to the scores and are covered by tests; they always sit next to a word. |
+| Alerts | Banners (below); feedback appears right under the button that caused it. |
+| Banners | 1 px border in the state colour + tinted background (no thick coloured side stripe). |
+| Disclosures | `<details>` with a drawn chevron on the right, accent-ink label, 48 px row; the chevron turns when open. |
+| Icons | Interface chrome uses plain text and a few inline SVG shapes (no icon font). Data pictograms (💧 🌱 💶 🛡️, 🔻, 🟫) stay in content because they link the priorities to the scores and are covered by tests; they always sit next to a word. |
 | Cards | Only for the rotation options (comparable items with expanders). No card inside a card. |
 
 ## 6. Rejected on purpose

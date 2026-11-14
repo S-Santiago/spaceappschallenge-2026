@@ -55,7 +55,7 @@ Reusable procedures. Invoke them with `/<skill-name>` or let Claude trigger them
 | `/crop-traits` | Adds/updates crops in `data/crops.csv` with a cited source for every value (`docs/crop-traits.md`) |
 | `/rotation-card` | Builds the ≥3 rotation strategies (incl. current) with why / evidence / benefits / gaps / risks and fit to farmer priorities |
 | `/design-taste-frontend` | Third-party (Taste, MIT). **UI step 1 — art direction**: palette, type, tone. See [ui-skills.md](ui-skills.md) |
-| `/frontend-design` | Third-party (Anthropic, Apache-2.0). **UI step 2 — implementation** of that direction in Streamlit |
+| `/frontend-design` | Third-party (Anthropic, Apache-2.0). **UI step 2 — implementation** of that direction in the PWA (`web/`) |
 | `/impeccable` | Third-party (Impeccable, Apache-2.0). **UI step 3 — audit & refinement** (`audit`, `critique`, `polish`…); proposes, never replaces, the direction |
 | `/security-review` | **Built into Claude Code** (not a project file). Security review of the pending changes on the current branch: secrets, injection, unsafe input handling. Run it before merging a branch and before making the demo public |
 

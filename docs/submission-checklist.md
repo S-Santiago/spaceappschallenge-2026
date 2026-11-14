@@ -29,7 +29,7 @@ Run `/submission-check` or ask the `submission-auditor` agent. Official NASA dea
 - [ ] Demo tested on a real low/mid-range phone over mobile data (360 px, no horizontal scroll, demo field < 3 s).
 - [ ] UX launch route: all 7 stages **GO** (`/ux-review`).
 - [ ] Red alert clear: no placeholder text/data, no dead buttons, no technical errors on screen (`Error`, `undefined`, `NaN`, `None`, tracebacks), no color-only states.
-- [ ] Hosted app woken up a few minutes before judging and pitch (Streamlit Cloud sleeps when idle).
+- [ ] Hosted app woken up a few minutes before judging and pitch (free hosts sleep when idle).
 - [ ] No organizer event material or NASA logos committed.
 - [ ] Built / simulated / future clearly separated in README and demo.
 - [ ] Repo is public.

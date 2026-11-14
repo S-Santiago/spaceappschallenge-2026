@@ -489,7 +489,9 @@ function renderResults(tab = "results") {
   const { data, label, at, inputs: used } = state.result;
   const profile = data?.profile || {};
   const strategies = Array.isArray(data?.strategies) ? data.strategies : [];
-  const weights = PRIORITIES.map(([k, icon, l]) => `${icon} ${l} ${used.priorities[k]}`).join(" · ");
+  const weights = PRIORITIES.every(([k]) => !used.priorities[k])
+    ? "all your priorities are 0, so they count the same" // rotations.overall() falls back to equal weights
+    : PRIORITIES.map(([k, icon, l]) => `${icon} ${l} ${used.priorities[k]}`).join(" · ");
   const loadingNdvi = isPending(state.result);
   const noNdvi = ndviMissing(profile);
 

@@ -18,22 +18,6 @@
       ],
       "port": 8000,
       "autoPort": false
-    },
-    {
-      "name": "farmlens",
-      "runtimeExecutable": ".venv/bin/streamlit",
-      "runtimeArgs": [
-        "run",
-        "src/app.py",
-        "--server.headless",
-        "true",
-        "--server.port",
-        "8501",
-        "--server.runOnSave",
-        "true"
-      ],
-      "port": 8501,
-      "autoPort": false
     }
   ]
 }

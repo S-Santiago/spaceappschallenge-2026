@@ -2,6 +2,7 @@
 
 - **Date:** 2026-11-14
 - **Status:** accepted — **supersedes the UI part of [0002](0002-tech-stack.md)** (Streamlit). Python, SQLite and the engine modules from 0002 stay.
+- **Update 2026-11-14:** the PWA reached parity with real data (#14), so the Streamlit test harness (`src/app.py`, `ui_results.py`, `ui_theme.py`, `mock_data.py`, mock samples, their tests and dependencies) was removed.
 - **Deciders:** team (Scrum Master @sebasbarrabaja-cmyk), after the supervisor's feedback. A PWA was the team's original idea.
 
 ## Context

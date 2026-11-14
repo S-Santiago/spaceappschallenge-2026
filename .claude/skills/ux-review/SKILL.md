@@ -5,7 +5,7 @@ description: Review a screen, component or the demo flow with the Málaga UX "la
 
 # UX review (launch route)
 
-Target: the file(s), route or screenshot given as argument (default: the main flow in `src/app.py`).
+Target: the file(s), route or screenshot given as argument (default: the main flow of the PWA in `web/js/app.js`, served at `http://localhost:8000`).
 Reference: `docs/ux-guidelines.md` (launch route table, red alert, mobile-first section).
 
 ## 1. Launch route — 7 stages
@@ -26,7 +26,7 @@ Works at 360 px with no horizontal scroll; single column (`layout="centered"`, n
 Search the code and the screens for anything that would appear in the demo:
 - placeholder text/data: `lorem`, `ipsum`, `asdf`, `Title here`, `TODO`, `test`, `xxx`;
 - buttons/links with no effect in the demo flow;
-- technical errors visible to users: `Error 500`, `undefined`, `NaN`, `None`, tracebacks, raw exceptions (Streamlit shows them in red boxes — wrap calls and show a friendly message);
+- technical errors visible to users: `Error 500`, `undefined`, `NaN`, `None`, tracebacks, raw API error messages (catch them and show a friendly message);
 - states distinguished only by color.
 Any hit → overall NOT YET.
 

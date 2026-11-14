@@ -1,9 +1,9 @@
 # Work plan — team of 4
 
-> **Agreed.** Stack: **Python 3.11+ · Streamlit · SQLite** — see [decisions/0002-tech-stack.md](decisions/0002-tech-stack.md). Tasks and owners live in the GitHub issues (epic #16); this page is the summary.
+> **Agreed.** Stack: **Python 3.11+ · SQLite · FastAPI + PWA** — see [decisions/0002-tech-stack.md](decisions/0002-tech-stack.md), superseded for the UI by [0004](decisions/0004-mobile-pwa.md). Tasks and owners live in the GitHub issues (epic #16); this page is the summary.
 
 ## Product (MVP)
-A Streamlit tool where a farmer picks a field (demo field or map), enters the current rotation and their priorities (save water, soil health, income, low risk). The tool then shows:
+A mobile web app (PWA) where a farmer picks a field (demo field or map), enters the current rotation and their priorities (save water, soil health, income, low risk). The tool then shows:
 1. **Field climate calendar** (12 months): rain, water deficit, soil moisture, frost and heat days, and months when the field is bare, all taken from NASA data.
 2. **Long-term trends**: 2005–2014 vs 2016–2025 (rainfall, heat days).
 3. **Rotation comparison**: the current rotation plus **3 alternatives** (legume break, cover crop in the bare window, water-saving swap, forage/diversification). Each one shows *why · evidence · benefits · information gaps · risks to review locally*.
@@ -22,7 +22,7 @@ Each track owns its own files, so the four can work in parallel without conflict
 
 | Track | Owner | Files | Issues |
 |---|---|---|---|
-| **App & integration** (full-stack) | @S-Santiago | `src/app.py`, wiring, deployment | #12 · #13 · #14 · #15 |
+| **App & integration** (full-stack) | @S-Santiago | `web/` (PWA), wiring, deployment | #12 · #13 · #14 · #15 |
 | **Database** | @HectorLopGar-Dev | `src/fieldshift/db.py`, schema/seed SQL, `data/crops.csv`, demo-field seed in `data/samples/` | #6 · #7 · #8 |
 | **Backend** (indicators + rotation engine) | @HaoJunnnzhang | `src/fieldshift/climate.py`, `src/fieldshift/rotations.py`, `tests/` | #9 · #10 · #11 |
 | **General** (decisions, data registry, docs, demo, submission) | @sebasbarrabaja-cmyk | `README.md`, `docs/`, `docs/pitch/` | #1 · #3 · #4 · #5 |
@@ -37,11 +37,11 @@ MODIS (ORNL) ───┘                           │      ▲
                                             ▼      │ save_profile / save_analysis
                               climate.py → Shape 1 → rotations.py → Shape 2
                                             │                         │
-                                            └──────→ src/app.py (Streamlit) ←┘
+                                            └──→ api.py (FastAPI) → web/ (PWA) ←┘
 ```
 
 ### DB interface (proposal in #6 — owner @HectorLopGar-Dev)
-Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_crops()`, `get_profile(lat, lon)`, `save_profile(...)`, `save_analysis(...)`. The `.db` file is git-ignored and rebuilt at startup from the committed schema + seed (needed on Streamlit Community Cloud, whose disk is reset on restart).
+Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_crops()`, `get_profile(lat, lon)`, `save_profile(...)`, `save_analysis(...)`. The `.db` file is git-ignored and rebuilt at startup from the committed schema + seed (needed on free hosts whose disk is reset on restart).
 
 ### Shape 1 — climate profile (A → B, C)
 ```json
