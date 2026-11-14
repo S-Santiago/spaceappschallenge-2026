@@ -19,7 +19,7 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 | Rotation engine → Shape 2 | Python | `src/fieldshift/rotations.py` | @HaoJunnnzhang | 🟡 #10 (built; needs real `crops.csv` from #7) |
 | Tests | pytest | `tests/` | @HaoJunnnzhang | 🟡 #11 (26 tests) |
 | API | FastAPI | `src/fieldshift/api.py` | @HectorLopGar-Dev | ✅ built (#36, PR #47) |
-| App (PWA) | HTML + CSS + vanilla JS modules, manifest, hand-written service worker, no build step | `web/` | @S-Santiago | 🔴 #35 · #40 |
+| App (PWA) | HTML + CSS + vanilla JS modules, manifest, hand-written service worker, no build step | `web/` | @S-Santiago | 🟡 #35 · #14 (form, results and loading/error states wired to the real API; offline analyses pending) · #40 |
 | Internal test harness (not the product) | Streamlit | `src/app.py` | @S-Santiago | ✅ built |
 | Hosting | Free Python host (Render / HF Spaces / Fly.io) | — | @HectorLopGar-Dev | 🔴 #39 |
 
