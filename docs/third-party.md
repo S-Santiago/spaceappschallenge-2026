@@ -24,7 +24,9 @@ Everything in (or used by) this project that the team did not create: libraries,
 
 | Dataset | Provider | Terms | Citation |
 |---|---|---|---|
-| _none yet_ | | | |
+| Crop traits from FAO-56 Tables 11 and 22 (`data/crops.csv`, R-01) | FAO | © FAO; values cited, no text reproduced | Allen et al. (1998), FAO Irrigation and Drainage Paper 56 |
+| Crop water needs from FAO Training Manual 3 (`data/crops.csv`, R-02) | FAO | © FAO; values cited | Brouwer & Heibloem (1986), FAO Irrigation Water Management Training Manual 3 |
+| Crop temperature parameters from FAO-66 (`data/crops.csv`, R-03) | FAO | © FAO; values cited | Steduto et al. (2012), FAO Irrigation and Drainage Paper 66 |
 
 ## 4. Code snippets copied or adapted
 
