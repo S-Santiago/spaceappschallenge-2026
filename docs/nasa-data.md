@@ -6,11 +6,62 @@ Every dataset, API or model output used in the project is registered here. This 
 
 ## 1. Datasets in use
 
-_None yet. Use the `nasa-dataset-check` skill to add entries with the template in section 3._
+Both are listed in the official challenge Resources tab ("NASA POWER: Agroclimatology & Meteorological Data"; "Landsat and MODIS / VIIRS: Reflectance, NDVI, Vegetation Indices").
 
 | ID | Name | Provider | Role in the solution | Status |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| D-01 | NASA POWER daily point data (Agroclimatology, `community=AG`) | NASA LaRC | Field climate calendar, crop water need vs rain, frost/heat/heavy-rain risk, decade trends (I-01..I-07, I-10, I-11); drives every rotation score | ✅ in use (`power.py`, `climate.py`) |
+| D-02 | MODIS/Terra MOD13Q1 v061 NDVI | NASA LP DAAC, served by ORNL DAAC | Field greenness and months when the field is likely bare (I-08, I-09) → cover-crop evidence | ✅ in use (`modis.py`, `climate.py`) |
+
+### D-01 · NASA POWER daily point data
+| Field | Value |
+|---|---|
+| Provider | NASA Langley Research Center (LaRC) POWER Project |
+| Official link | https://power.larc.nasa.gov/ · API docs https://power.larc.nasa.gov/docs/services/api/temporal/daily/ |
+| Product & version | POWER daily point API; version reported in the response header (`meta.api_version` in our cache) |
+| Access date | 2026-11-14 |
+| Access method | REST API, no login (`src/fieldshift/power.py`), cached as JSON |
+| License / terms | NASA open data, no restrictions. Requested acknowledgement: "These data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program." |
+| Variables & units | `T2M_MAX`, `T2M_MIN`, `T2MDEW` (°C); `PRECTOTCORR` (mm/day); `GWETROOT` (0–1); `ALLSKY_SFC_SW_DWN` (MJ m⁻² day⁻¹); `WS2M` (m/s) |
+| Spatial coverage & resolution | Global; meteorology from MERRA-2 at ~0.5° × 0.625° (≈ 50 km), solar ~1° |
+| Temporal coverage & resolution | Daily, 2005-01-01 → 2025-12-31 (7,670 days) |
+| Missing values / quality flags | Fill value −999 → `null`; month-years with > 10 % missing days are skipped (`climate.py`) |
+| Limits | Model/reanalysis values for a ~50 km cell, not plot measurements; local microclimate, valley frost and sea breeze are not captured; `GWETROOT` is a model estimate, not measured soil moisture |
+| Processing applied | daily values → monthly sums/counts per year → mean of each calendar month 2005–2025; ET0 by FAO-56 Penman-Monteith; decade comparison 2005–2014 vs 2016–2025 |
+| Synthetic data? | No (tests use small hand-made series, clearly separated in `tests/`) |
+| Role in the solution | Core: without it there is no climate calendar, no water score and no climate risk |
+| Small test done | Yes: Málaga city (36.72, −4.42) and Vega de Antequera (37.05, −4.60) |
+
+### D-02 · MODIS MOD13Q1 v061 NDVI
+| Field | Value |
+|---|---|
+| Provider | NASA LP DAAC (product); subset served by the ORNL DAAC MODIS/VIIRS web service |
+| Official link | https://lpdaac.usgs.gov/products/mod13q1v061/ · https://modis.ornl.gov/data/modis_webservice.html |
+| Product & version | MOD13Q1 v061, band `250m_16_days_NDVI` |
+| Access date | 2026-11-14 |
+| Access method | ORNL REST API, no login (`src/fieldshift/modis.py`), cached as JSON |
+| License / terms | NASA open data, no restrictions on reuse. Citation: Didan, K. (2021). MODIS/Terra Vegetation Indices 16-Day L3 Global 250m SIN Grid V061. NASA EOSDIS LP DAAC. doi:10.5067/MODIS/MOD13Q1.061 |
+| Variables & units | NDVI, unitless (scale 0.0001; fill −3000 removed) |
+| Spatial coverage & resolution | One 250 m pixel at the field point |
+| Temporal coverage & resolution | 16-day composites, 2024–2025 (45 composites in the test) |
+| Missing values / quality flags | Fill values dropped; pixel reliability flag not yet used |
+| Limits | Only 2 years; a 250 m pixel can mix several plots, trees or buildings (Málaga city pixel is urban) |
+| Processing applied | composites → mean per calendar month → `likely_bare` if NDVI < 0.25 |
+| Synthetic data? | No |
+| Role in the solution | Evidence for bare-field months and the cover-crop strategy |
+| Small test done | Yes: same two points as D-01 |
+
+### Official resources not used (and why)
+| Resource | Why not (yet) | What we use instead |
+|---|---|---|
+| SMAP soil moisture | Earthdata Login + 9–36 km grid; little time | POWER `GWETROOT` (model root-zone wetness) |
+| GPM IMERG precipitation | Earthdata Login, large files | POWER `PRECTOTCORR` |
+| SRTM elevation | Needs login or an API key | Slope entered by the farmer |
+| ECOSTRESS | Irregular revisit, AppEEARS login | POWER-based Penman-Monteith ET0 |
+| Landsat / VIIRS | More processing than MODIS for a 2-day build | MODIS NDVI |
+| GRACE / GRACE-FO, GEDI | ~300 km / forest-oriented | — (future) |
+| USDA / USGS partner datasets (WSS, CDL, PRISM, SSURGO, NAIP, NLCD, NWIS, OpenET, LANDFIRE, CoCoRaHS, AMS, NASS) | U.S. only; our scope is Málaga | — |
+| FAO GAEZ | Global, possible future check of crop suitability | — |
 
 ## 2. Candidate datasets (to evaluate — NOT yet verified)
 
@@ -63,4 +114,6 @@ All of the above except AppEEARS/Earthdata tools are named in the official state
 ```
 
 ## 4. Citation list
-_Add the recommended citation of each dataset used (many NASA DAACs provide a DOI-based citation)._
+- NASA POWER: "These data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program."
+- MODIS: Didan, K. (2021). *MODIS/Terra Vegetation Indices 16-Day L3 Global 250m SIN Grid V061*. NASA EOSDIS Land Processes DAAC. https://doi.org/10.5067/MODIS/MOD13Q1.061 — subset via ORNL DAAC MODIS/VIIRS Web Service.
+- Allen, R.G., Pereira, L.S., Raes, D., Smith, M. (1998). *Crop evapotranspiration — FAO Irrigation and Drainage Paper 56*. FAO, Rome.

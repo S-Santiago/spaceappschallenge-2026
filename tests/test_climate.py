@@ -29,6 +29,21 @@ def test_hargreaves_formula():
     assert climate.hargreaves_et0(20, 10, 10) == pytest.approx(0.0023 * 32.8 * 10**0.5 * 10)
 
 
+def test_penman_monteith_matches_fao56_example_18():
+    # FAO-56 example 18: Brussels 6 July, 50.80 N, 100 m, Tmax 21.5, Tmin 12.3, ea 1.409 kPa,
+    # u2 2.078 m/s, Rs 22.07 MJ m-2 day-1 -> ET0 = 3.9 mm/day
+    ra = climate.extraterrestrial_radiation_mj(50.80, 187)
+    et0 = climate.penman_monteith_et0(21.5, 12.3, 22.07, 1.409, 2.078, 100, ra)
+    assert et0 == pytest.approx(3.9, abs=0.05)
+
+
+def test_daily_et0_uses_penman_monteith_when_possible():
+    full = {**BASE, "ALLSKY_SFC_SW_DWN": 25.0, "T2MDEW": 8.0, "WS2M": 2.0}
+    assert climate.daily_et0(full, 37.0, 180, 500)[1] == "penman_monteith"
+    assert climate.daily_et0({**full, "WS2M": None}, 37.0, 180, 500)[1] == "hargreaves"
+    assert climate.daily_et0({**full, "T2M_MAX": None}, 37.0, 180, 500) == (None, None)
+
+
 def test_ra_polar_night_is_zero_not_error():
     assert climate.extraterrestrial_radiation_mm(80, 355) == pytest.approx(0, abs=1e-6)
 

@@ -7,7 +7,7 @@ Common to all POWER-based indicators: source NASA POWER daily point API (`commun
 | ID | Field | Plain meaning | Formula / rule | Unit | Threshold origin | Reviewed | Implemented |
 |---|---|---|---|---|---|---|---|
 | I-01 | `rain_mm` | How much it rains in a typical month | mean monthly Σ `PRECTOTCORR` | mm | — | no | ✅ `climate.py` |
-| I-02 | `et0_mm` | How much water the air "asks" from the field | FAO-56 Hargreaves, Ra from latitude (FAO-56 eq. 21) | mm | FAO-56. Indicative: underestimates near the coast (Málaga city cell ~755 mm/yr; inland Antequera ~1,264 mm/yr) | no | ✅ `climate.py` |
+| I-02 | `et0_mm` | How much water the air "asks" from the field | FAO-56 **Penman-Monteith** (eq. 6, G = 0) from POWER `T2M_MAX`, `T2M_MIN`, `ALLSKY_SFC_SW_DWN` (MJ m⁻² day⁻¹), `T2MDEW` (→ ea, eq. 14), `WS2M` (m/s), elevation of the POWER cell; Ra from latitude (eq. 21). Falls back to FAO-56 Hargreaves (eq. 52) on days missing radiation/humidity/wind; the count is in `quality.et0_method`. Checked against FAO-56 example 18 (3.9 mm/day) | mm | FAO-56 (Allen et al. 1998). Málaga city ≈ 1,264 mm/yr, Vega de Antequera ≈ 1,385 mm/yr | no | ✅ `climate.py` |
 | I-03 | `water_balance_mm` | Is there spare water or a deficit? | `rain_mm − et0_mm` | mm | — | no | ✅ `climate.py` |
 | I-04 | `soil_wetness` | How wet the root zone is (estimate) | mean `GWETROOT` | 0–1 | model output, not a measurement | no | ✅ `climate.py` |
 | I-05 | `frost_days` | Days with frost | days `T2M_MIN < 0 °C` | days/month | Freezing point; same rule as the ETCCDI frost-day index (FD). A 50 km cell undercounts frost in valley bottoms | no | ✅ `climate.py` |
@@ -21,19 +21,18 @@ Common to all POWER-based indicators: source NASA POWER daily point API (`commun
 ## Implementation notes (`src/fieldshift/climate.py`)
 - Monthly values: computed per month-year, then averaged over 2005–2025 for each calendar month.
 - Missing data: a month-year is skipped for a variable when more than 10 % of its days are missing; with ≤ 10 % missing, sums and day counts are rescaled to the full month. `quality.missing_days` and `quality.skipped_month_years` are returned with the profile (extra field, not used by the UI).
-- Ra (I-02) follows FAO-56 eqs. 21–25 and is converted to mm/day with ×0.408; checked against FAO-56 example 8 (20° S, 3 Sep → 32.2 MJ m⁻² day⁻¹).
+- Ra (I-02) follows FAO-56 eqs. 21–25; checked against FAO-56 example 8 (20° S, 3 Sep → 32.2 MJ m⁻² day⁻¹). Penman-Monteith checked against FAO-56 example 18. Hargreaves (temperature only) gave ~755 mm/yr in Málaga city because the coastal cell has a small day–night range; Penman-Monteith with POWER radiation, humidity and wind fixes this.
 - NDVI (I-08): each 16-day MODIS composite is assigned to the month of its start date.
 - Trends (I-10, I-11): only complete years count; 2015 belongs to neither decade.
 - If MODIS fails, the profile is still built with `ndvi` and `likely_bare` set to `null`.
 
 ## Limits to show in the UI
 Farmer-friendly versions in English and Spanish are returned in the profile as `limits` = `{"en": [...], "es": [...]}` (`climate.LIMITS`).
-- Hargreaves ET0 is probably too low on coastal cells (Málaga city, Cártama share the same POWER cell).
+- ET0 uses POWER radiation, humidity and wind for a ~50 km cell; local wind and sea breeze are not captured.
 - POWER: modelled/derived data for a ~50 km cell; local microclimate (valleys, slopes) is not captured.
 - `soil_wetness`: model estimate (MERRA-2), not satellite-measured soil moisture.
 - NDVI: only two years (2024–2025); a 250 m pixel can mix several plots.
 - 10-year vs 10-year comparison shows a change, not a proven long-term climate trend.
-- Hargreaves ET0 depends on the day–night temperature range; on coastal grid cells (small range) it can underestimate ET0 (Málaga demo: ~755 mm/year).
 
 ## Scoring (Shape 2 `scores`)
 Implemented in `src/fieldshift/rotations.py` (issue #10). All sub-scores are 0–100, **higher = better for the farmer**. Inputs: Shape 1 profile, crop traits from `data/crops.csv`, farmer inputs (rotation of 1–4 crops, priorities, irrigation yes/no, slope flat/moderate/steep). These are **team assumptions, indicative, not reviewed** by an agronomist yet.

@@ -30,7 +30,6 @@ LIMITS = {
         "Field greenness (NDVI) covers only 2024-2025 and a 250 m square that may include other plots.",
         "Comparing two 10-year periods shows a change, not a proven long-term climate trend.",
         "Frost, heat, heavy-rain and bare-field thresholds are general rules, not specific to your crop.",
-        "Near the coast, water demand (ET0) is probably underestimated.",
     ],
     "es": [
         "Los datos de clima son estimaciones de satélite y modelos de NASA para una zona de unos 50 km, "
@@ -39,24 +38,54 @@ LIMITS = {
         "El verdor de la parcela (NDVI) solo cubre 2024-2025 y un cuadrado de 250 m que puede incluir otras parcelas.",
         "Comparar dos periodos de 10 años muestra un cambio, no una tendencia climática demostrada.",
         "Los umbrales de helada, calor, lluvia fuerte y suelo desnudo son reglas generales, no propias de tu cultivo.",
-        "Cerca de la costa, la demanda de agua (ET0) probablemente está subestimada.",
     ],
 }
 
 GSC = 0.0820  # solar constant, MJ m-2 min-1 (FAO-56)
 MJ_TO_MM = 0.408  # MJ m-2 day-1 -> mm day-1 equivalent evaporation (FAO-56)
+SIGMA = 4.903e-9  # Stefan-Boltzmann constant, MJ K-4 m-2 day-1
+PM_PARAMS = ("T2M_MAX", "T2M_MIN", "ALLSKY_SFC_SW_DWN", "T2MDEW", "WS2M")
 
 
-def extraterrestrial_radiation_mm(lat: float, doy: int) -> float:
-    """Ra in mm/day for a latitude (deg) and day of year (FAO-56 eq. 21-25). Used by I-02."""
+def extraterrestrial_radiation_mj(lat: float, doy: int) -> float:
+    """Ra in MJ m-2 day-1 for a latitude (deg) and day of year (FAO-56 eq. 21-25). Used by I-02."""
     phi = math.radians(lat)
     dr = 1 + 0.033 * math.cos(2 * math.pi * doy / 365)
     delta = 0.409 * math.sin(2 * math.pi * doy / 365 - 1.39)
     ws = math.acos(max(-1.0, min(1.0, -math.tan(phi) * math.tan(delta))))
-    ra_mj = (24 * 60 / math.pi) * GSC * dr * (
+    return (24 * 60 / math.pi) * GSC * dr * (
         ws * math.sin(phi) * math.sin(delta) + math.cos(phi) * math.cos(delta) * math.sin(ws)
     )
-    return MJ_TO_MM * ra_mj
+
+
+def extraterrestrial_radiation_mm(lat: float, doy: int) -> float:
+    """Ra in mm/day equivalent evaporation."""
+    return MJ_TO_MM * extraterrestrial_radiation_mj(lat, doy)
+
+
+def sat_vapour_pressure(t: float) -> float:
+    """e°(T) in kPa (FAO-56 eq. 11)."""
+    return 0.6108 * math.exp(17.27 * t / (t + 237.3))
+
+
+def penman_monteith_et0(tmax: float, tmin: float, rs: float, ea: float, u2: float, elevation_m: float,
+                        ra_mj: float) -> float:
+    """Daily grass-reference ET0 in mm, FAO-56 Penman-Monteith (eq. 6) with G = 0. I-02.
+
+    rs: incoming shortwave radiation (MJ m-2 day-1), ea: actual vapour pressure (kPa), u2: wind at 2 m (m/s).
+    """
+    tmean = (tmax + tmin) / 2
+    pressure = 101.3 * ((293 - 0.0065 * elevation_m) / 293) ** 5.26  # eq. 7
+    gamma = 0.000665 * pressure  # eq. 8
+    es = (sat_vapour_pressure(tmax) + sat_vapour_pressure(tmin)) / 2  # eq. 12
+    slope = 4098 * sat_vapour_pressure(tmean) / (tmean + 237.3) ** 2  # eq. 13
+    rso = (0.75 + 2e-5 * elevation_m) * ra_mj  # eq. 37
+    rns = 0.77 * rs  # eq. 38, albedo 0.23
+    rnl = (SIGMA * ((tmax + 273.16) ** 4 + (tmin + 273.16) ** 4) / 2 * (0.34 - 0.14 * math.sqrt(max(ea, 0.0)))
+           * (1.35 * min(rs / rso, 1.0) - 0.35)) if rso > 0 else 0.0  # eq. 39
+    rn = rns - rnl
+    et0 = (0.408 * slope * rn + gamma * 900 / (tmean + 273) * u2 * (es - ea)) / (slope + gamma * (1 + 0.34 * u2))
+    return max(et0, 0.0)
 
 
 def hargreaves_et0(tmax: float, tmin: float, ra_mm: float) -> float:
@@ -77,7 +106,19 @@ def _ok(n_valid: int, n_days: int) -> bool:
     return n_days > 0 and (n_days - n_valid) / n_days <= MAX_MISSING
 
 
-def month_year_stats(days: dict, lat: float) -> dict[tuple[int, int], dict]:
+def daily_et0(values: dict, lat: float, doy: int, elevation_m: float) -> tuple[float | None, str | None]:
+    """ET0 for one day: Penman-Monteith when POWER radiation, dew point and wind exist, else Hargreaves."""
+    if values.get("T2M_MAX") is None or values.get("T2M_MIN") is None:
+        return None, None
+    ra = extraterrestrial_radiation_mj(lat, doy)
+    if all(values.get(k) is not None for k in PM_PARAMS):
+        ea = sat_vapour_pressure(values["T2MDEW"])  # eq. 14
+        return penman_monteith_et0(values["T2M_MAX"], values["T2M_MIN"], values["ALLSKY_SFC_SW_DWN"], ea,
+                                   values["WS2M"], elevation_m, ra), "penman_monteith"
+    return hargreaves_et0(values["T2M_MAX"], values["T2M_MIN"], MJ_TO_MM * ra), "hargreaves"
+
+
+def month_year_stats(days: dict, lat: float, elevation_m: float = 0.0) -> dict[tuple[int, int], dict]:
     """Per (year, month): rain, ET0, soil wetness and day counts. None where data are too incomplete."""
     stats = {}
     for (year, month), items in _group_days(days).items():
@@ -86,11 +127,8 @@ def month_year_stats(days: dict, lat: float) -> dict[tuple[int, int], dict]:
         tmin = [v["T2M_MIN"] for _, v in items if v.get("T2M_MIN") is not None]
         tmax = [v["T2M_MAX"] for _, v in items if v.get("T2M_MAX") is not None]
         gwet = [v["GWETROOT"] for _, v in items if v.get("GWETROOT") is not None]
-        et0 = [
-            hargreaves_et0(v["T2M_MAX"], v["T2M_MIN"], extraterrestrial_radiation_mm(lat, d.timetuple().tm_yday))
-            for d, v in items
-            if v.get("T2M_MAX") is not None and v.get("T2M_MIN") is not None
-        ]
+        daily = [daily_et0(v, lat, d.timetuple().tm_yday, elevation_m) for d, v in items]
+        et0 = [e for e, _ in daily if e is not None]
         # Sums and counts are rescaled to the full month so a few missing days do not bias them low.
         stats[(year, month)] = {
             "rain_mm": sum(rain) * n / len(rain) if _ok(len(rain), n) else None,
@@ -100,6 +138,7 @@ def month_year_stats(days: dict, lat: float) -> dict[tuple[int, int], dict]:
             "heat_days": sum(t > HEAT_C for t in tmax) * n / len(tmax) if _ok(len(tmax), n) else None,
             "heavy_rain_days": sum(r >= HEAVY_RAIN_MM for r in rain) * n / len(rain) if _ok(len(rain), n) else None,
             "missing_days": n - min(len(rain), len(tmin), len(tmax), len(gwet)),
+            "hargreaves_days": sum(m == "hargreaves" for _, m in daily),
         }
     return stats
 
@@ -163,7 +202,8 @@ def _round(value: float | None, digits: int) -> float | None:
 
 def build_profile(lat: float, lon: float, power_data: dict, modis_data: dict | None) -> dict:
     """Shape 1 climate profile from the raw POWER and MODIS payloads."""
-    stats = month_year_stats(power_data["days"], lat)
+    elevation = power_data["meta"].get("elevation_m") or 0.0
+    stats = month_year_stats(power_data["days"], lat, elevation)
     ndvi = monthly_ndvi(modis_data["points"]) if modis_data else {}
     months = []
     for row in monthly_climate(stats):
@@ -192,6 +232,8 @@ def build_profile(lat: float, lon: float, power_data: dict, modis_data: dict | N
         "quality": {
             "missing_days": sum(s["missing_days"] for s in stats.values()),
             "skipped_month_years": sum(any(v is None for v in s.values()) for s in stats.values()),
+            "et0_method": "FAO-56 Penman-Monteith (Hargreaves on {} days without radiation/humidity/wind)".format(
+                sum(s["hargreaves_days"] for s in stats.values())),
         },
     }
 

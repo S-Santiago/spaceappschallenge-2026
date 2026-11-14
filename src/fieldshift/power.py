@@ -11,7 +11,9 @@ import httpx
 from . import cache
 
 POWER_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
-PARAMETERS = ["T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT"]
+# Radiation, dew point and wind feed FAO-56 Penman-Monteith ET0 (climate.py, I-02).
+PARAMETERS = ["T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "ALLSKY_SFC_SW_DWN", "T2MDEW", "WS2M"]
+CACHE_KIND = "power_v2"  # bump when PARAMETERS change so old cache files are not reused
 START_YEAR = 2005
 END_YEAR = 2025
 FILL_VALUE = -999.0
@@ -20,7 +22,7 @@ FILL_VALUE = -999.0
 async def fetch_daily(lat: float, lon: float) -> dict:
     """Return {"meta": {...}, "days": {"YYYYMMDD": {param: value}}} for START_YEAR..END_YEAR."""
     lat, lon = round(lat, 2), round(lon, 2)
-    cached = cache.load("power", lat, lon)
+    cached = cache.load(CACHE_KIND, lat, lon)
     if cached:
         return cached
 
@@ -55,5 +57,5 @@ async def fetch_daily(lat: float, lon: float) -> dict:
         },
         "days": days,
     }
-    cache.save("power", lat, lon, payload)
+    cache.save(CACHE_KIND, lat, lon, payload)
     return payload

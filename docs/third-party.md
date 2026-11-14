@@ -23,7 +23,8 @@ Everything in (or used by) this project that the team did not create: libraries,
 
 | Dataset | Provider | Terms | Citation |
 |---|---|---|---|
-| _none yet_ | | | |
+| NASA POWER daily point data | NASA LaRC | NASA open data | See `docs/nasa-data.md` D-01 |
+| MODIS MOD13Q1 v061 NDVI (via ORNL DAAC web service) | NASA LP DAAC / ORNL DAAC | NASA open data | doi:10.5067/MODIS/MOD13Q1.061 (D-02) |
 
 ## 4. Code snippets copied or adapted
 
