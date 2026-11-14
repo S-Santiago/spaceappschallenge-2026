@@ -7,8 +7,10 @@ Short answers for the Málaga pitch Q&A (#44). Numbers are for the demo fields a
 - **Climate profile (built, `climate.py`):** 11 indicators per calendar month (I-01…I-11 in `docs/indicators.md`): rain, reference evapotranspiration (ET₀), water balance, soil wetness, frost / heat / heavy-rain days, greenness, likely-bare months, and a decade comparison.
 - **ET₀ (built):** FAO-56 Penman-Monteith from POWER radiation, humidity and wind. Hargreaves (temperature only) is used only for days missing those. Checked against FAO-56 worked examples 8 (Ra) and 18 (ET₀). Hargreaves alone gave ~755 mm/yr in Málaga city; Penman-Monteith gives ~1,264 mm/yr, in the range published for the coast.
 - **Rotation engine (built, `rotations.py`):** takes the farmer's current rotation and builds alternatives (legume break, cover crop, water-saving swap, forage/diversification). Each strategy gets four 0–100 scores (water, soil, income, risk) and an overall score weighted by the farmer's priorities. Rules are simple and written down in `docs/indicators.md → Scoring`.
-- **Predictions (planned, #37/#38):** statistics over the 20 years of NASA data (frequencies, percentiles, Gumbel return periods). **No AI or machine learning** in the app.
-- **Tests (built):** 80 pytest tests, including hand-checked values and the FAO-56 examples.
+- **Predictions (built, `predictions.py`):** statistics over 21 years of NASA data, **no AI or machine learning**, always labelled "not a weather forecast". P-01: chance of rain in each week. P-02: chance of a heavy-rain day (≥ 20 mm) in each month, and the rain expected once every 2, 5 and 10 years (Gumbel distribution fitted by L-moments). P-03: last spring and first autumn frost dates (percentiles). P-07: alerts when heavy rain usually comes while the field is bare.
+- **Example, Vega de Antequera:** last spring frost by 14 March in 19 of 21 years. Heavy rain expected once every 10 years: ~48 mm in a day; the largest day in 21 years was 52.7 mm (13 Nov 2024, the DANA storm), so the data catches real events. Wettest week for useful rain (≥ 10 mm): from 29 October, in 62 % of years.
+- **"Why 20 mm for predictions but 30 mm in the climate calendar?"** P-02 uses the international ETCCDI "very heavy rain" index (R20mm) so its probabilities are comparable; the calendar's 30 mm (I-07) is a stricter team rule for erosive storms. Both are documented in `docs/indicators.md`.
+- **Tests (built):** 128 pytest tests, including hand-checked values and the FAO-56 examples.
 
 ## Why these thresholds?
 | Threshold | Why | Honest caveat |
@@ -27,8 +29,8 @@ All of these are team assumptions, documented with sources in `docs/indicators.m
 - **Greenness covers only 2024–2025,** and a 250 m pixel can mix several plots.
 - **Ten years against ten years is a change, not a proven climate trend.** Example: Vega de Antequera had 14.6 % less rain and 13 more days above 35 °C per year in 2016–2025 than in 2005–2014.
 - **Income is illustrative:** a low/medium/high label, not real prices.
-- **Not a forecast:** everything is "based on the last 20 years of NASA data".
-- Every value in the UI has its own one-line limit, in English and Spanish (`docs/architecture.md`).
+- **Not a forecast:** everything is "based on 21 years of NASA data (2005–2025), not a weather forecast".
+- Every value and prediction has its own one-line limit, in English and Spanish (`docs/architecture.md`).
 
 ## Demo-field numbers (2005–2025 means)
 | Field | Rain mm/yr | ET₀ mm/yr | Frost days/yr | Days > 35 °C/yr | Rain change | Heat-day change |

@@ -211,3 +211,11 @@ def test_heavy_rain_on_demo_fields(field):
     levels = [lv["mm"] for lv in h["return_levels"]]
     assert levels == sorted(levels) and len(levels) == 3
     assert any(a["month"] in (10, 11) for a in out["alerts"])  # autumn storms on the bare seedbed
+
+
+def test_every_prediction_has_a_limit_in_both_languages():
+    out = p.build_predictions({"meta": {}, "days": {}})
+    shown = {"rain_weeks", "heavy_rain", "frost", "alerts"}
+    assert set(out["limits"]) == shown
+    for text in out["limits"].values():
+        assert text["en"] and text["es"]
