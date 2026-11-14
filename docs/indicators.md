@@ -25,6 +25,7 @@ Common to all POWER-based indicators: source NASA POWER daily point API (`commun
 - NDVI (I-08): each 16-day MODIS composite is assigned to the month of its start date.
 - Trends (I-10, I-11): only complete years count; 2015 belongs to neither decade.
 - If MODIS fails, the profile is still built with `ndvi` and `likely_bare` set to `null`.
+- **Calendar words in the app (display only, I-08/I-09):** `Bare` when `likely_bare` (NDVI < 0.25) · `Little cover` for 0.25 ≤ NDVI < 0.35 (stubble, weeds or a young crop) · `Green` from 0.35 · `Unknown` without NDVI. 0.35 is a **team assumption, indicative** (`LITTLE_COVER_NDVI` in `web/js/app.js`); the engine and P-07 still use only the 0.25 bare threshold. Added because 0.26 in July read as "Green" on stubble fields (Vega de Antequera).
 
 ## Limits to show in the UI
 Farmer-friendly versions in English and Spanish are returned in the profile as `limits` = `{"en": [...], "es": [...]}` (`climate.LIMITS`). One sentence per indicator is returned as `field_limits` = `{"rain_mm": {"en": ..., "es": ...}, ...}` (`climate.FIELD_LIMITS`) and one per score as `score_limits` in `/api/analyze` (`rotations.SCORE_LIMITS`); full table in [architecture.md](architecture.md#limits-per-value-shown-to-the-farmer-44).
