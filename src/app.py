@@ -11,54 +11,15 @@ from __future__ import annotations
 import streamlit as st
 
 from fieldshift import mock_data as data
+from fieldshift import ui_theme as t
 from fieldshift.mock_data import FarmerInputs
 from fieldshift.ui_results import render_results
 
 st.set_page_config(page_title="FarmLens", page_icon="🌱", layout="centered")
 
-# Global accessibility layer (one place for the whole app; see docs/ux-guidelines.md).
-# Streamlit's base font is already 16 px. Rules: every touch target ≥ 48 px high (WCAG 2.5.8 +
-# our low-end-phone guideline), one strong focus ring that works on light and dark themes
-# (WCAG 2.4.7 / 2.4.11), no text below 14 px, honour prefers-reduced-motion.
-st.markdown(
-    """
-    <style>
-    :root { --fl-target: 48px; --fl-focus: #1a73e8; }
-    .block-container { padding-top: 1.5rem; padding-left: 1rem; padding-right: 1rem; }
-
-    /* Touch targets */
-    div.stButton > button { min-height: var(--fl-target); font-size: 18px; font-weight: 600; }
-    [data-testid="stRadioOption"] { display: flex; min-height: var(--fl-target); align-items: center; }
-    [data-testid="stButtonGroup"] button { min-height: var(--fl-target); min-width: 44px; font-size: 16px; }
-    [data-testid="stSelectbox"] [role="group"] { min-height: var(--fl-target); align-items: stretch; }
-    [data-testid="stExpander"] summary { min-height: var(--fl-target); }
-    [data-testid="stElementToolbar"] button { min-width: 44px; min-height: 44px; }
-
-    /* Selected segment: theme text colour + bold (red-on-dark text was 3.6:1); border/tint still mark it */
-    div[data-testid="stButtonGroup"] button[role="radio"][aria-checked="true"],
-    div[data-testid="stButtonGroup"] button[role="radio"][aria-checked="true"] p { color: inherit; font-weight: 700; }
-
-    /* Heading permalink icons: 16 px targets and extra tab stops with no use for farmers */
-    [data-testid="stHeaderActionElements"] { display: none; }
-
-    /* One visible focus ring for every control (≥ 3:1 on both light and dark backgrounds) */
-    a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex="0"]:focus-visible,
-    [data-testid="stSelectbox"] [role="group"]:has(input:focus-visible),
-    [data-testid="stRadioOption"]:has(input:focus-visible),
-    [data-testid="stCheckbox"] label:has(input:focus-visible) {
-        outline: 3px solid var(--fl-focus); outline-offset: 2px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after {
-            animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important; scroll-behavior: auto !important;
-        }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# The whole design system (tokens + one CSS layer) lives in fieldshift.ui_theme; see DESIGN.md.
+# The CSS follows the active Streamlit theme (light / dark), or the system setting until it is known.
+st.markdown(t.page_css(getattr(st.context.theme, "type", None)), unsafe_allow_html=True)
 
 CROPS = data.get_crops()
 CROP_NAMES = {c["id"]: c["name"] for c in CROPS}
@@ -82,14 +43,15 @@ PRIORITIES = {
     "risk": "🛡️ Low risk",
 }
 
-st.title("🌱 FarmLens")
-st.write(
-    "Compare crop rotations for **your field** using NASA climate data. "
-    "Answer 4 short steps, then tap **Analyze my field**."
+st.markdown(
+    "<header class='fl-head'><h1>FarmLens</h1><p class='fl-lead'>Compare crop rotations for "
+    "<strong>your field</strong> using NASA climate data. Answer 4 short steps, then tap "
+    "<strong>Analyze my field</strong>.</p></header>",
+    unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------------- Step 1
-st.subheader("Step 1 of 4 · Your field")
+st.markdown(t.step_heading(1, 4, "Your field"), unsafe_allow_html=True)
 # Hints are visible text, not "?" tooltips: tooltips need hover and had 16 px targets on phones.
 mode = st.radio(
     "How do you want to choose your field?",
@@ -126,10 +88,10 @@ else:
     lat, lon = st.session_state.get("map_point", start)
     field_name = "Point on the map"
 
-st.info(f"📍 Location: **{lat:.4f}, {lon:.4f}** (latitude, longitude)")
+st.markdown(t.location_line(lat, lon, field_name), unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- Step 2
-st.subheader("Step 2 of 4 · Current rotation")
+st.markdown(t.step_heading(2, 4, "Current rotation"), unsafe_allow_html=True)
 n_years = st.segmented_control(
     "How many years does your rotation last?",
     [2, 3, 4],
@@ -143,9 +105,14 @@ for i in range(n_years):
     default = CROP_IDS.index(DEFAULT_ROTATION[i])
     crop = st.selectbox(f"Year {i + 1}", CROP_IDS, index=default, format_func=CROP_NAMES.get, key=f"year_{i}")
     rotation.append(crop)
+# Live preview of the answer, in the same strip the results use (one visual language for rotations).
+st.markdown(
+    t.rotation_strip(rotation, CROP_NAMES, label="Your current rotation") + t.family_key(rotation),
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------------------- Step 3
-st.subheader("Step 3 of 4 · Your priorities")
+st.markdown(t.step_heading(3, 4, "Your priorities"), unsafe_allow_html=True)
 st.caption("Tap a number: 0 = not important · 5 = very important")
 # Six big buttons instead of a slider: a 0–5 slider had a ~16 px thumb and needed dragging
 # (WCAG 2.5.7 / 2.5.8); one tap is easier on a small phone.
@@ -157,7 +124,7 @@ if sum(priorities.values()) == 0:
     st.caption("All priorities are 0, so they will count the same.")
 
 # ---------------------------------------------------------------- Step 4
-st.subheader("Step 4 of 4 · Your farm")
+st.markdown(t.step_heading(4, 4, "Your farm"), unsafe_allow_html=True)
 irrigation = st.radio(
     "Irrigation: how much water can you add besides rain?", list(IRRIGATION), format_func=IRRIGATION.get
 )
@@ -173,7 +140,7 @@ inputs = FarmerInputs(
     slope=slope,
 )
 
-if st.button("🔎 Analyze my field", type="primary", width="stretch"):
+if st.button("Analyze my field", type="primary", icon=":material/search:", width="stretch"):
     with st.spinner("Analyzing your field…"):
         profile = data.get_climate_profile(inputs.lat, inputs.lon)
         st.session_state["results"] = {
@@ -184,16 +151,22 @@ if st.button("🔎 Analyze my field", type="primary", width="stretch"):
         st.session_state["just_analyzed"] = True
 
 # ---------------------------------------------------------------- Results (#13)
+# Feedback sits right under the button that caused it, where the farmer's eyes are.
 results = st.session_state.get("results")
 if not results:
-    st.caption("Your results will appear here after you tap **Analyze my field**.")
+    st.caption("Your results will appear below after you tap **Analyze my field**.")
     st.stop()
 
-st.divider()
-st.header("✅ Results")
-if st.session_state.pop("just_analyzed", False):
-    st.success("Done ✓ Your results are ready.")
 if results["inputs"] != inputs.to_dict():
-    st.warning("You changed some answers. Tap **Analyze my field** again to update the results.")
+    st.warning(
+        "You changed some answers. Tap **Analyze my field** again to update the results below.",
+        icon=":material/refresh:",
+    )
+elif st.session_state.pop("just_analyzed", False):
+    st.success("Done. Your results are ready below.", icon=":material/check_circle:")
 
+st.markdown(
+    f"<h2 class='fl-step'><span class='fl-step__t'>Results for {t.e(results['inputs']['field_name'])}</span></h2>",
+    unsafe_allow_html=True,
+)
 render_results(results, CROP_NAMES, is_mock=data.IS_MOCK)

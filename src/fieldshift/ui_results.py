@@ -19,6 +19,8 @@ from typing import Any
 import altair as alt
 import streamlit as st
 
+from fieldshift import ui_theme as t
+
 log = logging.getLogger(__name__)
 
 MONTH_NAMES = list(calendar.month_name)[1:]  # "January" … "December"
@@ -249,11 +251,112 @@ def crop_sequence(years: Sequence[str] | None, crop_names: dict[str, str]) -> st
     )
 
 
+def overall_phrase(score: float) -> str:
+    """66 → "out of 100 · medium fit for your priorities"."""
+    return f"out of 100 · {score_level(score).lower()} fit for your priorities"
+
+
+# ---------------------------------------------------------------- HTML builders (pure)
+
+
+def score_list_html(scores: dict[str, Any] | None) -> str:
+    """The four dimension scores as a definition list with one bar each. Missing → "not available yet"."""
+    scores = scores or {}
+    rows = []
+    for key, icon, label in SCORE_DIMENSIONS:
+        v = t._clamp_score(scores.get(key))
+        if v is None:
+            rows.append(f"<div class='fl-score'><dt>{icon} {label}</dt><dd>not available yet</dd></div>")
+            continue
+        rows.append(
+            f"<div class='fl-score'><dt>{icon} {label}</dt>"
+            f"<dd>{v:.0f}/100 · {score_level(v)}</dd>{t.bar(v, 'dd')}</div>"
+        )
+    return f"<dl class='fl-scores'>{''.join(rows)}</dl>"
+
+
+def overall_html(scores: dict[str, Any] | None) -> str:
+    v = t._clamp_score((scores or {}).get("overall"))
+    if v is None:
+        return "<p class='fl-card-sub'>Overall fit not available yet.</p>"
+    return f"<p class='fl-overall'><b>{v:.0f}</b><span>{overall_phrase(v)}</span></p>"
+
+
+def compare_html(ordered: Sequence[dict[str, Any]], crop_names: dict[str, str], best_id: Any) -> str:
+    """One row per option: name, crops, overall score and bar. Same order as the cards below."""
+    rows = []
+    for s in ordered:
+        is_current = s.get("id") == "current"
+        name = "Your current rotation" if is_current else (s.get("name") or "Rotation option")
+        crops = " → ".join(t.crop_label(c, crop_names) for c in s.get("years") or [])
+        note = "<strong> · best fit</strong>" if s.get("id") == best_id else ""
+        v = t._clamp_score((s.get("scores") or {}).get("overall"))
+        score = f"{v:.0f}<small> /100</small>" if v is not None else "<small>not available</small>"
+        rows.append(
+            f"<li><span class='n'>{t.e(name)}<small>{t.e(crops)}{note}</small></span>"
+            f"<span class='s'>{score}</span>{t.bar(v) if v is not None else ''}</li>"
+        )
+    return f"<ol class='fl-compare' aria-label='Rotation options by overall fit'>{''.join(rows)}</ol>"
+
+
+_BARE_ROW = " class='is-bare'"  # shaded row: bare-field months (text says "Bare" too)
+
+
+def calendar_table_html(profile: dict[str, Any] | None) -> str:
+    head = (
+        "<tr><th scope='col'>Month</th><th scope='col'>Rain<br>mm</th><th scope='col'>Water need<br>mm</th>"
+        "<th scope='col'>Balance<br>mm</th><th scope='col'>Frost<br>days</th><th scope='col'>Heat<br>days</th>"
+        "<th scope='col'>Field</th></tr>"
+    )
+    body = "".join(
+        f"<tr{_BARE_ROW if 'Bare' in r['field'] else ''}><th scope='row'>{r['month']}</th>"
+        f"<td>{r['rain']}</td><td>{r['et0']}</td><td>{r['balance']}</td>"
+        f"<td>{r['frost']}</td><td>{r['heat']}</td><td>{r['field']}</td></tr>"
+        for r in calendar_rows(profile)
+    )
+    # The table scrolls inside its own region (never the page) if it ever gets wider than the phone;
+    # tabindex lets keyboard users scroll it; the caption names the table for screen readers.
+    return (
+        "<div class='fl-scroll' role='region' aria-label='Month-by-month climate table' tabindex='0'>"
+        "<table class='fl-cal'><caption class='fl-sr'>Average month, 2005–2025, for the area around your field"
+        f"</caption><thead>{head}</thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def trend_items(trends: dict[str, Any] | None) -> list[tuple[str, str, str]]:
+    """(figure, label, sentence) for each trend that has a value. Minus signs are typographic (−)."""
+    trends = trends or {}
+    out = []
+    rain = _num(trends.get("rain_change_pct"))
+    if rain is not None:
+        if rain < 0:
+            text = f"It rains about {abs(rain):.0f}% less than in 2005–2014."
+        elif rain > 0:
+            text = f"It rains about {rain:.0f}% more than in 2005–2014."
+        else:
+            text = "It rains about the same as in 2005–2014."
+        out.append((f"{rain:+.0f}%".replace("-", "−"), "🌧️ Rain per year", text))
+    heat = _num(trends.get("heat_days_change"))
+    if heat is not None:
+        if heat > 0:
+            text = f"About {heat:.0f} more very hot days a year than in 2005–2014."
+        elif heat < 0:
+            text = f"About {abs(heat):.0f} fewer very hot days a year than in 2005–2014."
+        else:
+            text = "About the same number of very hot days as in 2005–2014."
+        out.append((f"{heat:+.1f}".replace("-", "−"), "🔥 Very hot days a year (over 35 °C)", text))
+    return out
+
+
 # ---------------------------------------------------------------- sections
 
 
 def _empty(message: str) -> None:
-    st.info(f"ℹ️ {message}")
+    st.info(message, icon=":material/info:")
+
+
+def _html(markup: str) -> None:
+    st.markdown(markup, unsafe_allow_html=True)
 
 
 def render_key_facts(profile: dict[str, Any]) -> None:
@@ -268,27 +371,11 @@ def render_calendar_table(profile: dict[str, Any]) -> None:
     if not months_by_number(profile):
         _empty("The month-by-month table is not available for this field yet.")
         return
-    head = (
-        "<tr><th>Month</th><th>Rain<br>mm</th><th>Water need<br>mm</th><th>Balance<br>mm</th>"
-        "<th>Frost<br>days</th><th>Heat<br>days</th><th>Field</th></tr>"
-    )
-    body = "".join(
-        f"<tr><th scope='row'>{r['month']}</th><td>{r['rain']}</td><td>{r['et0']}</td><td>{r['balance']}</td>"
-        f"<td>{r['frost']}</td><td>{r['heat']}</td><td>{r['field']}</td></tr>"
-        for r in calendar_rows(profile)
-    )
-    # The table scrolls inside its own region (never the page) if it ever gets wider than the phone;
-    # tabindex lets keyboard users scroll it; the caption names the table for screen readers.
-    st.markdown(
-        "<div class='fl-scroll' role='region' aria-label='Month-by-month climate table' tabindex='0'>"
-        "<table class='fl-cal'><caption class='fl-sr'>Average month, 2005–2025, for the area around your field"
-        f"</caption><thead>{head}</thead><tbody>{body}</tbody></table></div>",
-        unsafe_allow_html=True,
-    )
+    _html(calendar_table_html(profile))
     st.caption(
         "Average month, 2005–2025. **Water need** = water the air takes from a crop (ET0). "
-        "**Balance** = rain − water need: 🔻 deficit (too little rain) · 💧 spare water. "
-        "**Heat** = days over 35 °C. **Field** = 🟫 bare or 🌱 crop, from satellite greenness 2024–2025."
+        "**Balance** = rain − water need: 🔻 deficit (too little rain), 💧 spare water. "
+        "**Heat** = days over 35 °C. **Field** = 🟫 bare (shaded row) or 🌱 crop, from satellite greenness 2024–2025."
     )
 
 
@@ -300,20 +387,28 @@ def render_rain_chart(profile: dict[str, Any]) -> None:
         return
     rows = [{"Month": MONTH_ABBR[i], "order": i, "Rain": rain[i], "Water need (ET0)": et0[i]} for i in range(12)]
     x = alt.X("Month:N", sort=MONTH_ABBR, title=None, axis=alt.Axis(labelAngle=0, labelFontSize=14))
-    y_title = "mm per month"
     color = alt.Color(
         "series:N",
         scale=alt.Scale(domain=["Rain", "Water need (ET0)"], range=["#1f6fb2", "#b3541e"]),
         legend=alt.Legend(title=None, orient="top", labelFontSize=15, symbolSize=150),
     )
     base = alt.Chart(alt.Data(values=rows))
-    bars = base.transform_fold(["Rain"], as_=["series", "mm"]).mark_bar(opacity=0.85).encode(
-        x=x, y=alt.Y("mm:Q", title=y_title), color=color, tooltip=["Month:N", alt.Tooltip("mm:Q", title="Rain (mm)")]
+    bars = base.transform_fold(["Rain"], as_=["series", "mm"]).mark_bar(opacity=0.85, cornerRadiusEnd=2).encode(
+        x=x,
+        y=alt.Y("mm:Q", title="mm per month"),
+        color=color,
+        tooltip=["Month:N", alt.Tooltip("mm:Q", title="Rain (mm)")],
     )
     line = base.transform_fold(["Water need (ET0)"], as_=["series", "mm"]).mark_line(
         point=alt.OverlayMarkDef(shape="diamond", size=60), strokeWidth=3, strokeDash=[6, 3]
     ).encode(x=x, y="mm:Q", color=color, tooltip=["Month:N", alt.Tooltip("mm:Q", title="Water need (mm)")])
-    chart = (bars + line).properties(height=240).configure_axis(titleFontSize=14, labelFontSize=14)
+    chart = (
+        (bars + line)
+        .properties(height=240)
+        .configure(font="system-ui, -apple-system, Segoe UI, Roboto, sans-serif")
+        .configure_axis(titleFontSize=14, labelFontSize=14, grid=True, gridOpacity=0.25, domain=False)
+        .configure_view(stroke=None)
+    )
     st.altair_chart(chart, width="stretch")
     st.caption(
         "Blue bars = rain. Dashed brown line with ◆ = water need. "
@@ -322,48 +417,24 @@ def render_rain_chart(profile: dict[str, Any]) -> None:
 
 
 def render_trends(profile: dict[str, Any]) -> None:
-    trends = (profile or {}).get("trends") or {}
-    rain = _num(trends.get("rain_change_pct"))
-    heat = _num(trends.get("heat_days_change"))
-    if rain is None and heat is None:
+    items = trend_items((profile or {}).get("trends"))
+    if not items:
         _empty("The comparison with earlier years is not available for this field yet.")
         return
-    with st.container(border=True):
-        st.markdown("**📈 Then and now: 2016–2025 compared with 2005–2014**")
-        if rain is not None:
-            # Less rain is bad → "normal" makes a negative delta red; the ↓/↑ arrow and the text carry the meaning.
-            st.metric("🌧️ Rain per year", f"{rain:+.0f} %".replace("-", "−"), delta=f"{rain:+.0f} %", delta_color="normal")
-            if rain < 0:
-                st.write(f"It rains about **{abs(rain):.0f}% less** than in 2005–2014.")
-            elif rain > 0:
-                st.write(f"It rains about **{rain:.0f}% more** than in 2005–2014.")
-            else:
-                st.write("It rains about the same as in 2005–2014.")
-        if heat is not None:
-            # More very hot days is bad → "inverse" makes a positive delta red.
-            st.metric(
-                "🔥 Very hot days (over 35 °C)",
-                f"{heat:+.1f} days a year".replace("-", "−"),
-                delta=f"{heat:+.1f} days",
-                delta_color="inverse",
-            )
-            if heat > 0:
-                st.write(f"There are about **{heat:.0f} more very hot days** a year than in 2005–2014.")
-            elif heat < 0:
-                st.write(f"There are about **{abs(heat):.0f} fewer very hot days** a year than in 2005–2014.")
-            else:
-                st.write("The number of very hot days is about the same as in 2005–2014.")
-        st.caption("⚠️ " + DATA_LIMITS[3])
+    _html(section_heading_small("Then and now: 2016–2025 compared with 2005–2014"))
+    _html(
+        "<ul class='fl-trend'>"
+        + "".join(
+            f"<li><b>{t.e(f)}</b><span class='l'>{t.e(lbl)}</span><span class='d'>{t.e(d)}</span></li>"
+            for f, lbl, d in items
+        )
+        + "</ul>"
+    )
+    st.caption(DATA_LIMITS[3])
 
 
-def _render_score_rows(scores: dict[str, Any]) -> None:
-    for key, icon, label in SCORE_DIMENSIONS:
-        v = _num(scores.get(key))
-        if v is None:
-            st.caption(f"{icon} {label}: not available yet")
-            continue
-        v = max(0.0, min(100.0, v))
-        st.progress(v / 100, text=f"{icon} {label} · **{v:.0f}/100 · {score_level(v)}**")
+def section_heading_small(title: str) -> str:
+    return f"<h4 class='fl-sub'>{t.e(title)}</h4>"
 
 
 def _render_list(items: Any, empty: str) -> None:
@@ -376,32 +447,34 @@ def render_strategy_card(
 ) -> None:
     scores = s.get("scores") or {}
     with st.container(border=True):
-        if is_baseline:
-            st.markdown("#### 📍 Your current rotation — baseline")
-            st.caption("What you grow today. The other options are compared with it.")
+        title = "Your current rotation" if is_baseline else (s.get("name") or "Rotation option")
+        sub = (
+            "What you grow today. The other options are compared with it."
+            if is_baseline
+            else ("A suggestion to discuss with your adviser, not an order." if is_best else "")
+        )
+        _html(
+            t.tags(best=is_best)
+            + f"<h4 class='fl-card-title'>{t.e(title)}</h4>"
+            + (f"<p class='fl-card-sub'>{t.e(sub)}</p>" if sub else "")
+        )
+        strip = t.rotation_strip(s.get("years"), crop_names, label=f"Crop sequence: {title}")
+        if strip:
+            _html(strip)
         else:
-            if is_best:
-                st.markdown("**⭐ Best fit for your priorities** — a suggestion to discuss, not an order.")
-            st.markdown(f"#### {s.get('name') or 'Rotation option'}")
-
-        seq = crop_sequence(s.get("years"), crop_names)
-        st.markdown(seq if seq else "_Crop sequence not available yet._")
-
-        overall = _num(scores.get("overall"))
-        if overall is not None:
-            st.markdown(f"**Overall fit: {overall:.0f}/100 · {score_level(overall)}**")
-        _render_score_rows(scores)
+            st.markdown("_Crop sequence not available yet._")
+        _html(overall_html(scores) + score_list_html(scores))
 
         if s.get("why"):
             st.markdown(f"**Why:** {s['why']}")
-        st.markdown("**⚠️ Risks to review locally**")
+        st.markdown(":material/warning: **Risks to review locally**")
         _render_list(s.get("risks_to_review"), "No risks listed yet — ask a local adviser.")
 
-        with st.expander("🔎 Evidence"):
+        with st.expander("Evidence", icon=":material/search:"):
             _render_list(s.get("evidence"), "No evidence listed yet.")
-        with st.expander("✅ Benefits"):
+        with st.expander("Benefits", icon=":material/check_circle:"):
             _render_list(s.get("benefits"), "No benefits listed yet.")
-        with st.expander("❓ What we don't know yet"):
+        with st.expander("What we don't know yet", icon=":material/help:"):
             _render_list(s.get("gaps"), "No information gaps listed.")
 
 
@@ -410,53 +483,38 @@ def render_strategies(strategies: list[dict[str, Any]], crop_names: dict[str, st
     if not ordered:
         _empty("No rotation options could be built for this field yet. Check your answers and try again.")
         return
+    best_id = next((s.get("id") for s in ordered if s.get("id") != "current"), None)
     line = priority_line(weights)
     if line:
-        st.caption(f"**Overall fit** mixes the four scores using your priorities: {line}.")
-    st.caption("Scores: Low under 40 · Medium 40–69 · High 70 or more (out of 100).")
-    best_id = next((s.get("id") for s in ordered if s.get("id") != "current"), None)
+        st.caption(f"**Overall fit** mixes four scores with your priorities: {line}.")
+    _html(compare_html(ordered, crop_names, best_id))
+    all_crops = [c for s in ordered for c in (s.get("years") or [])]
+    _html(t.family_key(all_crops))
+    st.caption("Scores out of 100: Low under 40, Medium 40–69, High 70 or more. Open each option for the details.")
     for s in ordered:
         render_strategy_card(s, crop_names, is_baseline=s.get("id") == "current", is_best=s.get("id") == best_id)
 
 
 def render_sources(profile: dict[str, Any], is_mock: bool) -> None:
     sources = [str(x) for x in (profile or {}).get("sources") or [] if x]
-    st.markdown("**📚 Sources and limits**")
+    _html("<div class='fl-foot'></div>")
+    st.markdown("**Sources and limits**")
     if sources:
         prefix = "Planned data sources (the mock values above do not come from them yet)" if is_mock else "Data sources"
-        st.markdown(f"{prefix}: " + " · ".join(sources) + ".")
+        st.markdown(f"{prefix}: " + ", ".join(sources) + ".")
     else:
         st.markdown("_Data sources not available._")
     st.markdown("\n".join(f"- {limit}" for limit in DATA_LIMITS[:3]))
-    st.markdown(f"🤝 **{SUPPORT_NOTE}**")
+    st.markdown(f":material/handshake: **{SUPPORT_NOTE}**")
 
 
 # ---------------------------------------------------------------- page
 
 
-CSS = """
-<style>
-.fl-scroll { overflow-x: auto; max-width: 100%; }
-.fl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-table.fl-cal { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.25; }
-table.fl-cal th, table.fl-cal td { padding: 0.35rem 0.2rem; text-align: right; border-bottom: 1px solid rgba(128,128,128,0.35); }
-table.fl-cal thead th { font-size: 14px; font-weight: 600; vertical-align: bottom; }
-table.fl-cal th[scope=row], table.fl-cal thead th:first-child { text-align: left; }
-table.fl-cal td:last-child, table.fl-cal thead th:last-child { text-align: left; white-space: nowrap; }
-table.fl-cal td:nth-child(4) { white-space: nowrap; }
-/* Smallest phones (320 px): tighter cells so all 7 columns fit without scrolling */
-@media (max-width: 360px) {
-  table.fl-cal { font-size: 14px; }
-  table.fl-cal th, table.fl-cal td { padding: 0.35rem 0.12rem; }
-}
-</style>
-"""
-
-
 def _section(title: str, draw: Callable[[], None], fallback: str) -> None:
     """Draw one section; on any error show a friendly message instead of a traceback."""
     if title:
-        st.subheader(title)
+        _html(t.section_heading(title))
     try:
         draw()
     except Exception:  # noqa: BLE001 — never show a traceback to a farmer
@@ -470,14 +528,16 @@ def render_results(results: dict[str, Any], crop_names: dict[str, str], *, is_mo
     strategies = results.get("strategies") or []
     weights = (results.get("inputs") or {}).get("weights") or {}
 
-    st.markdown(CSS, unsafe_allow_html=True)
     if is_mock:
-        st.warning("⚠️ **MOCK DATA** — example values for testing the app, not real results for your field.")
+        st.warning(
+            "**Mock data** — example values for testing the app, not real results for your field.",
+            icon=":material/science:",
+        )
 
     oops = "This part could not be shown. The rest of the results are still valid."
-    _section("🗓️ Your field through the year", lambda: render_key_facts(profile), oops)
+    _section("Rotation options", lambda: render_strategies(strategies, crop_names, weights), oops)
+    _section("Your field through the year", lambda: render_key_facts(profile), oops)
     _section("", lambda: render_rain_chart(profile), oops)
     _section("", lambda: render_calendar_table(profile), oops)
     _section("", lambda: render_trends(profile), oops)
-    _section("🔄 Rotation options", lambda: render_strategies(strategies, crop_names, weights), oops)
     _section("", lambda: render_sources(profile, is_mock), oops)

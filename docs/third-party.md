@@ -24,6 +24,7 @@ Everything in (or used by) this project that the team did not create: libraries,
 
 | Asset | Source / author | License | Where used | Attribution text |
 |---|---|---|---|---|
+| Material Symbols (icon font, bundled inside Streamlit, no extra download) | Google | Apache-2.0 | Interface icons via `:material/…:` in `src/app.py` and `src/fieldshift/ui_results.py` (buttons, alerts, expanders) | None required (keep the license notice if the font is redistributed outside Streamlit) |
 | OpenStreetMap standard map tiles | OpenStreetMap contributors (tile.openstreetmap.org) | Data: ODbL 1.0; tiles: OSM Tile Usage Policy (light use, valid User-Agent, attribution, no bulk download) | Step 1 map (`src/app.py`, only when "Point on a map" is chosen) | "© OpenStreetMap contributors" — shown automatically in the map corner by folium |
 
 > Map tiles: OpenStreetMap data requires "© OpenStreetMap contributors" attribution (ODbL). Many tile providers have their own usage policies — check them.
