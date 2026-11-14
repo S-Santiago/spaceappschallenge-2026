@@ -17,9 +17,12 @@ Everything the team shares — rules (`CLAUDE.md`), agents (`.claude/agents/`), 
 
 ## 2. Every time you start working
 ```bash
-git pull          # gets the latest code AND the latest skills/agents/rules
+git switch main && git pull     # latest code AND latest skills/agents/rules
+git switch -c feat/my-topic     # main is protected: always work on a branch
 claude
 ```
+When done: commit, `git push -u origin feat/my-topic`, then `gh pr create` (or ask Claude to open the PR). The PR needs one approval from a teammate; see [CONTRIBUTING.md](../CONTRIBUTING.md#pull-requests).
+
 If someone changes a skill or agent while your session is open, restart Claude Code to load it.
 
 ## 3. What is shared vs personal

@@ -20,6 +20,15 @@
 6. **Honesty**: clearly separate *built*, *simulated* and *future* in docs and demo. Never present unverified AI output as verified.
 7. **Never commit organizer event material** (PDFs, posters, judge photos). It lives outside the repo.
 
+## Git workflow — `main` is protected (ruleset "Protect main")
+- **Never commit or push to `main`.** Direct pushes, force pushes and deletion are blocked for everyone (no bypass).
+- Always: `git switch main && git pull` → `git switch -c <type>/<topic>` (`feat/`, `fix/`, `data/`, `docs/`) → commit → `git push -u origin <branch>` → `gh pr create`.
+- **PR title = final commit message** (merge is squash-only) → write it in Conventional Commits form, in English (`feat: add climate indicators`).
+- Fill the PR template checklist. No AI attribution lines in the PR body.
+- A PR needs **1 approval from someone other than the last pusher** and **all review threads resolved**. Pushing after approval dismisses it → finish the changes before requesting review.
+- Reviewers: code → @S-Santiago; visuals/docs → @sebasbarrabaja-cmyk (auto-requested via `.github/CODEOWNERS`); any teammate's approval counts.
+- If a push to `main` is rejected, do not try to work around it: move the commits to a branch (`git switch -c <branch>`; then reset local `main` to `origin/main` only after the branch is pushed) and open a PR.
+
 ## Working conventions
 - Small commits, Conventional Commits style (`feat:`, `fix:`, `docs:`, `data:`, `chore:`).
 - **No AI authorship in git**: never add `Co-Authored-By` or "Generated with" lines to commits or PRs. AI usage is declared only in `docs/ai-usage.md`.
