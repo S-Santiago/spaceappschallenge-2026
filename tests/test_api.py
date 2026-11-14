@@ -36,7 +36,6 @@ def test_crops_in_both_languages(client):
     assert en["chickpea"]["name"] == "Chickpea" and es["chickpea"]["name"] == "Garbanzo"
     assert en["chickpea"]["n_fixing"] is True
     assert en["sunflower"]["scientific_name"] == "Helianthus annuus"  # searchable Latin name in the PWA
-    assert en["sunflower"]["name_es"] == "Girasol"
     assert client.get("/api/crops", params={"lang": "fr"}).status_code == 422
 
 

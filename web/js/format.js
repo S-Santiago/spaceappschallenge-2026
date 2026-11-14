@@ -264,21 +264,20 @@ export function findCrop(text, crops) {
   return hits.length === 1 ? hits[0].id : null;
 }
 
-/** Text of a crop suggestion: English name, Spanish name and Latin name, so any of them can be typed to find it. */
+/** Text of a crop suggestion: English name plus the Latin name, so either can be typed to find it. */
 export function cropOption(crop) {
-  const local = crop.name_es && crop.name_es !== crop.name ? ` (${crop.name_es})` : "";
-  return crop.scientific_name ? `${crop.name}${local} · ${crop.scientific_name}` : `${crop.name}${local}`;
+  return crop.scientific_name ? `${crop.name} · ${crop.scientific_name}` : crop.name;
 }
 
 /**
- * Crops that match what the farmer typed: by common name (English or Spanish), Latin (scientific) name, id or the full suggestion
+ * Crops that match what the farmer typed: by common (English) name, Latin (scientific) name, id or the full suggestion
  * text. Exact matches win; otherwise names that start with the text, then names that contain it.
  * Several hits = ambiguous (e.g. "Phaseolus vulgaris" is both green and dry bean).
  */
 export function matchCrops(text, crops) {
   const q = normalizeText(text);
   if (!q) return [];
-  const keys = (c) => [c.name, c.name_es, c.scientific_name, c.id, cropOption(c)].filter(Boolean).map(normalizeText);
+  const keys = (c) => [c.name, c.scientific_name, c.id, cropOption(c)].filter(Boolean).map(normalizeText);
   const exact = crops.filter((c) => keys(c).includes(q));
   if (exact.length) return exact;
   for (const test of [(k) => k.startsWith(q), (k) => k.includes(q)]) {
