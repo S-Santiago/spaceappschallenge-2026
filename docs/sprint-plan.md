@@ -8,7 +8,7 @@ Backlog = GitHub issues · one **milestone per sprint** · epic #16.
 |---|---|
 | Scrum Master + backlog priority (Product Owner) | @sebasbarrabaja-cmyk — runs the ceremonies, removes blockers, decides scope with the supervisor/organizers |
 | Tech lead | @S-Santiago |
-| Developers | @S-Santiago (PWA frontend) · @HectorLopGar-Dev (API + data) · @HaoJunnnzhang (data analysis: indicators & predictions) |
+| Developers | @S-Santiago (PWA frontend) · @HectorLopGar-Dev (API + data) · @HaoJunnnzhang (data analysis — **away on Saturday**) · @sebasbarrabaja-cmyk (data analysis on Saturday, besides Scrum Master) |
 
 ## Ceremonies (time-boxed)
 | Ceremony | When | Length | Output |
@@ -44,19 +44,21 @@ Statistics over NASA POWER 2005–2025 and MODIS NDVI, defined in `docs/indicato
 | P-01 | Weekly rain probability | Share of years with rain ≥ 1 mm in that calendar week |
 | P-02 | Heavy-rain risk & return period | Monthly frequency of days ≥ 30 mm; annual maxima fitted to a Gumbel distribution |
 | P-03 | Last spring / first autumn frost dates | Percentiles (50 %, 90 %) of yearly dates with Tmin < 0 °C |
-| P-04 | Heat and rain trends | Linear / Sen's slope per decade with confidence interval |
-| P-05 | Season dryness | Accumulated rain vs historical distribution (SPI-style percentile) |
-| P-06 | Sowing window per crop | Combine P-01…P-03 with crop limits from `data/crops.csv` |
+| P-04 *(stretch)* | Heat and rain trends | Linear / Sen's slope per decade with confidence interval |
+| P-05 *(stretch)* | Season dryness | Accumulated rain vs historical distribution (SPI-style percentile) |
+| P-06 *(stretch)* | Sowing window per crop | Combine P-01…P-03 with crop limits from `data/crops.csv` |
 | P-07 | Bare-soil + heavy-rain alert | Months likely bare (MODIS) × heavy-rain probability (P-02) |
 
 Always labelled "based on the last 20 years of NASA data" — **not** a weather forecast.
 
 **Stretch (S3, only if everything else is green):** future climate projections from NASA NEX-GDDP-CMIP6 for the demo fields (verify the dataset first with `/nasa-dataset-check`).
 
+**Must-have: P-01, P-02, P-03, P-07.** P-04…P-06 only if S2 is green (re-plan 2026-11-14, Haojun away on Saturday).
+
 ## Work split
 | | @S-Santiago — PWA | @HectorLopGar-Dev — API & data | @HaoJunnnzhang — Data analysis | @sebasbarrabaja-cmyk — SM, UX, docs |
 |---|---|---|---|---|
-| **S1** | PWA shell: manifest, service worker, 4-step form wired to the API | FastAPI exposing fields, crops, analysis; close #6–#8 | Specify P-01…P-07 in `indicators.md`; implement P-01, P-03 | Ceremonies; decision records; UX criteria for the PWA; demo-field coordinates in docs |
-| **S2** | Results + "What to expect" screens, offline cache | Predictions/alerts endpoints, precomputed demo payloads, deploy public URL | Implement P-02, P-04…P-07 + tests | Register methods, `/ux-review`, pitch storyline, slide draft |
-| **S3** | Performance, error/empty states; Android notification (stretch) | Offline & API tests, hosting warm-up | Limits & uncertainty texts; CMIP6 (stretch) | `/security-review`, `/submission-check`, README final |
+| **S1** | #35 PWA shell: manifest, service worker, 4-step form wired to the API | #36 FastAPI exposing fields, crops, analysis; close #6–#8 | *(away)* | Ceremonies · **#37** specify P-01…P-07, implement P-01, P-03 |
+| **S2** | #40 Results + "What to expect" screens, offline cache | #39 Predictions/alerts endpoints, precomputed demo payloads, deploy public URL | *(away)* | Ceremonies · **#38** implement P-02, P-07 (+ stretch P-04…P-06) · #41 register methods, `/ux-review` |
+| **S3** | Performance, error/empty states; Android notification (stretch) | Offline & API tests, hosting warm-up | #44 Limits & uncertainty texts; CMIP6 (stretch) — fallback owner Sebastian | Pitch storyline + slide draft · `/security-review`, `/submission-check`, README final |
 | **S4** | Screenshots, tech test | Check public link on several phones | Technical Q&A answers | Slides/video, Project page, Submit for Judging, rehearsal |
