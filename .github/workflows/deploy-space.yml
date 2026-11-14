@@ -1,0 +1,48 @@
+# Deploys the public demo to a Hugging Face Space (Docker SDK) on every push to main (decision 0006).
+# Setup (repo admin, once): Actions secret HF_TOKEN (fine-grained token, write access to the Space only)
+# and Actions variable HF_SPACE (e.g. "user/farmlens"). Without HF_SPACE the job is skipped.
+name: Deploy public demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-space
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: vars.HF_SPACE != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the Hugging Face CLI
+        run: pip install "huggingface_hub==1.33.0"
+
+      - name: Assemble the Space folder (only what the image needs)
+        run: |
+          mkdir -p space/data
+          cp -r Dockerfile .dockerignore requirements.txt LICENSE src web space/
+          cp data/crops.csv space/data/
+          cp -r data/samples space/data/
+          cp deploy/space-README.md space/README.md
+          find space -name '__pycache__' -prune -exec rm -rf {} +
+
+      - name: Upload to the Space (replaces every file; the Space rebuilds itself)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          hf upload "$HF_SPACE" space . --repo-type space --delete "*" \
+            --commit-message "Deploy ${GITHUB_SHA::7} from GitHub main"
