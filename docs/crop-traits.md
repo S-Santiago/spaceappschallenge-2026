@@ -4,13 +4,16 @@ Characteristics of every crop that may appear in a rotation. Maintained with the
 
 ## Columns
 
+Loaded into the `crops` table of the SQLite database on start-up (`src/fieldshift/db.py`); the column list must match `src/fieldshift/schema.sql`.
+
 | Column | Meaning | Unit / allowed values |
 |---|---|---|
-| `crop` | Common name (English) | text |
+| `crop` | Identifier used in rotations (English, lowercase snake_case) | text, e.g. `durum_wheat` |
 | `scientific_name` | Latin name | text |
 | `family` | Botanical family (key for breaking pest/disease cycles) | e.g. Poaceae, Fabaceae, Brassicaceae, Asteraceae |
 | `type` | Role | cereal / legume / oilseed / forage / cover / other |
 | `season` | Sowing season in the target region | autumn / spring / summer |
+| `sow_month`, `harvest_month` | Typical sowing and harvest (or termination) month in the target region | 1–12 |
 | `cycle_days_min`, `cycle_days_max` | Sowing to harvest | days |
 | `water_need_mm_min`, `water_need_mm_max` | Seasonal crop water requirement | mm per cycle |
 | `drought_tolerance` | | low / medium / high |
@@ -22,6 +25,7 @@ Characteristics of every crop that may appear in a rotation. Maintained with the
 | `ground_cover` | Protection against erosion while growing | low / medium / high |
 | `forage_value` | | low / medium / high |
 | `residue_organic_matter` | Contribution of residues to soil organic matter | low / medium / high |
+| `market_value` | Relative market value of the harvest — **illustrative only**, not a price | low / medium / high |
 | `sources` | Reference IDs, separated by `;` | e.g. `R-01;R-02` |
 | `confidence` | | low / medium / high |
 | `notes` | Caveats (generic vs Mediterranean values, stage, etc.) | text |
