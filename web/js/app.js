@@ -45,6 +45,7 @@ const SCORE_ROWS = [
 ];
 const FAMILY_LABEL = { cereal: "Cereal", legume: "Legume", oilseed: "Oilseed", forage: "Forage", cover: "Cover crop", fallow: "Fallow", other: "Other" };
 const STAGES = ["Fetching NASA climate data…", "Checking field greenness…", "Comparing rotations…"];
+const LITTLE_COVER_NDVI = 0.35; // calendar word "Little cover" between Bare (<0.25) and Green (docs/indicators.md I-09)
 
 const state = {
   fields: [], crops: [], names: {}, types: {},
@@ -629,14 +630,20 @@ function calendar(profile, noNdvi) {
   if (!months.length) return "";
   // Each line: pictogram in its own column, so wrapped text lines up under the text, not under the icon.
   const line = (icon, text) => `<span><i aria-hidden="true">${icon}</i>${text}</span>`;
-  const field = (m) => (m.likely_bare === true ? line("🟫", "Bare") : m.likely_bare === false ? line("🌿", "Green") : line("❔", "Unknown"));
+  // Field cover in three words (docs/indicators.md I-09): Bare below 0.25 (engine's likely_bare), Little cover
+  // 0.25–0.35 (stubble, weeds, young crop), Green from 0.35. 0.35 is a display-only team assumption.
+  const field = (m) => {
+    if (m.likely_bare === true) return line("🟫", "Bare");
+    if (m.likely_bare !== false || num(m.ndvi) === null) return line("❔", "Unknown");
+    return num(m.ndvi) < LITTLE_COVER_NDVI ? line("🌾", "Little cover") : line("🌿", "Green");
+  };
   // Non-breaking space keeps a number with its unit when the cell wraps.
   const days = (v, word) => `${fmt(v, 0)}&nbsp;${word}${Math.round(v) === 1 ? "" : "s"}`;
   const cells = months.map((m) => `<div><b>${MONTH_ABBR[m.month - 1]}</b>${line("🌧️", `${fmt(m.rain_mm, 0)}&nbsp;mm`)}${field(m)}${
     num(m.frost_days) >= 0.5 ? line("❄️", days(m.frost_days, "frost day")) : ""}${num(m.heat_days) >= 0.5 ? line("🔥", days(m.heat_days, "hot day")) : ""}</div>`).join("");
   const rows = months.map((m) => `<tr><td>${MONTH_ABBR[m.month - 1]}</td><td>${fmt(m.rain_mm, 0)}</td><td>${fmt(m.et0_mm, 0)}</td><td>${fmt(m.water_balance_mm, 0)}</td><td>${fmt(m.soil_wetness, 2)}</td><td>${fmt(m.frost_days, 1)}</td><td>${fmt(m.heat_days, 1)}</td><td>${fmt(m.heavy_rain_days, 1)}</td><td>${noNdvi ? "—" : fmt(m.ndvi, 2)}</td></tr>`).join("");
   return `<h3 style="margin-top:24px">Month by month</h3>
-    <p class="small muted">Rain, field cover (satellite greenness 2024–2025), and frost or very hot days (over 35 °C) per month.</p>
+    <p class="small muted">Rain, field cover (satellite greenness 2024–2025: bare, little cover such as stubble or a young crop, or green), and frost or very hot days (over 35 °C) per month.</p>
     <div class="cal">${cells}</div>
     <details><summary>All numbers, month by month</summary>
       <div class="table-wrap" tabindex="0" role="region" aria-label="Monthly climate table"><table>
