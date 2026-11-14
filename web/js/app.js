@@ -4,7 +4,7 @@
 
 import * as api from "./api.js";
 import {
-  MONTH_ABBR, MONTHS, cropName, errorMessage, esc, fmt, formatDate, keyFacts, levelText, ndviMissing, num, trendFacts,
+  MONTH_ABBR, MONTHS, cropName, errorMessage, esc, findCrop, fmt, formatDate, keyFacts, levelText, ndviMissing, num, trendFacts,
 } from "./format.js";
 import { inMalaga, mountMap } from "./map.js";
 
@@ -141,8 +141,6 @@ function masthead() {
 function renderForm() {
   const fieldOptions = state.fields.map((f) => [f.slug, f.name, f.description]);
   fieldOptions.push(["map", "Another point on the map", "Tap your field on a map · Needs a connection"]);
-  const cropOptions = (sel) => state.crops.map((c) => `<option value="${esc(c.id)}"${c.id === sel ? " selected" : ""}>${esc(c.name)}</option>`).join("");
-
   app.innerHTML = `${masthead()}
   <form id="form" novalidate>
     <section class="step" aria-labelledby="s1">
@@ -162,8 +160,8 @@ function renderForm() {
       <fieldset style="margin-top:12px"><legend>How many years before it repeats?</legend>
         <div class="segmented">${[1, 2, 3, 4].map((n) => `<label><input type="radio" name="years" value="${n}"${n === state.rotation.length ? " checked" : ""}><span>${n} ${n === 1 ? "year" : "years"}</span></label>`).join("")}</div>
       </fieldset>
-      <div id="years" style="margin-top:16px">${state.rotation.map((id, i) => `
-        <div class="year-row"><label for="y${i}">Year ${i + 1}</label><select id="y${i}" data-year="${i}">${cropOptions(id)}</select></div>`).join("")}</div>
+      <datalist id="crop-list">${state.crops.map((c) => `<option value="${esc(c.name)}"></option>`).join("")}</datalist>
+      <div id="years" style="margin-top:16px">${yearRows()}</div>
       <div id="strip" style="margin-top:16px">${strip(state.rotation, "Your current rotation")}</div>
     </section>
 
@@ -191,6 +189,9 @@ function renderForm() {
   updateWhere();
   const form = $("#form");
   form.addEventListener("change", onChange);
+  form.addEventListener("input", onCropInput);
+  form.addEventListener("focusin", onCropFocus);
+  form.addEventListener("focusout", onCropBlur);
   form.addEventListener("submit", (e) => { e.preventDefault(); runAnalysis(); });
   $("#locate").addEventListener("click", locate);
   if (isFreePoint()) openMap();
@@ -215,10 +216,59 @@ function updateWhere() {
   }
 }
 
+// One text field per year with the crop names as suggestions (<datalist>): type part of a name, pick it.
+function yearRows() {
+  return state.rotation.map((id, i) => `
+    <div class="year-row"><label for="y${i}">Year ${i + 1}</label>
+      <input id="y${i}" class="crop-input" data-year="${i}" list="crop-list" value="${esc(cropName(id, state.names))}"
+        autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done"
+        placeholder="Type a crop, e.g. wheat" aria-describedby="y${i}-hint">
+      <p class="field-hint" id="y${i}-hint" role="status"></p></div>`).join("");
+}
+
+function setYear(input, id) {
+  state.rotation[Number(input.dataset.year)] = id;
+  state.edited = true;
+  $("#strip").innerHTML = strip(state.rotation, "Your current rotation");
+  updateWhere();
+}
+
+/** While typing: as soon as the text names exactly one crop (e.g. picked from the suggestions), use it. */
+function onCropInput(e) {
+  const t = e.target;
+  if (t.dataset.year === undefined) return;
+  const id = findCrop(t.value, state.crops);
+  if (id && state.names[id].toLowerCase() === t.value.trim().toLowerCase()) setYear(t, id);
+}
+
+/** On focus the field is emptied so every suggestion shows; leaving it resolves or restores the crop. */
+function onCropFocus(e) {
+  const t = e.target;
+  if (t.dataset.year === undefined) return;
+  t.placeholder = t.value || "Type a crop, e.g. wheat";
+  t.value = "";
+  $(`#${t.id}-hint`).textContent = "";
+  t.removeAttribute("aria-invalid");
+}
+
+function onCropBlur(e) {
+  const t = e.target;
+  if (t.dataset.year === undefined) return;
+  const i = Number(t.dataset.year);
+  const typed = t.value.trim();
+  const id = findCrop(typed, state.crops);
+  if (id) {
+    setYear(t, id);
+  } else if (typed) {
+    $(`#${t.id}-hint`).textContent = `"${typed}" is not in the crop list, so ${cropName(state.rotation[i], state.names)} was kept. Type part of a name and pick one of the suggestions.`;
+    t.setAttribute("aria-invalid", "true");
+  }
+  t.value = cropName(state.rotation[i], state.names);
+  t.placeholder = "Type a crop, e.g. wheat";
+}
+
 function renderYears() {
-  const cropOptions = (sel) => state.crops.map((c) => `<option value="${esc(c.id)}"${c.id === sel ? " selected" : ""}>${esc(c.name)}</option>`).join("");
-  $("#years").innerHTML = state.rotation.map((id, i) => `
-    <div class="year-row"><label for="y${i}">Year ${i + 1}</label><select id="y${i}" data-year="${i}">${cropOptions(id)}</select></div>`).join("");
+  $("#years").innerHTML = yearRows();
   $("#strip").innerHTML = strip(state.rotation, "Your current rotation");
   app.querySelectorAll('input[name="years"]').forEach((r) => { r.checked = Number(r.value) === state.rotation.length; });
 }
@@ -245,10 +295,7 @@ function onChange(e) {
     renderYears();
     updateWhere();
   } else if (t.dataset.year !== undefined) {
-    state.rotation[Number(t.dataset.year)] = t.value;
-    state.edited = true;
-    $("#strip").innerHTML = strip(state.rotation, "Your current rotation");
-    updateWhere();
+    // crop text fields are handled on input / focus / blur (onCropInput, onCropFocus, onCropBlur)
   } else if (t.name.startsWith("p-")) {
     const k = t.name.slice(2);
     state.priorities[k] = Number(t.value);
@@ -326,6 +373,7 @@ async function runAnalysis() {
     const data = await api.analyze(body, { freePoint: free });
     setStage(2);
     state.result = { data, inputs: body, at: new Date().toISOString(), label: free ? `your point (${fmt(body.lat, 2)}, ${fmt(body.lon, 2)})` : fieldInfo()?.name || "your field" };
+    watchPending(state.result);
     setStage(3);
     location.hash = "#/results";
   } catch (err) {
@@ -349,6 +397,30 @@ async function runAnalysis() {
   }
 }
 
+// A new map point can come back with `pending: ["ndvi"]`: the API answered from NASA POWER while the slow
+// MODIS greenness download goes on in the background (docs/work-plan.md, "Points that are not demo fields").
+// Ask again quietly every 30 s (up to 4 min) and redraw the results when the greenness has arrived.
+const PENDING_RETRY_MS = 30000;
+const PENDING_TRIES = 8;
+
+function isPending(result) {
+  return (result?.data?.pending || []).includes("ndvi");
+}
+
+function watchPending(result, tries = 0) {
+  if (!isPending(result) || tries >= PENDING_TRIES) return;
+  setTimeout(async () => {
+    if (state.result !== result) return; // a newer analysis replaced this one
+    try {
+      const data = await api.analyze(result.inputs, { freePoint: true });
+      if (state.result !== result) return;
+      result.data = data;
+      if (!isPending(result) && location.hash === "#/results") renderResults();
+    } catch { /* keep the results we have; try again below */ }
+    watchPending(result, tries + 1);
+  }, PENDING_RETRY_MS);
+}
+
 // ------------------------------------------------------------------ results screen
 
 function scoreBar(value) {
@@ -361,6 +433,7 @@ function renderResults() {
   const profile = data?.profile || {};
   const strategies = Array.isArray(data?.strategies) ? data.strategies : [];
   const weights = PRIORITIES.map(([k, icon, l]) => `${icon} ${l} ${used.priorities[k]}`).join(" · ");
+  const loadingNdvi = isPending(state.result);
   const noNdvi = ndviMissing(profile);
 
   const compare = strategies.length ? `<ul class="compare">${strategies.map((s) => `
@@ -391,7 +464,9 @@ function renderResults() {
   const trends = trendFacts(profile.trends);
   const loc = profile.location || {};
   const limits = [...(profile.limits?.en || [])];
-  if (noNdvi) limits.unshift("Greenness data (MODIS) was not available for this point, so the months when the field is bare are unknown.");
+  if (noNdvi) limits.unshift(loadingNdvi
+    ? "Greenness data (MODIS) was still loading for this point, so the months when the field is bare are not known yet."
+    : "Greenness data (MODIS) was not available for this point, so the months when the field is bare are unknown.");
 
   app.innerHTML = `
   <div class="results-head">
@@ -399,7 +474,9 @@ function renderResults() {
     <h1 tabindex="-1" id="r-title">Results for ${esc(label)}</h1>
     <p class="small muted">Based on NASA data for 2005–2025 · analysed ${esc(formatDate(at))}</p>
   </div>
-  ${noNdvi ? banner("warn", "Greenness data unavailable for this point", " Bare months are unknown. Rain, heat and frost still come from NASA POWER.") : ""}
+  ${loadingNdvi
+    ? banner("warn", "Satellite greenness is still loading", " Rain, heat and frost results are ready. The months when the field is bare will be added here automatically in a minute or two. Keep this page open.")
+    : noNdvi ? banner("warn", "Greenness data unavailable for this point", " Bare months are unknown. Rain, heat and frost still come from NASA POWER.") : ""}
 
   <section class="section" aria-labelledby="h-opt">
     <h2 id="h-opt">Rotation options</h2>
