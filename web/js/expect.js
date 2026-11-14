@@ -3,11 +3,13 @@
 // Data: GET /api/predictions (P-01, P-02, P-03, P-07) + the Shape 1 profile already loaded (heat, I-06/I-11).
 
 import { MONTHS, MONTH_ABBR, esc, fmt, limitsDetails, num, trendFacts } from "./format.js";
+import { icon, withIcon } from "./icons.js";
 import {
   FROST_CAVEAT, basisFor, count, WEEKS, alertCards, frostSentences, fromMonth, heatFacts, heavySentence, mmdd, nextWeeks,
   rainYearSummary, returnSentence, weekOfYear,
 } from "./expect-format.js";
 
+// Card titles are passed as HTML (icon + escaped words).
 // The "not a weather forecast" basis is said once, at the top of the tab, and repeated in the footer (UX review #40):
 // repeating it in every card buried the content.
 function card(title, body, extra = "") {
@@ -19,7 +21,7 @@ export function rainStrip(rainWeeks, today = new Date()) {
   const weeks = (rainWeeks || []).filter((w) => num(w?.prob_rain) !== null && num(w?.week) !== null)
     .sort((a, b) => a.week - b.week);
   if (weeks.length !== WEEKS) return "";
-  const W = 340, H = 132, L = 40, R = 4, T = 18, B = 22;
+  const W = 340, H = 140, L = 40, R = 4, T = 26, B = 22;
   const bw = (W - L - R) / WEEKS;
   const y = (p) => T + (H - T - B) * (1 - p);
   const now = weekOfYear(today);
@@ -35,12 +37,16 @@ export function rainStrip(rainWeeks, today = new Date()) {
     return `<text x="${(L + i * bw + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="start">${MONTH_ABBR[m - 1][0]}</text>`;
   }).join("");
   const tx = L + (now - 1) * bw + bw / 2;
+  // "Today": a drawn down-pointing triangle on the dashed line, the word above it (no text glyph).
+  const anchor = now > 44 ? "end" : now < 8 ? "start" : "middle";
+  const textX = anchor === "end" ? tx + 5 : anchor === "start" ? tx - 5 : tx;
   const marker = `<line x1="${tx.toFixed(1)}" x2="${tx.toFixed(1)}" y1="${T - 2}" y2="${y(0)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="3 2"/>` +
-    `<text x="${tx.toFixed(1)}" y="${T - 6}" text-anchor="${now > 44 ? "end" : now < 8 ? "start" : "middle"}" class="today">▼ Today</text>`;
+    `<path class="today-mark" d="M${(tx - 5).toFixed(1)} ${T - 9}h10l-5 7z" fill="var(--ink)"/>` +
+    `<text x="${textX.toFixed(1)}" y="${T - 12}" text-anchor="${anchor}" class="today">Today</text>`;
   const summary = rainYearSummary(weeks);
   const label = `Chance of rain in each week of the year, from January to December. Today is in the week of ${mmdd(weeks[now - 1].start, true)}. ${summary || ""}`;
   return `<svg class="chart strip-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${grid}${bars}${labels}${marker}</svg>
-    <p class="small muted">Each bar is one week: how many of the last ${fmt(weeks[0].years, 0)} years had at least 1 mm of rain that week (none · half · all).</p>
+    <p class="small muted">Each bar is one week. It shows how often it rained that week (1 mm or more). Full height: rain in all ${fmt(weeks[0].years, 0)} years.</p>
     ${summary ? `<p style="margin-top:8px">${esc(summary)}</p>` : ""}
     <details><summary>All 52 weeks</summary>
       <div class="table-wrap" tabindex="0" role="region" aria-label="Rain week by week"><table>
@@ -57,9 +63,9 @@ function rainSection(pred, today) {
     const label = i === 0 ? `This week (from ${mmdd(w.start)})` : `Week of ${mmdd(w.start)}`;
     const rain = wet === 0 ? `no rain in the last ${w.years} years`
       : `rain in ${wet} of ${w.years} years${useful ? `, ${useful} with more than 10 mm` : ""}`;
-    return `<li><span class="ico" aria-hidden="true">🌧️</span><span><strong>${esc(label)}</strong>: ${esc(rain)}</span></li>`;
+    return `<li><span class="ico" aria-hidden="true">${icon("rain")}</span><span><strong>${esc(label)}</strong>: ${esc(rain)}</span></li>`;
   }).join("");
-  const cards = rows ? card("🌧️ Rain week by week", `<ul class="facts">${rows}</ul>`) : "";
+  const cards = rows ? card(withIcon("rain", "Rain week by week"), `<ul class="facts">${rows}</ul>`) : "";
   const strip = rainStrip(pred?.rain_weeks, today);
   if (!cards && !strip) return "";
   return `<section class="section" aria-labelledby="h-rain"><h3 id="h-rain">Rain in the next 4 weeks</h3>
@@ -74,9 +80,9 @@ function frostSection(pred) {
     f.spring ? `<p><strong>${f.none ? "Frost" : "Spring"}:</strong> ${esc(f.spring)}</p>` : "",
     f.autumn ? `<p style="margin-top:8px"><strong>Autumn:</strong> ${esc(f.autumn)}</p>` : "",
     f.safe ? `<p style="margin-top:8px">${esc(f.safe)}</p>` : "",
-    `<p class="caveat">⚠️ ${esc(FROST_CAVEAT)}</p>`,
+    `<p class="caveat">${withIcon("warning", esc(FROST_CAVEAT))}</p>`,
   ].join("");
-  return `<section class="section" aria-labelledby="h-frost"><h3 id="h-frost">Frost</h3>${card("❄️ Last and first frost", body)}</section>`;
+  return `<section class="section" aria-labelledby="h-frost"><h3 id="h-frost">Frost</h3>${card(withIcon("frost", "Last and first frost"), body)}</section>`;
 }
 
 function heatSection(profile) {
@@ -85,8 +91,8 @@ function heatSection(profile) {
   const trend = trendFacts({ heat_days_change: profile?.trends?.heat_days_change, baseline: profile?.trends?.baseline })[0];
   const body = `<p>${esc(heat.summary)}</p>
     ${heat.perMonth.length ? `<ul class="plain">${heat.perMonth.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-    ${trend ? `<p style="margin-top:8px"><span aria-hidden="true">${trend.icon}</span> ${esc(trend.text)} <span class="small muted">(2016–2025 compared with 2005–2014: a change, not a proven trend)</span></p>` : ""}`;
-  return `<section class="section" aria-labelledby="h-heat"><h3 id="h-heat">Heat</h3>${card("🔥 Very hot days", body)}</section>`;
+    ${trend ? `<p style="margin-top:8px">${withIcon(trend.icon, esc(trend.text))} <span class="small muted">(2016–2025 compared with 2005–2014. A change, not a proven trend.)</span></p>` : ""}`;
+  return `<section class="section" aria-labelledby="h-heat"><h3 id="h-heat">Heat</h3>${card(withIcon("sun", "Very hot days (over 35 °C)"), body)}</section>`;
 }
 
 function heavySection(pred, today) {
@@ -102,8 +108,8 @@ function heavySection(pred, today) {
     .filter(Boolean);
   if (!lines.length) return "";
   return `<section class="section" aria-labelledby="h-heavy"><h3 id="h-heavy">Heavy rain</h3>
-    ${card("⛈️ Days with heavy rain", lines.map((t, i) => `<p${i ? ' style="margin-top:8px"' : ""}>${t}</p>`).join("") +
-      `<p class="small muted" style="margin-top:8px">Rain averaged over about 50 km: a storm on your field can be stronger.</p>`)}</section>`;
+    ${card(withIcon("storm", "Days with heavy rain"), lines.map((t, i) => `<p${i ? ' style="margin-top:8px"' : ""}>${t}</p>`).join("") +
+      `<p class="small muted" style="margin-top:8px">Rain is averaged over about 50 km. A storm on your field can be stronger.</p>`)}</section>`;
 }
 
 /** P-07 alert cards — only when the payload has them; otherwise nothing at all (no placeholder). */
@@ -114,12 +120,12 @@ export function alertsSection(pred, today = new Date()) {
   const sources = [...new Set(cards.flatMap((c) => (c.source ? c.source.split(" and ") : [])))].join(" and ");
   const rows = cards.map((c) => {
     const freq = /\((\d+ of \d+ years)\)/.exec(c.text)?.[1];
-    return `<li><span class="ico" aria-hidden="true">${c.icon}</span><span><strong>${esc(MONTHS[c.month - 1])}</strong> <span class="level">${esc(c.levelWord)}</span>${
-      freq ? ` heavy rain in ${esc(freq)}` : ""}</span></li>`;
+    return `<li><span class="ico" aria-hidden="true">${icon(c.icon)}</span><span><strong>${esc(MONTHS[c.month - 1])}</strong> <span class="level">${esc(c.levelWord)}</span> risk${
+      freq ? `: heavy rain in ${esc(freq)}` : ""}</span></li>`;
   }).join("");
   return `<section class="section" aria-labelledby="h-alerts"><h3 id="h-alerts">Heavy rain on bare soil</h3>
     <article class="card exp-card alert alert--${level}" aria-label="Heavy rain on bare soil: ${cards.length} ${cards.length === 1 ? "month" : "months"}, upcoming first">
-      <p>Heavy-rain days often fall when the field is bare in these months. Bare soil can wash away — a cover crop or leaving stubble helps.</p>
+      <p>Heavy-rain days often fall when the field is bare in these months. Bare soil can wash away. A cover crop or stubble helps.</p>
       <ul class="facts" style="margin-top:12px">${rows}</ul>
       <p class="small muted" style="margin-top:12px">${sources ? `Bare months from the ${esc(sources)}. ` : ""}${esc(cards[0].threshold)} Upcoming months first.</p>
       <div class="warn" id="warn-slot" hidden></div>
@@ -131,10 +137,10 @@ export function renderExpect(pred, profile, today = new Date()) {
   const sections = [alertsSection(pred, today), rainSection(pred, today), frostSection(pred), heatSection(profile), heavySection(pred, today)]
     .filter(Boolean).join("");
   const period = String(pred?.period || "2005-2025").replace("-", "–");
-  return `<p class="basis basis--lead">ℹ️ ${esc(basisFor(pred?.period))}</p>
-    ${sections || `<p class="muted" style="margin-top:16px">What to expect is not available for this field. Try again later, or try a demo field.</p>`}
+  return `<p class="basis basis--lead">${withIcon("info", esc(basisFor(pred?.period)))}</p>
+    ${sections || `<p class="muted" style="margin-top:16px">What to expect is not available for this field. Try again later, or try an example field.</p>`}
     <section class="section foot" aria-labelledby="h-exp-src"><h3 id="h-exp-src">Where these numbers come from</h3>
-      <p class="small" style="margin-top:8px">Counts of years in NASA POWER daily data, ${esc(period)}, for an area of about 50 km around your field. They say what happened in past years, not what the weather will do. Your valley, slope or coast can differ.</p>
+      <p class="small" style="margin-top:8px">We count years in NASA daily weather data, ${esc(period)}. Each number covers about 50 km around your field. It says what happened in past years, not what the weather will do. Your valley, slope or coast can differ.</p>
       ${limitsDetails("What each prediction can't tell", [["Rain week by week", pred?.limits?.rain_weeks?.en], ["Frost", pred?.limits?.frost?.en],
         ["Heavy rain", pred?.limits?.heavy_rain?.en], ["Heavy rain on bare soil", pred?.limits?.alerts?.en]])}</section>`;
 }

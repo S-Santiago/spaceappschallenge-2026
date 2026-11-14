@@ -26,7 +26,7 @@ export function esc(value) {
   })[c]);
 }
 
-/** Months (1–12) → consecutive runs, wrapping over New Year: [11,12,1,5] → [[11,1],[5,5]]. */
+/** Months (1–12) -> consecutive runs, wrapping over New Year: [11,12,1,5] -> [[11,1],[5,5]]. */
 export function monthRuns(months) {
   const set = new Set(months);
   if (set.size === 0) return [];
@@ -42,7 +42,7 @@ export function monthRuns(months) {
   return runs;
 }
 
-/** [[10,3],[6,6]] → "October–March and June". */
+/** [[10,3],[6,6]] -> "October–March and June". */
 export function formatRuns(runs) {
   const parts = runs.map(([a, b]) => (a === b ? MONTHS[a - 1] : `${MONTHS[a - 1]}–${MONTHS[b - 1]}`));
   if (parts.length <= 1) return parts[0] || "";
@@ -62,7 +62,7 @@ export function ndviMissing(profile) {
 }
 
 /**
- * Plain-English key facts from Shape 1: [{icon, text}]. A fact is skipped when its data is missing.
+ * Plain-English key facts from Shape 1: [{icon, text}], icon = an icon name from icons.js. A fact is skipped when its data is missing.
  * Thresholds are the ones in docs/indicators.md (I-05 frost, I-06 heat > 35 °C, I-09 bare).
  */
 export function keyFacts(profile) {
@@ -85,7 +85,7 @@ export function keyFacts(profile) {
       acc += months.get(m).rain_mm;
     }
     if (total > 0) {
-      facts.push({ icon: "🌧️", text: `About ${fmt(total, 0, "mm")} of rain a year. Most of it falls in ${formatRuns(monthRuns(wet))}.` });
+      facts.push({ icon: "rain", text: `About ${fmt(total, 0, "mm")} of rain a year. Most of it falls in ${formatRuns(monthRuns(wet))}.` });
     }
   }
 
@@ -95,20 +95,20 @@ export function keyFacts(profile) {
     if (dry.length) {
       const worst = balance.reduce((a, b) => (b.water_balance_mm < a.water_balance_mm ? b : a));
       facts.push({
-        icon: "💧",
-        text: `Rain is less than the water the air takes from the field in ${formatRuns(monthRuns(dry))}. ` +
-          `Worst in ${MONTHS[worst.month - 1]} (${fmt(worst.water_balance_mm, 0, "mm")}).`,
+        icon: "drop",
+        text: `In ${formatRuns(monthRuns(dry))}, rain is less than the water the field loses. ` +
+          `Worst: ${MONTHS[worst.month - 1]} (${fmt(worst.water_balance_mm, 0, "mm")} a month).`,
       });
     } else {
-      facts.push({ icon: "💧", text: "Rain is more than the water the air takes from the field in every month." });
+      facts.push({ icon: "drop", text: "Every month, rain is more than the water the field loses." });
     }
   }
 
   if (!ndviMissing(profile)) {
     const bare = all.filter((m) => m.likely_bare === true).map((m) => m.month);
     facts.push(bare.length
-      ? { icon: "🟫", text: `The field was probably bare in ${formatRuns(monthRuns(bare))} (satellite greenness, 2024–2025).` }
-      : { icon: "🌿", text: "The field looked covered by plants all year (satellite greenness, 2024–2025)." });
+      ? { icon: "bare", text: `Satellite photos show the field was probably bare in ${formatRuns(monthRuns(bare))} (2024–2025 only).` }
+      : { icon: "leaf", text: "Satellite photos show the field covered by plants all year (2024–2025 only)." });
   }
 
   const heat = val("heat_days");
@@ -116,8 +116,8 @@ export function keyFacts(profile) {
     const total = heat.reduce((a, b) => a + b, 0);
     const hot = all.filter((m) => m.heat_days >= 1).map((m) => m.month);
     facts.push(total < 0.5
-      ? { icon: "🔥", text: "Very hot days (over 35 °C) are rare here." }
-      : { icon: "🔥", text: `About ${fmt(total, 0)} very hot days (over 35 °C) a year${hot.length ? `, mostly in ${formatRuns(monthRuns(hot))}` : ""}.` });
+      ? { icon: "sun", text: "Very hot days (over 35 °C) are rare here." }
+      : { icon: "sun", text: `About ${fmt(total, 0)} very hot days (over 35 °C) a year${hot.length ? `, mostly in ${formatRuns(monthRuns(hot))}` : ""}.` });
   }
 
   const frost = val("frost_days");
@@ -125,30 +125,31 @@ export function keyFacts(profile) {
     const total = frost.reduce((a, b) => a + b, 0);
     const cold = all.filter((m) => m.frost_days >= 1).map((m) => m.month);
     facts.push(total < 0.5
-      ? { icon: "❄️", text: "Frost is rare here." }
-      : { icon: "❄️", text: `About ${fmt(total, 0)} frost days a year${cold.length ? `, mostly in ${formatRuns(monthRuns(cold))}` : ""}.` });
+      ? { icon: "frost", text: "Frost is rare here." }
+      : { icon: "frost", text: `About ${fmt(total, 0)} frost days a year${cold.length ? `, mostly in ${formatRuns(monthRuns(cold))}` : ""}.` });
   }
   return facts;
 }
 
-/** Trend sentences (I-10, I-11) or [] when the values are missing. */
+/** Trend sentences (I-10, I-11) or [] when the values are missing. `icon` is an icon name (icons.js). */
 export function trendFacts(trends) {
   const out = [];
   const base = trends?.baseline || "2005-2014";
   const baseText = base.replace("-", "–");
+  const since = /^(\d{4})/.exec(String(trends?.recent ?? ""))?.[1] || "2016"; // recent period: 2016-2025
   const rain = num(trends?.rain_change_pct);
   if (rain !== null) {
-    const text = Math.abs(rain) < 2 ? `It rains about the same as in ${baseText}.`
-      : rain < 0 ? `It rains about ${fmt(-rain, 0)}% less than in ${baseText}.`
-        : `It rains about ${fmt(rain, 0)}% more than in ${baseText}.`;
-    out.push({ icon: rain <= -2 ? "🔻" : rain >= 2 ? "🔺" : "➖", text });
+    const text = Math.abs(rain) < 2 ? `Since ${since} it rains about the same as in ${baseText}.`
+      : rain < 0 ? `Since ${since} it rains about ${fmt(-rain, 0)}% less than in ${baseText}.`
+        : `Since ${since} it rains about ${fmt(rain, 0)}% more than in ${baseText}.`;
+    out.push({ icon: rain <= -2 ? "trend-down" : rain >= 2 ? "trend-up" : "trend-flat", text });
   }
   const heat = num(trends?.heat_days_change);
   if (heat !== null) {
     const text = Math.abs(heat) < 0.5 ? `About the same number of very hot days as in ${baseText}.`
       : heat > 0 ? `About ${fmt(heat, 0)} more very hot days a year than in ${baseText}.`
         : `About ${fmt(-heat, 0)} fewer very hot days a year than in ${baseText}.`;
-    out.push({ icon: heat >= 0.5 ? "🔺" : heat <= -0.5 ? "🔻" : "➖", text });
+    out.push({ icon: heat >= 0.5 ? "trend-up" : heat <= -0.5 ? "trend-down" : "trend-flat", text });
   }
   return out;
 }
@@ -163,7 +164,7 @@ export function levelText(label, score) {
   return n >= 67 ? "Good" : n >= 34 ? "Fair" : "Poor";
 }
 
-/** Readable crop name: from the API catalogue, else "durum_wheat" → "Durum wheat". */
+/** Readable crop name: from the API catalogue, else "durum_wheat" -> "Durum wheat". */
 export function cropName(id, names) {
   if (names && names[id]) return names[id];
   const text = String(id ?? "").replace(/_/g, " ").trim();
@@ -175,28 +176,30 @@ export function cropName(id, names) {
  * offline | timeout | network | validation | not_found | nasa | server.
  */
 export function errorMessage(kind, { freePoint = false } = {}) {
+  // An example field is only worth suggesting when the farmer chose their own point on the map.
+  const orExample = freePoint ? ", or pick an example field" : "";
   switch (kind) {
     case "offline":
       return {
         title: "You're offline",
         text: freePoint
-          ? "A new point on the map needs an internet connection to fetch NASA data. Connect and try again, or pick a demo field."
-          : "Only results you opened before on this phone work offline. Connect to the internet, or go back to the answers you used last time.",
+          ? "A new map point needs internet to get NASA data. Connect and try again, or pick an example field."
+          : "Only results you opened before on this phone work offline. Connect to the internet, or use your last answers.",
       };
     case "timeout":
       return {
-        title: "NASA data is taking too long",
-        text: "We are still fetching data for this point. Try again in a minute — it is usually ready by then. You can also try a demo field.",
+        title: "NASA data is slow right now",
+        text: `Try again in 1 minute${orExample}.`,
       };
     case "nasa":
       return {
         title: "We couldn't reach NASA data right now",
-        text: "Try a demo field, or try again in a minute.",
+        text: `Try again in 1 minute${orExample}.`,
       };
     case "validation":
       return {
-        title: "Some answers could not be used",
-        text: "Check the crops in your rotation and try again.",
+        title: "We couldn't use some answers",
+        text: "Check the crop for each year.",
       };
     case "not_found":
       return {
@@ -211,12 +214,12 @@ export function errorMessage(kind, { freePoint = false } = {}) {
     default:
       return {
         title: "Something went wrong on our side",
-        text: "Try again in a minute. If it keeps happening, try a demo field.",
+        text: `Try again in 1 minute${orExample}.`,
       };
   }
 }
 
-/** HTTP status → error kind (see errorMessage). */
+/** HTTP status -> error kind (see errorMessage). */
 export function errorKind(status) {
   if (status === 422 || status === 400) return "validation";
   if (status === 404) return "not_found";
@@ -249,7 +252,7 @@ export function formatDate(iso) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
 }
 
-/** Lower case, no accents, single spaces: "  Maíz " → "maiz". */
+/** Lower case, no accents, single spaces: "  Maíz " -> "maiz". */
 export function normalizeText(text) {
   return String(text ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[_\s]+/g, " ").trim();
 }
@@ -257,7 +260,7 @@ export function normalizeText(text) {
 /**
  * Crop id for what the farmer typed in a crop text field, or null.
  * Exact name or id first (case and accents ignored); otherwise the only crop whose name starts with,
- * or else contains, the text ("sunfl" → sunflower). Ambiguous or unknown text → null.
+ * or else contains, the text ("sunfl" -> sunflower). Ambiguous or unknown text -> null.
  */
 export function findCrop(text, crops) {
   const hits = matchCrops(text, crops);
@@ -290,10 +293,47 @@ export function matchCrops(text, crops) {
 // Limits per value (#44): the API sends one "what this can't tell" sentence per climate value (profile.field_limits),
 // per score (score_limits) and per prediction (predictions.limits). Shown collapsed, next to the values they describe.
 export const FIELD_LIMIT_ROWS = [
-  ["rain_mm", "Rain"], ["et0_mm", "Water the air takes (ET₀)"], ["water_balance_mm", "Water balance"],
-  ["soil_wetness", "Soil wetness"], ["frost_days", "Frost days"], ["heat_days", "Very hot days"],
-  ["heavy_rain_days", "Heavy-rain days"], ["ndvi", "Greenness"], ["likely_bare", "Bare months"],
+  ["rain_mm", "Rain"], ["et0_mm", "Water lost by a short grass field"], ["water_balance_mm", "Balance"],
+  ["soil_wetness", "Soil moisture"], ["frost_days", "Frost days"], ["heat_days", "Hot days (over 35 °C)"],
+  ["heavy_rain_days", "Very heavy rain days"], ["ndvi", "Plant cover"], ["likely_bare", "Bare months"],
 ];
+
+/** "36.95° N, 4.55° W" (2 decimals, about 1 km); "—" when a value is missing. */
+export function fmtCoords(lat, lon) {
+  const a = num(lat), b = num(lon);
+  if (a === null || b === null) return "—";
+  return `${Math.abs(a).toFixed(2)}° ${a < 0 ? "S" : "N"}, ${Math.abs(b).toFixed(2)}° ${b < 0 ? "W" : "E"}`;
+}
+
+/**
+ * Evidence sentence from the API in plain words: {text, confidence: "high"|"medium"|"low"|null, sources: ["R-01", …]}.
+ * The "[R-01;R-02, confidence medium]" bracket becomes `sources` + `confidence`; indicator codes (I-01) and dataset
+ * names are dropped from the text ("(NASA POWER 2005-2025, I-01)" -> "(NASA data 2005–2025)").
+ */
+export function plainEvidence(text) {
+  let t = String(text ?? "");
+  let confidence = null, sources = [];
+  const bracket = /\s*\[([^\]]*)\]/.exec(t);
+  if (bracket) {
+    const conf = /confidence\s+(high|medium|low)\b/i.exec(bracket[1]);
+    confidence = conf ? conf[1].toLowerCase() : null;
+    sources = bracket[1].replace(/,?\s*confidence\s+\S+/i, "").split(/[;,]/).map((s) => s.trim())
+      .filter((s) => /^[A-Z]+-[A-Z0-9]+$/.test(s));
+    t = t.replace(bracket[0], "");
+  }
+  t = t
+    .replace(/\(NASA POWER (\d{4})-(\d{4})(?:,\s*I-\d+)*\)/g, "(NASA data $1–$2)")
+    .replace(/\(MODIS NDVI (\d{4})-(\d{4})(?:,\s*I-\d+)*\)/g, "(satellite photos $1–$2)")
+    .replace(/,\s*I-\d+/g, "")
+    .replace(/\s*\(I-\d+(?:,\s*I-\d+)*\)/g, "")
+    .replace(/Satellite greenness suggests/g, "Satellite photos suggest")
+    .replace(/(^|[^-\w])water need/g, (m, p) => `${p}crop water need`)
+    .replace(/crop crop water need/g, "crop water need")
+    .replace(/\b(\d{4})-(\d{4})\b/g, "$1–$2")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return { text: t, confidence, sources };
+}
 
 /** Collapsed list of [label, sentence] rows; rows without a sentence are skipped; "" when none is left
  * (e.g. an analysis saved offline before the API sent limits). */

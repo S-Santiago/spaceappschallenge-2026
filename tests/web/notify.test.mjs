@@ -51,13 +51,13 @@ test("message text: P-07 wording, level as a word, year counts, not a forecast",
   const nov = keepAlerts(PRED.alerts).find((a) => a.month === 11);
   const t = warningText("Vega de Antequera", nov);
   assert.equal(t.title, "Heavy-rain risk on bare soil — Vega de Antequera");
-  assert.equal(t.body, "High risk. In November, heavy-rain days often fall while your field is bare (in 11 of the last 21 years). " +
-    "Consider cover or residue. Based on NASA history, not a forecast.");
+  assert.equal(t.body, "High risk in November: heavy rain often falls on bare soil (11 of 21 years). " +
+    "Keep stubble or a cover crop. Past NASA data, not a forecast.");
   const dec = warningText("Vega de Antequera", keepAlerts(PRED.alerts).find((a) => a.month === 12), { example: true });
   assert.equal(dec.title, "Example: Heavy-rain risk on bare soil — Vega de Antequera");
-  assert.match(dec.body, /^Medium risk\. In December, .*\(in 5 of the last 21 years\)/);
+  assert.match(dec.body, /^Medium risk in December: .*\(5 of 21 years\)/);
   assert.equal(warningText("", { month: 2, level: "medium" }).body,
-    "Medium risk. In February, heavy-rain days often fall while your field is bare. Consider cover or residue. Based on NASA history, not a forecast.");
+    "Medium risk in February: heavy rain often falls on bare soil. Keep stubble or a cover crop. Past NASA data, not a forecast.");
   assert.match(warningText(null, nov).title, /— your field$/);
   assert.equal(warningText("x", { month: 2, level: "low" }), null);
   for (const a of keepAlerts(PRED.alerts)) {

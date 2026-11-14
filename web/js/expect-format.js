@@ -1,29 +1,29 @@
 // Pure helpers for the "What to expect" screen (P-01, P-02, P-03, P-07 from GET /api/predictions, and heat from
 // the Shape 1 profile). No DOM here, so `node --test tests/web` can check them. Sentences follow
-// docs/indicators.md → "Farmer sentences": counts of years, never percentages; nothing is invented, and a
+// docs/indicators.md -> "Farmer sentences": counts of years, never percentages; nothing is invented, and a
 // missing value means the sentence is skipped.
 
 import { MONTHS, MONTH_ABBR, fmt, formatRuns, monthRuns, num } from "./format.js";
 
 export const BASIS = "Based on 21 years of NASA data (2005–2025) — not a weather forecast.";
 
-/** The basis line for the period the API reports ("2005-2025" → 21 years); BASIS when the period is missing. */
+/** The basis line for the period the API reports ("2005-2025" -> 21 years); BASIS when the period is missing. */
 export function basisFor(period) {
   const m = /^(\d{4})-(\d{4})$/.exec(String(period ?? ""));
   if (!m) return BASIS;
   const years = Number(m[2]) - Number(m[1]) + 1;
   return `Based on ${years} years of NASA data (${m[1]}–${m[2]}) — not a weather forecast.`;
 }
-export const FROST_CAVEAT = "Frost near the ground and in valley bottoms can come later and be harder than shown. Check with local experience.";
+export const FROST_CAVEAT = "Low ground and valley floors can get later, harder frosts. Ask local farmers.";
 export const WEEKS = 52;
 
-/** Years out of `years` for a 0–1 share, as a whole count (21 × 0.76 → 16). */
+/** Years out of `years` for a 0–1 share, as a whole count (21 × 0.76 -> 16). */
 export function count(prob, years) {
   const p = num(prob), y = num(years);
   return p === null || y === null ? null : Math.round(p * y);
 }
 
-/** "11-26" → "26 Nov"; "26 November" with `long`. */
+/** "11-26" -> "26 Nov"; "26 November" with `long`. */
 export function mmdd(text, long = false) {
   const m = /^(\d{2})-(\d{2})$/.exec(String(text ?? ""));
   if (!m) return null;
@@ -94,7 +94,7 @@ export function frostSentences(frost) {
   if (a && num(a.years)) {
     const first = mmdd(a.first_frost_p10, true);
     if (a.years_with_frost === 0) out.autumn = `No frost in the last ${a.years} years in this area.`;
-    else if (first && num(a.years_from_p10) !== null) out.autumn = `In ${a.years_from_p10} of the last ${a.years} years the first frost came on or after ${first} (or not at all before the new year).`;
+    else if (first && num(a.years_from_p10) !== null) out.autumn = `In ${a.years_from_p10} of the last ${a.years} years, the first frost came on ${first} or later, or not at all.`;
     else if (num(a.years_from_p10) !== null) out.autumn = `In ${a.years_from_p10} of the last ${a.years} years there was no frost before the new year.`;
   }
   out.none = s?.years_with_frost === 0 && a?.years_with_frost === 0;
@@ -104,7 +104,7 @@ export function frostSentences(frost) {
     else if (days >= 365) out.safe = "In most years there is no frost at all.";
     else {
       const from = mmdd(s?.last_frost_p90, true) || "1 January", to = mmdd(a?.first_frost_p10, true) || "31 December";
-      out.safe = `That leaves about ${fmt(days, 0)} days without frost in most years, between ${from} and ${to}.`;
+      out.safe = `Most years you get about ${fmt(days, 0)} days with no frost, from ${from} to ${to}.`;
     }
   }
   if (out.none) out.autumn = null; // one "no frost" sentence is enough
@@ -144,7 +144,7 @@ export function fromMonth(items, from, key = "month") {
   return [...(items || [])].sort((a, b) => ((a[key] - from + 12) % 12) - ((b[key] - from + 12) % 12));
 }
 
-const LEVELS = { high: { icon: "⚠️", word: "High" }, medium: { icon: "⚠️", word: "Medium" } }; // level = the word, one icon
+const LEVELS = { high: { icon: "warning", word: "High" }, medium: { icon: "warning", word: "Medium" } }; // level = the word; icon = icons.js name
 const SOURCES = { crop_calendar: "crop calendar", satellite: "satellite" };
 
 /**
@@ -158,14 +158,14 @@ export function alertCards(alerts, thresholdMm = 20, today = new Date()) {
     .map((a) => {
       const n = count(a.prob, a.years);
       const freq = n === null ? "" : ` (${n} of ${a.years} years)`;
-      const rain = a.level === "high" ? `heavy rain is common${freq}` : `heavy rain comes in some years${freq}`;
+      const first = a.level === "high" ? `Your field is often bare when heavy rain comes${freq}.` : `Your field is often bare, and heavy rain comes in some years${freq}.`;
       return {
         month: a.month,
         level: a.level,
         icon: LEVELS[a.level].icon,
-        title: `${MONTHS[a.month - 1]} · ${LEVELS[a.level].word.toLowerCase()}`,
+        title: `${MONTHS[a.month - 1]} · ${LEVELS[a.level].word.toLowerCase()} risk`,
         levelWord: LEVELS[a.level].word,
-        text: `Your field is usually bare and ${rain}. Bare soil can wash away — a cover crop or leaving stubble helps.`,
+        text: `${first} Bare soil can wash away. A cover crop or stubble helps.`,
         source: (a.sources || []).map((s) => SOURCES[s]).filter(Boolean).join(" and "),
         threshold: `A heavy-rain day here means more than ${fmt(thresholdMm, 0)} mm in one day.`,
       };
