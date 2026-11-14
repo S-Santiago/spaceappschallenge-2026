@@ -59,3 +59,15 @@ def test_no_placeholders_or_mock_data_in_the_pwa():
         text = path.read_text(encoding="utf-8")
         assert not re.search(r"lorem ipsum|TODO|asdf|mock_", text, re.I), path.name
         assert "fetch(" not in text or path.name == "api.js", f"{path.name}: API calls belong in api.js"
+
+
+def test_service_worker_keeps_analyses_and_predictions_offline():
+    """#40/#14: predictions stale-while-revalidate, the last analysis per input combination under a synthetic
+    key, saved data surviving app updates. Behaviour is checked by hand in airplane mode."""
+    sw = (WEB / "sw.js").read_text(encoding="utf-8")
+    assert '"/api/predictions"' in re.search(r"DATA_PATHS = \[(.*?)\];", sw, re.S).group(1)
+    assert 'request.method === "POST" && url.pathname === "/api/analyze"' in sw
+    assert "X-FarmLens-Key" in sw and "X-FarmLens-Saved-At" in sw and "X-FarmLens-Offline" in sw
+    assert "VERSION" not in re.search(r"const (?:DATA|ANALYSES) = (.*);", sw).group(1)  # not wiped by a new version
+    api_js = (WEB / "js" / "api.js").read_text(encoding="utf-8")
+    assert "X-FarmLens-Key" in api_js and "analysisKey" in api_js

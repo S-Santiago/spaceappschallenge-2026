@@ -181,7 +181,7 @@ export function errorMessage(kind, { freePoint = false } = {}) {
         title: "You're offline",
         text: freePoint
           ? "A new point on the map needs an internet connection to fetch NASA data. Connect and try again, or pick a demo field."
-          : "Connect to the internet and try again.",
+          : "Only results you opened before on this phone work offline. Connect to the internet, or go back to the answers you used last time.",
       };
     case "timeout":
       return {
@@ -222,6 +222,22 @@ export function errorKind(status) {
   if (status === 404) return "not_found";
   if (status === 503 || status === 502 || status === 504) return "nasa";
   return "server";
+}
+
+/**
+ * Synthetic cache key for a POST /api/analyze body (sw.js keeps the last answer per key for offline use):
+ * keys sorted at every level, numbers as numbers, rotation order kept, coordinates to 2 decimals.
+ */
+export function analysisKey(inputs) {
+  const norm = (v) => {
+    if (Array.isArray(v)) return v.map(norm);
+    if (v && typeof v === "object") return Object.fromEntries(Object.keys(v).sort().filter((k) => v[k] !== undefined).map((k) => [k, norm(v[k])]));
+    if (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
+    return v;
+  };
+  const body = norm(inputs || {});
+  for (const k of ["lat", "lon"]) if (typeof body[k] === "number") body[k] = Math.round(body[k] * 100) / 100;
+  return JSON.stringify(body);
 }
 
 /** "14 November 2026, 15:42" in the phone's locale-independent English form. */
