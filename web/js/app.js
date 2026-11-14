@@ -386,7 +386,7 @@ function locate() {
 
 // ------------------------------------------------------------------ analysis
 
-async function runAnalysis() {
+async function runAnalysis(next = "#/results") {
   if (state.busy) return;
   const feedback = $("#feedback");
   if (isFreePoint() && !state.point) {
@@ -423,13 +423,13 @@ async function runAnalysis() {
     state.result = { data, inputs: body, at: saved || new Date().toISOString(), saved: saved !== null, label: free ? `your point (${fmt(body.lat, 2)}, ${fmt(body.lon, 2)})` : fieldInfo()?.name || "your field" };
     watchPending(state.result);
     setStage(3);
-    location.hash = "#/results";
+    location.hash = next;
   } catch (err) {
     const msg = errorMessage(err.kind || "server", { freePoint: free });
     feedback.innerHTML = banner("error", msg.title, ` ${msg.text}`,
       `<div class="actions"><button type="button" class="btn btn--primary" id="retry">Try again</button>${
         free && state.fields.length ? `<button type="button" class="btn btn--block" id="use-demo">Use a demo field</button>` : ""}</div>`);
-    $("#retry").addEventListener("click", runAnalysis);
+    $("#retry").addEventListener("click", () => runAnalysis(next));
     $("#use-demo")?.addEventListener("click", () => {
       const first = app.querySelector(`input[name="field"][value="${state.fields[0].slug}"]`);
       first.checked = true;
@@ -632,6 +632,7 @@ async function loadExpect() {
     if (state.result !== result || location.hash !== "#/expect" || !$("#panel")) return;
     $("#panel").innerHTML = (state.predictions?.saved != null && !state.result.saved ? savedBanner(state.predictions.saved) : "") +
       view.renderExpect(data, result.data?.profile);
+    mountWarnings(data, result);
   };
   if (state.predictions?.key === key) {
     try { await show(state.predictions.data); return; } catch { /* the view module failed to load: fall through */ }
@@ -649,6 +650,42 @@ async function loadExpect() {
     $("#retry-expect").addEventListener("click", loadExpect);
     $("#to-options").addEventListener("click", () => openTab("results"));
   }
+}
+
+/** Heavy-rain warnings on this phone (#42): loaded only when the alert card is on screen. */
+async function mountWarnings(data, result) {
+  const slot = $("#warn-slot");
+  if (!slot) return;
+  try {
+    const [warn, fmtw] = await Promise.all([import("./notify.js"), import("./notify-format.js")]);
+    if (!slot.isConnected) return;
+    const { lang, ...saved } = result.inputs; // the answers, so a tap on the warning can open this field again
+    warn.mountWarn(slot, { key: fmtw.fieldKey(result.inputs), name: result.label, inputs: saved, alerts: data?.alerts });
+  } catch { /* the module failed to load: the card stays as it is, without the control */ }
+}
+
+/** A tap on a warning opens #/warning/<field key>: analyse that field again (saved answer offline) → What to expect. */
+async function openWarning(key) {
+  history.replaceState(null, "", "#/");
+  let entry = null;
+  try { entry = (await import("./notify.js")).watched(key); } catch { /* no warnings module: plain start */ }
+  const saved = entry?.inputs;
+  const known = (saved?.rotation || []).filter((id) => state.names[id]);
+  if (!saved || !known.length || (!saved.field && (num(saved.lat) === null || num(saved.lon) === null))) { route(); return; }
+  if (saved.field && state.fields.some((f) => f.slug === saved.field)) {
+    state.field = saved.field;
+  } else {
+    state.field = "map";
+    state.point = { lat: saved.lat, lon: saved.lon };
+  }
+  Object.assign(state, {
+    rotation: known, irrigation: saved.irrigation || state.irrigation, slope: saved.slope || state.slope,
+    priorities: { ...state.priorities, ...(saved.priorities || {}) }, edited: true,
+  });
+  lastScreen = "form";
+  state.mapApi = null;
+  renderForm();
+  runAnalysis("#/expect");
 }
 
 function climateChart(profile) {
@@ -707,6 +744,10 @@ let lastScreen = null;
 
 function route() {
   if (!state.crops.length) return;
+  if (location.hash.startsWith("#/warning/")) {
+    openWarning(decodeHashKey(location.hash));
+    return;
+  }
   const tab = { "#/results": "results", "#/expect": "expect" }[location.hash];
   if (tab && state.result) {
     state.mapApi = null;
@@ -725,6 +766,10 @@ function route() {
     state.mapApi = null;
     renderForm();
   }
+}
+
+function decodeHashKey(hash) {
+  try { return decodeURIComponent(hash.slice("#/warning/".length)); } catch { return ""; }
 }
 
 function updateNet() { document.getElementById("net").hidden = navigator.onLine !== false; }
@@ -748,6 +793,20 @@ if ("serviceWorker" in navigator) {
     box.querySelector("#reload").addEventListener("click", () => location.reload());
   });
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  // A tap on a warning while FarmLens is already open: the service worker focuses this window and sends the link.
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    const hash = e.data?.type === "farmlens-open" ? String(e.data.hash || "") : "";
+    if (!hash.startsWith("#/warning/")) return;
+    if (location.hash === hash) route();
+    else location.hash = hash;
+  });
 }
+
+// Warnings on this phone (#42): only when some are on, the small module is loaded to show the ones that are due.
+try {
+  if (localStorage.getItem("farmlens-warnings-v1")) {
+    window.addEventListener("load", () => import("./notify.js").then((m) => m.checkWarnings()).catch(() => {}));
+  }
+} catch { /* storage blocked: no warnings */ }
 
 boot();

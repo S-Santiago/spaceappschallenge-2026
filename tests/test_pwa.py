@@ -71,3 +71,14 @@ def test_service_worker_keeps_analyses_and_predictions_offline():
     assert "VERSION" not in re.search(r"const (?:DATA|ANALYSES) = (.*);", sw).group(1)  # not wiped by a new version
     api_js = (WEB / "js" / "api.js").read_text(encoding="utf-8")
     assert "X-FarmLens-Key" in api_js and "analysisKey" in api_js
+
+
+def test_warnings_are_local_notifications_only():
+    """#42: notifications are shown by the page (no push server, no subscription, no VAPID key) and open the app."""
+    sw = (WEB / "sw.js").read_text(encoding="utf-8")
+    assert 'addEventListener("notificationclick"' in sw
+    for path in [WEB / "sw.js", *(WEB / "js").glob("*.js")]:
+        text = path.read_text(encoding="utf-8")
+        assert not re.search(r"pushManager|\.subscribe\(|applicationServerKey|addEventListener\(\"push\"", text), path.name
+    notify = (WEB / "js" / "notify.js").read_text(encoding="utf-8")
+    assert "requestPermission" in notify and "requestPermission" not in (WEB / "js" / "app.js").read_text(encoding="utf-8")

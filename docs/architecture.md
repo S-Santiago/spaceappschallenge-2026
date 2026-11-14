@@ -91,6 +91,25 @@ Every number in the UI gets one short sentence saying what it cannot tell. Texts
 
 The general statements (`climate.LIMITS`, `rotations.DISCLAIMER`) stay as they are, at the end of the results.
 
+## Heavy-rain warnings on this phone (#42) — privacy note
+**Built (stretch, Sprint 3), tested on a real Android phone with the installed PWA:** after a tap on "🔔 Warn me when this risk is near" in the P-07 alert card, the PWA shows **local notifications** with `registration.showNotification()` from the page. There is **no push server, no push subscription, no VAPID key**, and nothing about the farmer or the field is sent anywhere because of this feature. Code: `web/js/notify.js` (loaded on demand), `web/js/notify-format.js` (pure rules, tested in `tests/web/notify.test.mjs`), `notificationclick` in `web/sw.js`.
+
+- **Permission** is asked only from that tap, with the reason next to the button ("Nothing is sent to us"); never on page load. Blocked, unsupported (e.g. iPhone Safari not added to the Home Screen, iOS < 16.4) and on/off states are explained in words. No consent record is needed beyond the browser's own permission, since there is no subscription.
+- **Rule:** when FarmLens is opened (or What to expect loads, also from cached predictions offline), for each field with warnings on, if `alerts[]` has the current or the next month → one notification per field per alerted month. Text: P-07 wording, level as a word, year counts, "Based on NASA history, not a forecast". A tap opens What to expect for that field.
+- **Limit:** a local notification can only be shown while FarmLens runs, so warnings come **when the farmer opens the app**, not at a set date. Reminders with the app closed would need Web Push (a push server and a subscription) or Periodic Background Sync (Chrome only, installed app, not guaranteed) — a possible next step, with explicit consent, not built.
+
+**Stored on the phone only** (`localStorage`, key `farmlens-warnings-v1`; removed with "Turn off" or by clearing the site data):
+
+| What | Why |
+|---|---|
+| Field key: demo field slug, or the map point rounded to 2 decimals (~1 km) | Identify the field the warning is for |
+| Field label (demo field name or "your point (lat, lon)") | Notification title |
+| The answers of that analysis (rotation, priorities, irrigation, slope) | Open the same results again when the notification is tapped |
+| Alert months of P-07 (month, share of years, years, level) | Decide offline which months are near |
+| Dedupe keys `<field key>\|YYYY-MM` of warnings already shown (pruned after ~13 months) | One notification per field per month |
+
+No name, contact, account, device identifier or precise location beyond the point the farmer chose is stored. The same answers and point are already kept by the service worker for offline results (#14).
+
 ## Known limitations
 - NASA POWER is modelled/derived data on a ~50 km grid: describes the area, not the plot.
 - `GWETROOT` is model-based root-zone wetness, not satellite-measured soil moisture.
