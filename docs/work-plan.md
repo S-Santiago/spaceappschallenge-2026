@@ -74,7 +74,7 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
 |---|---|
 | `GET /api/health` | `{"status": "ok"}` (use it to wake the free host before the pitch) |
 | `GET /api/fields` | Demo fields: `[{"slug", "name", "lat", "lon", "elevation_m", "description"}]` |
-| `GET /api/crops?lang=en\|es` | `[{"id", "name", "type", "family", "n_fixing", "sow_month", "harvest_month", "confidence"}]` |
+| `GET /api/crops?lang=en\|es` | `[{"id", "name", "type", "family", "n_fixing", "sow_month", "harvest_month", "confidence"}]` sorted by `name` in `lang` (accents ignored). **PWA crop field:** a text input with the names as suggestions (`<input list="crops">` + `<datalist>`, no JS library) and the chosen `id` sent in `rotation` |
 | `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "pending", "disclaimer", "score_limits"}` (`score_limits`: one sentence per score, in the request language) |
 | `GET /api/analyses/{id}` | A stored analysis: `{"id", "lat", "lon", "inputs", "strategies", "created_at"}` |
 

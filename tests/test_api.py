@@ -38,6 +38,14 @@ def test_crops_in_both_languages(client):
     assert client.get("/api/crops", params={"lang": "fr"}).status_code == 422
 
 
+def test_crops_sorted_by_name_for_the_dropdown(client):
+    import unicodedata
+    for lang in ("en", "es"):
+        names = [c["name"] for c in client.get("/api/crops", params={"lang": lang}).json()]
+        key = [unicodedata.normalize("NFKD", n).casefold() for n in names]
+        assert key == sorted(key)
+
+
 def test_engine_crops_cover_perennials():
     alfalfa = db.get_engine_crops()["alfalfa"]
     assert alfalfa["crop_id"] == "alfalfa"
