@@ -32,8 +32,8 @@ LEVELS = ("medium", "high")
 # One short limits sentence per prediction (#44), keyed like the build_predictions output. Shown on each card.
 PREDICTION_LIMITS = {
     "rain_weeks": {  # P-01
-        "en": "Share of the last 20 years with rain in that week; it does not forecast this year's weather.",
-        "es": "Parte de los últimos 20 años con lluvia esa semana; no predice el tiempo de este año.",
+        "en": "Share of the past 21 years (2005-2025) with rain in that week; it does not forecast this year's weather.",
+        "es": "Parte de los 21 años pasados (2005-2025) con lluvia esa semana; no predice el tiempo de este año.",
     },
     "heavy_rain": {  # P-02
         "en": "Rain averaged over an area of about 50 km and only 21 years of data: local storms can be stronger, "

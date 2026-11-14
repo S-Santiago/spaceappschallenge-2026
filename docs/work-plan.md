@@ -116,7 +116,7 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
  "alerts": [      // P-07; null if neither MODIS nor a rotation was given
    {"month": 11, "prob": 0.52, "years": 21, "sources": ["crop_calendar"], "level": "high"}],
  "limits": {      // one sentence per card, en + es (predictions.PREDICTION_LIMITS, #44)
-   "rain_weeks": {"en": "Share of the last 20 years with rain in that week; ...", "es": "..."},
+   "rain_weeks": {"en": "Share of the past 21 years (2005-2025) with rain in that week; ...", "es": "..."},
    "heavy_rain": {...}, "frost": {...}, "alerts": {...}}}
 ```
 Call `build_predictions(power, modis, rotation)` with `rotation` = list of crop dicts of the farmer's **current** rotation (`[db.get_engine_crops()[c] for c in rotation_ids]`). The endpoint applies `predictions.raise_for_slope(level, slope)` with the farmer's slope, so the PWA shows `level` as it comes.

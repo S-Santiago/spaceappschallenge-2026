@@ -81,7 +81,7 @@ Every number in the UI gets one short sentence saying what it cannot tell. Texts
 
 | ID | Key | Limit (English; Spanish in code) |
 |---|---|---|
-| P-01 | `rain_weeks` | Share of the last 20 years with rain in that week; it does not forecast this year's weather. |
+| P-01 | `rain_weeks` | Share of the past 21 years (2005-2025) with rain in that week; it does not forecast this year's weather. |
 | P-02 | `heavy_rain` | Rain averaged over an area of about 50 km and only 21 years of data: local storms can be stronger, and storms rarer than once in 10 years are not estimated. |
 | P-03 | `frost` | Air temperature for the area; ground frost and cold valley bottoms can freeze later in spring and harder than shown. |
 | P-07 | `alerts` | Heavy-rain days often fall when the field is bare; this is a warning sign, not measured soil loss, and your field may be covered differently this year. |
