@@ -7,8 +7,10 @@ the climate profile from climate.py and the strategies from rotations.py.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import os
+import unicodedata
 from pathlib import Path
 from typing import Literal
 
@@ -16,13 +18,19 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
-from . import climate, db, rotations
+from . import climate, db, modis, power, rotations
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = Path(os.environ.get("FIELDSHIFT_WEB_DIR") or ROOT / "web")
 
 # Stored profiles are reused only while climate.py is unchanged.
 PROFILE_VERSION = hashlib.sha1(Path(climate.__file__).read_bytes()).hexdigest()[:12]
+
+# MODIS (ORNL) can take minutes for a new point; POWER takes seconds. The farmer gets an answer from POWER
+# after at most MODIS_WAIT_S; the NDVI download keeps going in the background and is used on the next request.
+POWER_TIMEOUT_S = float(os.environ.get("FIELDSHIFT_POWER_TIMEOUT_S", 60))
+MODIS_WAIT_S = float(os.environ.get("FIELDSHIFT_MODIS_WAIT_S", 3))
+_inflight: dict[tuple[str, float, float], asyncio.Task] = {}  # one download per source and point
 
 Lang = Literal["en", "es"]
 
@@ -67,22 +75,49 @@ def fields() -> list[dict]:
 
 @app.get("/api/crops")
 def crops(lang: Lang = "en") -> list[dict]:
-    """Crops the farmer can pick for the current rotation."""
+    """Crops the farmer can pick for the current rotation, sorted by name in `lang` (accents ignored)."""
     return [{"id": c["crop_id"], "name": rotations.crop_name(c, lang), "type": c["type"], "family": c["family"],
              "n_fixing": c["n_fixing"] == "yes", "sow_month": c["sow_month"], "harvest_month": c["harvest_month"],
              "confidence": c["confidence"]}
-            for c in db.get_engine_crops().values()]
+            for c in sorted(db.get_engine_crops().values(),
+                            key=lambda c: unicodedata.normalize("NFKD", rotations.crop_name(c, lang)).casefold())]
 
 
-async def _profile(lat: float, lon: float) -> dict:
+def _fetch(source: str, lat: float, lon: float) -> asyncio.Task:
+    """Start (or join) the download of one NASA source for a point; it survives the request that started it."""
+    key = (source, round(lat, 2), round(lon, 2))
+    task = _inflight.get(key)
+    if task is None:
+        fetch = power.fetch_daily if source == "power" else modis.fetch_ndvi
+        task = _inflight[key] = asyncio.create_task(fetch(lat, lon))
+        task.add_done_callback(lambda t: (_inflight.pop(key, None), t.cancelled() or t.exception()))
+    return task
+
+
+async def _profile(lat: float, lon: float) -> tuple[dict, list[str]]:
+    """Shape 1 profile and the sources still downloading (["ndvi"] while MODIS is slow)."""
     profile = db.get_profile(lat, lon, version=PROFILE_VERSION)
-    if profile is None:
-        try:
-            profile = await climate.get_profile(lat, lon)
-        except Exception as exc:  # NASA API down or unreachable
-            raise HTTPException(503, f"NASA data not available for this location: {exc}") from exc
+    if profile is not None:
+        return profile, []
+
+    power_task, modis_task = _fetch("power", lat, lon), _fetch("modis", lat, lon)
+    try:
+        power_data = await asyncio.wait_for(asyncio.shield(power_task), POWER_TIMEOUT_S)
+    except Exception as exc:  # NASA POWER down, unreachable or too slow
+        raise HTTPException(503, "NASA climate data is not available for this point right now. "
+                                 "Try again in a few minutes or use a demo field.") from exc
+    try:
+        modis_data = await asyncio.wait_for(asyncio.shield(modis_task), MODIS_WAIT_S)
+    except asyncio.TimeoutError:
+        modis_data = None  # still downloading: answer without satellite greenness, do not store
+    except Exception:
+        modis_data = None  # MODIS failed: NDVI is optional
+
+    profile = climate.build_profile(lat, lon, power_data, modis_data)
+    if modis_data is not None or modis_task.done():
         db.save_profile(lat, lon, profile, version=PROFILE_VERSION)
-    return profile
+        return profile, []
+    return profile, ["ndvi"]
 
 
 @app.post("/api/analyze")
@@ -96,7 +131,7 @@ async def analyze(req: AnalyzeRequest) -> dict:
     else:
         lat, lon = req.lat, req.lon
 
-    profile = await _profile(lat, lon)
+    profile, pending = await _profile(lat, lon)
     try:
         strategies = rotations.compare(profile, req.rotation, db.get_engine_crops(), req.priorities.model_dump(),
                                        irrigated=req.irrigation != "none", slope=req.slope, lang=req.lang)
@@ -107,6 +142,7 @@ async def analyze(req: AnalyzeRequest) -> dict:
         s["labels"] = {k: rotations.label(v, req.lang) for k, v in s["scores"].items()}
     analysis_id = db.save_analysis(lat, lon, req.model_dump(), strategies)
     return {"analysis_id": analysis_id, "profile": profile, "strategies": strategies,
+            "pending": pending,  # ["ndvi"]: bare-soil months unknown yet, ask again in a few minutes
             "disclaimer": rotations.DISCLAIMER[req.lang],
             "score_limits": {k: v[req.lang] for k, v in rotations.SCORE_LIMITS.items()}}
 

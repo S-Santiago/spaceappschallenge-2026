@@ -38,6 +38,14 @@ def test_crops_in_both_languages(client):
     assert client.get("/api/crops", params={"lang": "fr"}).status_code == 422
 
 
+def test_crops_sorted_by_name_for_the_dropdown(client):
+    import unicodedata
+    for lang in ("en", "es"):
+        names = [c["name"] for c in client.get("/api/crops", params={"lang": lang}).json()]
+        key = [unicodedata.normalize("NFKD", n).casefold() for n in names]
+        assert key == sorted(key)
+
+
 def test_engine_crops_cover_perennials():
     alfalfa = db.get_engine_crops()["alfalfa"]
     assert alfalfa["crop_id"] == "alfalfa"
@@ -98,3 +106,60 @@ def test_root_without_pwa(client, monkeypatch):
     if api.WEB_DIR.is_dir():
         pytest.skip("PWA present: / serves it")
     assert client.get("/").json()["docs"] == "/docs"
+
+
+def _sample(kind):
+    import json
+    return json.loads((db.SAMPLES_DIR / f"{kind}_37.07_-4.87.json").read_text(encoding="utf-8"))
+
+
+def test_slow_modis_answers_with_power_and_finishes_in_background(client, monkeypatch):
+    import asyncio
+    monkeypatch.setattr(api, "MODIS_WAIT_S", 0.05)
+    calls = {"modis": 0}
+    state = {"ready": False}
+
+    async def fast_power(lat, lon):
+        return _sample("power")
+
+    async def slow_modis(lat, lon):
+        calls["modis"] += 1
+        while not state["ready"]:
+            await asyncio.sleep(0.01)
+        return _sample("modis")
+
+    monkeypatch.setattr(api.power, "fetch_daily", fast_power)
+    monkeypatch.setattr(api.modis, "fetch_ndvi", slow_modis)
+    body = {"lat": 40.0, "lon": -3.0, "rotation": ["durum_wheat", "sunflower"]}
+
+    with TestClient(api.app) as c:  # one event loop for all requests, like the real server
+        first = c.post("/api/analyze", json=body).json()
+        assert first["pending"] == ["ndvi"]
+        assert all(m["likely_bare"] is None for m in first["profile"]["months"])
+        assert first["strategies"][0]["id"] == "current"
+        assert db.get_profile(40.0, -3.0) is None  # incomplete profile is not stored
+
+        second = c.post("/api/analyze", json=body).json()
+        assert second["pending"] == ["ndvi"]
+        assert calls["modis"] == 1  # the retry joins the running download instead of starting another
+
+        state["ready"] = True
+        c.portal.call(asyncio.sleep, 0.1)  # let the background download finish
+        third = c.post("/api/analyze", json=body).json()
+        assert third["pending"] == []
+        assert db.get_profile(40.0, -3.0) is not None
+
+
+def test_complete_profile_has_nothing_pending(client):
+    body = client.post("/api/analyze", json={"field": "campillos", "rotation": ["barley"]}).json()
+    assert body["pending"] == []
+
+
+def test_power_down_is_a_friendly_503(client, monkeypatch):
+    async def down(lat, lon):
+        raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(api.power, "fetch_daily", down)
+    resp = client.post("/api/analyze", json={"lat": 41.0, "lon": -2.0, "rotation": ["barley"]})
+    assert resp.status_code == 503
+    assert "connection refused" not in resp.json()["detail"]
