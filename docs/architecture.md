@@ -15,9 +15,9 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 | Database | SQLite | `src/fieldshift/db.py`, schema + seed | @HectorLopGar-Dev | 🔴 #6 |
 | Crop catalogue | CSV seed → `crops` table | `data/crops.csv` | @HectorLopGar-Dev | 🔴 #7 |
 | Demo fields (offline) | committed seed | `data/samples/` | @HectorLopGar-Dev | 🔴 #8 |
-| Climate indicators → Shape 1 | Python | `src/fieldshift/climate.py` | @HaoJunnnzhang | 🔴 #9 |
-| Rotation engine → Shape 2 | Python | `src/fieldshift/rotations.py` | @HaoJunnnzhang | 🔴 #10 |
-| Tests | pytest | `tests/` | @HaoJunnnzhang | 🔴 #11 |
+| Climate indicators → Shape 1 | Python | `src/fieldshift/climate.py` | @HaoJunnnzhang | 🟡 #9 (built; DB hook pending #6) |
+| Rotation engine → Shape 2 | Python | `src/fieldshift/rotations.py` | @HaoJunnnzhang | 🟡 #10 (built; needs real `crops.csv` from #7) |
+| Tests | pytest | `tests/` | @HaoJunnnzhang | 🟡 #11 (26 tests) |
 | UI | Streamlit | `src/app.py` | @S-Santiago | 🔴 #12 · #13 |
 | Hosting | Streamlit Community Cloud | — | @S-Santiago | 🔴 #15 |
 
@@ -57,4 +57,8 @@ Coordinates are rounded to 2 decimals (~1 km) everywhere. Main functions: `get_c
 - MODIS NDVI: only 2024–2025, 250 m pixels may mix several plots.
 - Market value of crops is illustrative.
 - Hosted demo: disk resets on restart (DB rebuilt from seed; saved analyses lost).
-- _More from #11 (thresholds, uncertainty statements)._
+- Thresholds are team assumptions documented in [indicators.md](indicators.md): frost Tmin < 0 °C, heat Tmax > 35 °C, heavy rain ≥ 30 mm/day, likely bare NDVI < 0.25. None is crop-specific.
+- ET0 is FAO-56 Penman-Monteith from NASA POWER radiation, humidity and wind (Hargreaves only as a fallback for missing days); still a ~50 km cell value.
+- Rotation scores use simple, documented rules ([indicators.md → Scoring](indicators.md#scoring-shape-2-scores)): rain in the crop's months vs its seasonal water need; stored soil water, yields and real prices are not modelled. `income` is illustrative.
+- Uncertainty statements for the UI (English and Spanish): `climate.LIMITS`, returned in every profile as `limits`.
+- Coastal grid cells (Málaga city, Cártama): no heat days and an urban MODIS pixel in the city; the demo field should be inland farmland (e.g. Vega de Antequera).

@@ -1,0 +1,9 @@
+crop_id,name,scientific_name,family,type,season,sow_month,harvest_month,water_need_mm_min,water_need_mm_max,drought_tolerance,heat_tolerance,frost_tolerance,n_fixing,root_depth_m,residue_organic_matter,ground_cover,forage_value,market_value_illustrative,sources,confidence,notes
+durum_wheat,Durum wheat,Triticum durum,Poaceae,cereal,autumn,11,6,400,500,medium,medium,high,no,1.2,medium,medium,low,medium,TEST,indicative,test fixture only
+barley,Barley,Hordeum vulgare,Poaceae,cereal,autumn,11,5,300,450,high,medium,high,no,1.0,medium,medium,medium,medium,TEST,indicative,test fixture only
+chickpea,Chickpea,Cicer arietinum,Fabaceae,legume,spring,2,6,250,400,high,medium,low,yes,1.0,low,low,low,high,TEST,indicative,test fixture only
+sunflower,Sunflower,Helianthus annuus,Asteraceae,oilseed,spring,3,8,500,700,medium,high,low,no,2.0,medium,medium,low,medium,TEST,indicative,test fixture only
+maize,Maize,Zea mays,Poaceae,cereal,spring,4,9,600,800,low,medium,low,no,1.5,high,high,medium,high,TEST,indicative,test fixture only
+vetch_oat,Vetch-oat,Vicia sativa + Avena sativa,Fabaceae,forage,autumn,11,4,300,400,medium,medium,medium,yes,0.8,medium,high,high,low,TEST,indicative,test fixture only
+vetch_cover,Vetch cover,Vicia sativa,Fabaceae,cover,autumn,10,2,150,250,medium,medium,medium,yes,0.8,medium,high,medium,low,TEST,indicative,test fixture only
+fallow,Fallow,,,fallow,,,,,,,,,no,,low,low,low,low,TEST,indicative,test fixture only
