@@ -21,14 +21,27 @@ MAX_MISSING = 0.10  # skip a month-year when more than 10 % of its days are miss
 BASELINE = (2005, 2014)  # I-10, I-11
 RECENT = (2016, 2025)
 
-# Plain-language uncertainty statements for the UI (docs/indicators.md -> Limits to show in the UI).
-LIMITS = [
-    "Climate values are NASA satellite and model estimates for an area of about 50 km, not measurements on your plot.",
-    "Soil wetness is a model estimate, not a measurement.",
-    "Field greenness (NDVI) covers only 2024-2025 and a 250 m square that may include other plots.",
-    "Comparing two 10-year periods shows a change, not a proven long-term climate trend.",
-    "Frost, heat, heavy-rain and bare-field thresholds are general rules, not specific to your crop.",
-]
+# Plain-language uncertainty statements for the UI, English and Spanish
+# (docs/indicators.md -> Limits to show in the UI).
+LIMITS = {
+    "en": [
+        "Climate values are NASA satellite and model estimates for an area of about 50 km, not measurements on your plot.",
+        "Soil wetness is a model estimate, not a measurement.",
+        "Field greenness (NDVI) covers only 2024-2025 and a 250 m square that may include other plots.",
+        "Comparing two 10-year periods shows a change, not a proven long-term climate trend.",
+        "Frost, heat, heavy-rain and bare-field thresholds are general rules, not specific to your crop.",
+        "Near the coast, water demand (ET0) is probably underestimated.",
+    ],
+    "es": [
+        "Los datos de clima son estimaciones de satélite y modelos de NASA para una zona de unos 50 km, "
+        "no medidas en tu parcela.",
+        "La humedad del suelo es una estimación de un modelo, no una medida.",
+        "El verdor de la parcela (NDVI) solo cubre 2024-2025 y un cuadrado de 250 m que puede incluir otras parcelas.",
+        "Comparar dos periodos de 10 años muestra un cambio, no una tendencia climática demostrada.",
+        "Los umbrales de helada, calor, lluvia fuerte y suelo desnudo son reglas generales, no propias de tu cultivo.",
+        "Cerca de la costa, la demanda de agua (ET0) probablemente está subestimada.",
+    ],
+}
 
 GSC = 0.0820  # solar constant, MJ m-2 min-1 (FAO-56)
 MJ_TO_MM = 0.408  # MJ m-2 day-1 -> mm day-1 equivalent evaporation (FAO-56)

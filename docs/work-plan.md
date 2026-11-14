@@ -52,7 +52,7 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
               "ndvi": 0.15, "likely_bare": true}],
   "trends": {"rain_change_pct": -8, "heat_days_change": 3.1},
   "sources": ["NASA POWER 2005-2025", "MODIS MOD13Q1 2024-2025"],
-  "limits": ["Climate values are NASA satellite and model estimates for an area of about 50 km, ..."]
+  "limits": {"en": ["Climate values are NASA satellite and model estimates ..."], "es": ["Los datos de clima son ..."]}
 }
 ```
 
@@ -64,7 +64,7 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
   "score_details": {"nitrogen": 0, "organic_matter": 12, "erosion": 24, "pest_break": 13, "bare_months_per_year": 4.7},
   "why": "...", "evidence": ["..."], "benefits": ["..."], "gaps": ["..."], "risks_to_review": ["..."]}]
 ```
-`id` is `current` or a strategy kind (`legume_break`, `cover_crop`, `water_saving`, `forage_diversification`). `cover_crop` is `null` or `{"after_year": 2, "crop": "vetch_cover"}`. Call `rotations.compare(profile, current, crops, priorities, irrigated, slope)`; use `rotations.label(score)` for good/neutral/poor and `rotations.DISCLAIMER` at the end of the cards.
+`id` is `current` or a strategy kind (`legume_break`, `cover_crop`, `water_saving`, `forage_diversification`). `cover_crop` is `null` or `{"after_year": 2, "crop": "vetch_cover"}`. Call `rotations.compare(profile, current, crops, priorities, irrigated, slope, lang="en"|"es")`; use `rotations.label(score, lang)` for good/neutral/poor and `rotations.DISCLAIMER[lang]` at the end of the cards. Scope: Málaga province only; inland farmland such as Vega de Antequera (37.05, -4.60) gives a much more realistic profile than Málaga city, whose NASA cell is coastal and whose MODIS pixel is urban.
 
 ## Suggested timeline (Europe/Madrid)
 | When | Milestone |

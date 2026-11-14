@@ -113,3 +113,4 @@ def test_build_profile_shape_1_without_modis():
     assert p["trends"]["rain_change_pct"] is None  # no decades available
     assert len(p["sources"]) == 1
     assert p["limits"] == climate.LIMITS
+    assert len(climate.LIMITS["en"]) == len(climate.LIMITS["es"])

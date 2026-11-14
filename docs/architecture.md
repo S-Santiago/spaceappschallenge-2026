@@ -46,4 +46,5 @@ Defined in [indicators.md](indicators.md). Thresholds and formulas must be docum
 - Thresholds are team assumptions documented in [indicators.md](indicators.md): frost Tmin < 0 °C, heat Tmax > 35 °C, heavy rain ≥ 30 mm/day, likely bare NDVI < 0.25. None is crop-specific.
 - ET0 is Hargreaves (temperature only), not Penman-Monteith; it can be biased on coastal cells.
 - Rotation scores use simple, documented rules ([indicators.md → Scoring](indicators.md#scoring-shape-2-scores)): rain in the crop's months vs its seasonal water need; stored soil water, yields and real prices are not modelled. `income` is illustrative.
-- Uncertainty statements for the UI: `climate.LIMITS`, returned in every profile as `limits`.
+- Uncertainty statements for the UI (English and Spanish): `climate.LIMITS`, returned in every profile as `limits`.
+- Coastal grid cells (Málaga city, Cártama): ET0 too low and no heat days; the demo field should be inland farmland (e.g. Vega de Antequera).
