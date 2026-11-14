@@ -22,7 +22,26 @@ claude
 ```
 If someone changes a skill or agent while your session is open, restart Claude Code to load it.
 
-## 3. What is shared vs personal
+## 3. Git workflow (`main` is protected)
+`main` only changes through a **pull request**. GitHub rejects direct pushes, force pushes and deletion of `main`.
+
+```bash
+git switch main && git pull
+git switch -c feat/short-name      # feat/, fix/, data/, docs/, chore/
+# ...work, small commits (Conventional Commits)...
+git push -u origin feat/short-name
+gh pr create --fill                # or open the PR on GitHub
+```
+
+Rules on `main`:
+- **1 approval** from another teammate is required; a new push after the approval needs a new approval.
+- All review conversations must be **resolved** before merging.
+- Merge method: **squash only** (linear history; the PR title becomes the commit, so write it as `feat: ...`).
+- The branch is **deleted automatically** after merge. If GitHub says the branch is out of date, click *Update branch*.
+- Reviews are requested automatically (`.github/CODEOWNERS`).
+- Emergency only (e.g. minutes before the deadline): the repo admin can merge a PR bypassing the rules. Direct pushes stay blocked even for the admin.
+
+## 4. What is shared vs personal
 | Shared (in git) | Personal (not in git) |
 |---|---|
 | `CLAUDE.md` — project rules | Your Claude account and login |
@@ -31,7 +50,7 @@ If someone changes a skill or agent while your session is open, restart Claude C
 
 Do not re-enable AI attribution in your local settings: the team policy is no AI co-authorship in git; AI use is declared in [`ai-usage.md`](ai-usage.md).
 
-## 4. Quick reference
+## 5. Quick reference
 | I want to… | Use |
 |---|---|
 | Get climate data for a location | `/nasa-power-fetch <lat> <lon>` (uses `src/fieldshift/power.py`) |

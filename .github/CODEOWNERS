@@ -1,0 +1,3 @@
+# Default reviewers: GitHub requests a review from these people on every PR.
+# (Code-owner approval is not mandatory; any 1 approval from a teammate is enough.)
+* @S-Santiago @sebasbarrabaja-cmyk
