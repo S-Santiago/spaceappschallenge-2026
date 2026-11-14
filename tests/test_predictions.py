@@ -1,6 +1,7 @@
 """Hand-checkable tests for src/fieldshift/predictions.py (P-01 weekly rain, P-03 frost dates)."""
 
 import json
+import math
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -139,3 +140,74 @@ def test_coastal_field_has_no_frost_and_inland_field_does():
     inland = json.loads((SAMPLES / "power_37.07_-4.87.json").read_text(encoding="utf-8"))
     assert p.frost_dates(coast["days"])["spring"]["probability"] == 0.0
     assert p.frost_dates(inland["days"])["spring"]["probability"] > 0.5
+
+
+# ------------------------------------------------------------------ P-02
+
+def test_gumbel_lmoments_hand_check():
+    # x = 10..50: b0 = 30, b1 = (0*10 + .25*20 + .5*30 + .75*40 + 1*50) / 5 = 20, l2 = 10
+    xi, alpha = p.gumbel_lmoments([10, 20, 30, 40, 50])
+    assert alpha == pytest.approx(10 / math.log(2))
+    assert xi == pytest.approx(30 - 0.5772156649 * 10 / math.log(2))
+    # T = 2 years: xi - alpha * ln(-ln(0.5))
+    assert p.gumbel_return_level(xi, alpha, 2) == pytest.approx(26.96, abs=0.01)
+    assert p.gumbel_lmoments([1, 2, 3, 4]) is None  # too few annual maxima
+
+
+def test_heavy_rain_monthly_probability_and_annual_max():
+    days = {**_year(2005), **_year(2006), **_year(2007)}
+    _set(days, "20051015", PRECTOTCORR=25.0)
+    _set(days, "20061020", PRECTOTCORR=40.0)
+    _set(days, "20071010", PRECTOTCORR=15.0)  # below 20 mm
+    h = p.heavy_rain(days)
+    october = h["months"][9]
+    assert october == {"month": 10, "prob": 0.67, "years": 3}
+    assert h["months"][6]["prob"] == 0.0
+    assert h["annual_max"]["max_mm"] == 40.0 and h["annual_max"]["max_year"] == 2006
+    assert h["return_levels"] == []  # only 3 annual maxima: no Gumbel fit
+
+
+# ------------------------------------------------------------------ P-07
+
+WHEAT = {"type": "cereal", "sow_month": 11, "harvest_month": 6}
+FALLOW = {"type": "fallow", "sow_month": None, "harvest_month": None}
+
+
+def test_rotation_bare_months():
+    assert p.rotation_bare_months([WHEAT]) == {7, 8, 9, 10}
+    assert p.rotation_bare_months([WHEAT, FALLOW]) == set(range(1, 13))
+
+
+def test_soil_alerts_sources_and_levels():
+    heavy = {"months": [{"month": m, "prob": prob, "years": 21}
+                        for m, prob in zip(range(1, 13), [0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.38, 0.52, 0.19])]}
+    alerts = p.soil_alerts(heavy, observed_bare={9: True, 10: True}, planned_bare={10, 11, 12})
+    assert [(a["month"], a["level"], a["sources"]) for a in alerts] == [
+        (10, "medium", ["satellite", "crop_calendar"]),
+        (11, "high", ["crop_calendar"]),
+    ]  # Sept bare but prob 0.1 < 0.2; Dec bare but 0.19 < 0.2
+    assert p.soil_alerts(heavy) == []
+
+
+def test_raise_for_slope():
+    assert p.raise_for_slope("medium", "steep") == "high"
+    assert p.raise_for_slope("high", "steep") == "high"
+    assert p.raise_for_slope("medium", "flat") == "medium"
+
+
+def test_alerts_none_without_bare_information():
+    power = {"days": {**_year(2005), **_year(2006)}}
+    assert p.build_predictions(power)["alerts"] is None
+
+
+@pytest.mark.parametrize("field", ["37.03_-4.64", "37.07_-4.87", "36.72_-4.67"])
+def test_heavy_rain_on_demo_fields(field):
+    power = json.loads((SAMPLES / f"power_{field}.json").read_text(encoding="utf-8"))
+    modis = json.loads((SAMPLES / f"modis_{field}.json").read_text(encoding="utf-8"))
+    out = p.build_predictions(power, modis, [WHEAT])
+    h = out["heavy_rain"]
+    assert h["annual_max"]["years"] == 21
+    assert h["months"][6]["prob"] == 0.0  # no >= 20 mm day in July in 21 years
+    levels = [lv["mm"] for lv in h["return_levels"]]
+    assert levels == sorted(levels) and len(levels) == 3
+    assert any(a["month"] in (10, 11) for a in out["alerts"])  # autumn storms on the bare seedbed
