@@ -2,7 +2,7 @@
 // weigh on the first load. Returns HTML strings only (no DOM access), so node --test can render it with fixtures.
 // Data: GET /api/predictions (P-01, P-02, P-03, P-07) + the Shape 1 profile already loaded (heat, I-06/I-11).
 
-import { MONTHS, MONTH_ABBR, esc, fmt, num, trendFacts } from "./format.js";
+import { MONTHS, MONTH_ABBR, esc, fmt, limitsDetails, num, trendFacts } from "./format.js";
 import {
   FROST_CAVEAT, basisFor, count, WEEKS, alertCards, frostSentences, fromMonth, heatFacts, heavySentence, mmdd, nextWeeks,
   rainYearSummary, returnSentence, weekOfYear,
@@ -133,5 +133,7 @@ export function renderExpect(pred, profile, today = new Date()) {
   return `<p class="basis basis--lead">ℹ️ ${esc(basisFor(pred?.period))}</p>
     ${sections || `<p class="muted" style="margin-top:16px">What to expect is not available for this field. Try again later, or try a demo field.</p>`}
     <section class="section foot" aria-labelledby="h-exp-src"><h3 id="h-exp-src">Where these numbers come from</h3>
-      <p class="small" style="margin-top:8px">Counts of years in NASA POWER daily data, ${esc(period)}, for an area of about 50 km around your field. They say what happened in past years, not what the weather will do. Your valley, slope or coast can differ.</p></section>`;
+      <p class="small" style="margin-top:8px">Counts of years in NASA POWER daily data, ${esc(period)}, for an area of about 50 km around your field. They say what happened in past years, not what the weather will do. Your valley, slope or coast can differ.</p>
+      ${limitsDetails("What each prediction can't tell", [["Rain week by week", pred?.limits?.rain_weeks?.en], ["Frost", pred?.limits?.frost?.en],
+        ["Heavy rain", pred?.limits?.heavy_rain?.en], ["Heavy rain on bare soil", pred?.limits?.alerts?.en]])}</section>`;
 }

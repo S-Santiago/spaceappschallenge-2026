@@ -98,12 +98,12 @@ label { font-weight: 600; }
 .prio + .prio { margin-top: var(--s4); }
 .prio-head { display: flex; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s1); }
 
-select, .crop-input {
+select, .crop-input, .place-search input {
   width: 100%; min-height: var(--target); font: inherit; color: var(--ink); background: var(--ground);
   border: 1px solid var(--line); border-radius: var(--r-md); padding: 0 var(--s3);
 }
-.crop-input { font-size: max(16px, 1rem); } /* 16px+ stops iOS from zooming into the field */
-.crop-input::placeholder { color: var(--muted); }
+.crop-input, .place-search input { font-size: max(16px, 1rem); } /* 16px+ stops iOS from zooming into the field */
+.crop-input::placeholder, .place-search input::placeholder { color: var(--muted); }
 .crop-input[aria-invalid="true"] { border-color: var(--error-line); }
 .field-hint { margin: var(--s1) 0 0; font-size: var(--t-small); color: var(--error-line); }
 .field-hint:empty { display: none; }
@@ -126,6 +126,9 @@ select, .crop-input {
 
 /* ---- map */
 .map { height: 300px; border-radius: var(--r-md); border: 1px solid var(--line); margin-top: var(--s3); background: var(--panel); }
+.place-search { display: flex; gap: var(--s2); margin-top: var(--s3); }
+.place-search input { flex: 1; min-width: 0; }
+.map-note .leaflet-popup-content { margin: var(--s2) var(--s3); font: inherit; font-size: var(--t-small); }
 .map.leaflet-container .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
 .location { margin-top: var(--s3); padding: var(--s3) var(--s4); background: var(--panel); border-radius: var(--r-md); }
 
@@ -152,6 +155,7 @@ select, .crop-input {
 
 /* ---- results */
 .results-head { display: grid; gap: var(--s3); margin-bottom: var(--s4); }
+.results-head > .btn { justify-self: start; } /* secondary action: compact, not a full-width bar above the answer */
 .section { margin-top: var(--s6); }
 .section > h2 { margin-bottom: var(--s3); }
 .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
@@ -233,9 +237,11 @@ th:first-child, td:first-child { text-align: left; }
 h4.sub { font-size: var(--t-h3); margin: var(--s5) 0 0; }
 .caveat { margin-top: var(--s3); padding: var(--s2) var(--s3); border: 1px solid var(--warn-strong); background: var(--warn-bg); border-radius: var(--r-sm); }
 .plain { list-style: none; padding: 0; margin: var(--s2) 0 0; display: grid; gap: var(--s1); }
+.card ul.plain, .card ul.facts { padding-left: 0; } /* .card ul indents bullet lists; these lists carry their own icons */
+.card ul.plain { margin-top: var(--s2); }
 .strip-chart .today { fill: var(--ink); font-weight: 700; }
 tr.now td { font-weight: 700; }
-.alert { border-width: 2px; }
+.alert { border-width: 1px; }
 .alert--high { border-color: var(--error-line); background: var(--error-bg); }
 .alert--medium { border-color: var(--warn-strong); background: var(--warn-bg); }
-.alert .level { display: inline-block; margin-left: var(--s1); padding: 0 var(--s2); border: 2px solid currentColor; border-radius: 999px; font-size: var(--t-small); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: 2px; }
+.alert .level { display: inline-block; margin: 0 var(--s1); padding: 0 var(--s2); border: 1px solid currentColor; border-radius: 999px; font-size: var(--t-small); font-weight: 600; line-height: 1.6; } /* sentence case (DESIGN.md §3) */

@@ -27,6 +27,8 @@ Everything in (or used by) this project that the team did not create: libraries,
 | Asset | Source / author | License | Where used | Attribution text |
 |---|---|---|---|---|
 | OpenStreetMap standard map tiles | OpenStreetMap contributors (tile.openstreetmap.org) | Data: ODbL 1.0; tiles: OSM Tile Usage Policy (light use, valid User-Agent, attribution, no bulk download) | Step 1 map (`web/js/map.js`, only when the map option is chosen) | "© OpenStreetMap contributors" with a link to the copyright page — shown in the map corner |
+| Málaga province outline (`web/js/malaga-area.js`) | OpenStreetMap contributors (relation 5275848), fetched once from Nominatim on 2026-11-14, simplified (threshold 0.003°) and rounded to 3 decimals | ODbL 1.0 (derived database: kept as a separate file with its source and license in the header) | PWA step 1: only points inside Málaga province can be chosen (map taps, phone location, place search); outline drawn on the map | "© OpenStreetMap contributors" — shown in the map corner and in the file header |
+| OpenStreetMap Nominatim search service | OpenStreetMap Foundation (nominatim.openstreetmap.org) | Data: ODbL 1.0; service: Nominatim Usage Policy (max 1 request/s, no autocomplete while typing, no bulk geocoding, attribution) | PWA step 1 "Town or area" search (`web/js/api.js` `searchPlaces`, called only when the farmer taps Find) | "© OpenStreetMap contributors" — shown in the map corner |
 
 > Map tiles: OpenStreetMap data requires "© OpenStreetMap contributors" attribution (ODbL). Many tile providers have their own usage policies — check them.
 

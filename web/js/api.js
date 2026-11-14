@@ -70,6 +70,13 @@ export function predictionsQuery(inputs) {
   return q.toString();
 }
 
+/**
+ * Place search by name with OpenStreetMap Nominatim (map.findPlace keeps only places in Málaga province).
+ * One request per tap on "Find", never while typing, as the Nominatim usage policy asks. Network only.
+ */
+export const searchPlaces = (params) =>
+  request(`https://nominatim.openstreetmap.org/search?${params}`, { headers: { Accept: "application/json" }, timeoutMs: 10000 });
+
 /** Statistics over NASA history (P-01, P-02, P-03, P-07). A new point may wait for NASA POWER. */
 export function getPredictions(inputs, { freePoint = false } = {}) {
   return send(`/api/predictions?${predictionsQuery(inputs)}`, { timeoutMs: freePoint ? 75000 : 20000 });

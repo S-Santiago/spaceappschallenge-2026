@@ -6,9 +6,9 @@
 //   synthetic GET key (the Cache API can't key POST requests). The page computes the key (format.analysisKey)
 //   and sends it in the X-FarmLens-Key header. Offline, the saved answer is returned with X-FarmLens-Offline: 1.
 // - Every cached API response carries X-FarmLens-Saved-At (when it was saved), shown as "Saved result from <date>".
-// - Map tiles and the map library: network only.
+// - Map tiles, the map library and place search (Nominatim): network only.
 
-const VERSION = "v10";
+const VERSION = "v11";
 const SHELL = `farmlens-shell-${VERSION}`;
 // Data caches keep their names across app updates, so saved results survive a new version of the app.
 const DATA = "farmlens-data-v1";
@@ -16,7 +16,7 @@ const ANALYSES = "farmlens-analyses-v1";
 const MAX_ANALYSES = 30;
 const SHELL_FILES = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
-  "js/app.js", "js/api.js", "js/format.js", "js/map.js", "js/expect.js", "js/expect-format.js",
+  "js/app.js", "js/api.js", "js/format.js", "js/map.js", "js/malaga-area.js", "js/expect.js", "js/expect-format.js",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
 const DATA_PATHS = ["/api/fields", "/api/crops", "/api/predictions"];

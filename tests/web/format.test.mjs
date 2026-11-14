@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  cropName, errorKind, errorMessage, esc, fmt, formatRuns, keyFacts, levelText, monthRuns, ndviMissing, trendFacts,
+  FIELD_LIMIT_ROWS, cropName, errorKind, errorMessage, esc, fmt, formatRuns, keyFacts, levelText, limitsDetails, monthRuns,
+  ndviMissing, trendFacts,
 } from "../../web/js/format.js";
 
 const month = (m, extra = {}) => ({
@@ -80,4 +81,18 @@ test("every HTTP error maps to a plain-English message", () => {
     assert.ok(m.title && m.text);
     assert.doesNotMatch(m.title + m.text, /error|exception|traceback|\d{3}|undefined/i);
   }
+});
+
+test("limitsDetails lists only rows with a sentence, escaped, and is empty without any (#44)", () => {
+  const html = limitsDetails("What the scores can not tell", [["Water", "Rain <vs> need"], ["Soil", undefined], ["Income", ""]]);
+  assert.ok(html.startsWith("<details"));
+  assert.ok(html.includes("<strong>Water:</strong> Rain &lt;vs&gt; need"));
+  assert.ok(!html.includes("Soil") && !html.includes("Income"));
+  assert.equal(limitsDetails("x", [["Water", undefined]]), "");
+  assert.doesNotMatch(html, RED_ALERT);
+});
+
+test("FIELD_LIMIT_ROWS covers every monthly value of the profile (#44)", () => {
+  const keys = Object.keys(month(1)).filter((k) => k !== "month").sort();
+  assert.deepEqual(FIELD_LIMIT_ROWS.map(([k]) => k).sort(), keys);
 });

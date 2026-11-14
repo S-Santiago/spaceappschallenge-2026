@@ -16,7 +16,8 @@
         "--reload-dir",
         "src"
       ],
-      "port": 8000
+      "port": 8000,
+      "autoPort": false
     }
   ]
 }
