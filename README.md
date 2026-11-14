@@ -83,6 +83,8 @@ uvicorn fieldshift.api:app --app-dir src --port 8000
 
 Then open http://localhost:8000 on a phone-sized window. One service runs the API (`/api/...`, interactive docs at `/docs`) and serves the mobile web app from `web/`. No API keys are needed: NASA POWER and the ORNL DAAC MODIS service are open, and the three demo fields answer from the NASA data pre-loaded in `data/samples/`. A new point on the map fetches NASA data live (the first time can take a minute or more).
 
+**Port:** always run it on **8000** — the team's Cloudflare tunnel points at that port, so no other port is allowed. If 8000 is busy, stop the process using it (macOS/Linux: `lsof -ti tcp:8000 | xargs kill`) and start the API again on 8000.
+
 **Tests:** `pip install -r requirements-dev.txt`, then `PYTHONPATH=src pytest` (engine, API and PWA checks) and `node --test "tests/web/*.test.mjs"` (PWA helpers, Node 18+, no packages).
 
 ## 6. Repository map

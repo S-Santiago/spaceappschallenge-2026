@@ -16,7 +16,8 @@
         "--reload-dir",
         "src"
       ],
-      "port": 8000
+      "port": 8000,
+      "autoPort": false
     },
     {
       "name": "farmlens",
@@ -31,7 +32,8 @@
         "--server.runOnSave",
         "true"
       ],
-      "port": 8501
+      "port": 8501,
+      "autoPort": false
     }
   ]
 }
