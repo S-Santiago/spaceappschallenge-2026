@@ -1,7 +1,7 @@
 # 🌱 [Project name TBD] — NASA Space Apps Challenge 2026 · Málaga
 
-> **Challenge 06 · Agriculture adapted with NASA data**
-> *Design a tool that uses NASA data to help farmers adapt to climate change.*
+> **Challenge 06 · Adapting farms with NASA data**
+> *A decision-support tool that combines NASA Earth observations with local soil information, crop characteristics and farmer priorities to help farmers explore crop-rotation strategies that strengthen soil health and resilience to changing climate and water conditions.* — full statement in [`docs/challenge.md`](docs/challenge.md)
 
 | | |
 |---|---|
@@ -24,6 +24,8 @@ _TODO: Which farmers / region / crop? Which climate impact (drought, heat stress
 ## 3. Our solution
 
 _TODO: What it does, main user flow, screenshot or diagram._
+
+Required by the challenge — for **at least three rotation strategies (including the current one)** the tool explains: why it was suggested · supporting evidence · benefits · information gaps · risks needing local review. It supports, and does not replace, farmers' judgment.
 
 ## 4. NASA data used
 
