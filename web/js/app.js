@@ -7,7 +7,7 @@ import * as api from "./api.js";
 import {
   MONTH_ABBR, MONTHS, cropName, cropOption, errorMessage, esc, matchCrops, fmt, formatDate, keyFacts, levelText, ndviMissing, num, trendFacts,
 } from "./format.js";
-import { inMalaga, mountMap } from "./map.js";
+import { findPlace, inMalaga, mountMap, roundPoint } from "./map.js";
 
 const app = document.getElementById("app");
 
@@ -144,15 +144,20 @@ function masthead() {
 
 function renderForm() {
   const fieldOptions = state.fields.map((f) => [f.slug, f.name, f.description]);
-  fieldOptions.push(["map", "Another point on the map", "Tap your field on a map · Needs a connection"]);
+  fieldOptions.push(["map", "Another point on the map", "Search your town or tap the map · Málaga province only · Needs a connection"]);
   app.innerHTML = `${masthead()}
   <form id="form" novalidate>
     <section class="step" aria-labelledby="s1">
       ${stepHead(1, "Your field").replace("<h2>", '<h2 id="s1">')}
       <fieldset><legend>Where is your field?</legend>${radioCards("field", fieldOptions, state.field)}</fieldset>
       <div id="map-box" ${isFreePoint() ? "" : "hidden"}>
-        <p class="small" style="margin-top:12px">Tap your field on the map, or use your phone's location.</p>
-        <div class="map" id="map" aria-label="Map of Málaga province. Tap to choose your field."></div>
+        <p class="small" style="margin-top:12px">Only fields in Málaga province. Type the name of your town or area, tap your field on the map, or use your phone's location.</p>
+        <div class="place-search" role="search">
+          <label for="place" class="sr-only">Town or area in Málaga province</label>
+          <input id="place" type="search" autocomplete="off" enterkeyhint="search" placeholder="Town or area, e.g. Antequera" aria-describedby="where">
+          <button type="button" class="btn" id="find">Find</button>
+        </div>
+        <div class="map" id="map" aria-label="Map of Málaga province. Tap inside the border to choose your field."></div>
         <div class="actions"><button type="button" class="btn btn--block" id="locate">📍 Use my location</button></div>
       </div>
       <div class="location" id="where" aria-live="polite"></div>
@@ -198,7 +203,36 @@ function renderForm() {
   form.addEventListener("focusout", onCropBlur);
   form.addEventListener("submit", (e) => { e.preventDefault(); runAnalysis(); });
   $("#locate").addEventListener("click", locate);
+  $("#find").addEventListener("click", searchPlace);
+  // Enter in the search box searches instead of submitting the whole form.
+  $("#place").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); searchPlace(); } });
   if (isFreePoint()) openMap();
+}
+
+/** Type a town or area → the point moves there, only if it is in Málaga province (map.findPlace checks it). */
+async function searchPlace() {
+  const input = $("#place");
+  const where = $("#where");
+  const q = input.value.trim();
+  if (!q) { input.focus(); return; }
+  const find = $("#find");
+  find.disabled = true;
+  where.innerHTML = `<span class="muted">Looking for “${esc(q)}” in Málaga province…</span>`;
+  try {
+    const place = await findPlace(q);
+    if (!place) {
+      where.innerHTML = `<span>We couldn't find “${esc(q)}” in Málaga province. Only places in Málaga can be chosen. Check the spelling, or try the nearest town.</span>`;
+      return;
+    }
+    state.point = place;
+    state.mapApi?.setPoint(place, true);
+    $("#feedback").innerHTML = "";
+    updateWhere();
+  } catch {
+    where.innerHTML = `<span>The search needs a connection. Try again, or tap the map instead.</span>`;
+  } finally {
+    find.disabled = false;
+  }
 }
 
 function updateWhere() {
@@ -206,11 +240,11 @@ function updateWhere() {
   const note = $("#preset-note");
   if (isFreePoint()) {
     if (!state.point) {
-      where.innerHTML = `<span class="muted">No point chosen yet. Tap the map to choose your field.</span>`;
+      where.innerHTML = `<span class="muted">No point chosen yet. Search your town or tap the map to choose your field.</span>`;
     } else {
-      const outside = inMalaga(state.point) ? "" : `<br><span class="small">⚠️ This point is outside Málaga province. FarmLens crops and rules are set for Málaga, so results may not fit.</span>`;
-      where.innerHTML = `📍 Your point: <strong>${fmt(state.point.lat, 2)}, ${fmt(state.point.lon, 2)}</strong>
-        <br><span class="small muted">The first analysis of a new point fetches NASA data live and can take up to a minute.</span>${outside}`;
+      const name = state.point.name ? `<strong>${esc(state.point.name)}</strong> · ` : "";
+      where.innerHTML = `📍 Your point: ${name}<strong>${fmt(state.point.lat, 2)}, ${fmt(state.point.lon, 2)}</strong>
+        <br><span class="small muted">${state.point.name ? "Tap the map to move the point onto your field. " : ""}The first analysis of a new point fetches NASA data live and can take up to a minute.</span>`;
     }
     note.textContent = "Example rotation filled in. Change it to match your field.";
   } else {
@@ -335,7 +369,12 @@ function locate() {
   where.innerHTML = `<span class="muted">Finding your location…</span>`;
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      state.point = { lat: Math.round(pos.coords.latitude * 100) / 100, lon: Math.round(pos.coords.longitude * 100) / 100 };
+      const p = roundPoint(pos.coords.latitude, pos.coords.longitude);
+      if (!inMalaga(p)) {
+        where.innerHTML = `<span>You are outside Málaga province, so your location can't be used. Only fields in Málaga can be chosen: search your town or tap the map.</span>`;
+        return;
+      }
+      state.point = p;
       state.mapApi?.setPoint(state.point, true);
       updateWhere();
     },

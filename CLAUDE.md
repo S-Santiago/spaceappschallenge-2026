@@ -7,7 +7,7 @@
 - **Predictions are statistics over NASA historical data, not AI/ML** (frequencies, percentiles, return periods, trends with confidence intervals). Define each one in `docs/indicators.md` before coding and label it "based on the last 20 years", never as a forecast.
 - Work is organised in sprints: `docs/sprint-plan.md` (Scrum Master: @sebasbarrabaja-cmyk). Check the current milestone before picking a task.
 - **Target users: farmers with at most a low/mid-range phone, slow or unstable mobile data and little tech experience.** Everything user-facing must be **mobile-first and lightweight** (see `docs/ux-guidelines.md` → "Mobile-first, low-end phones"). Desktop is secondary.
-- **Local servers.** API + PWA: `PYTHONPATH=src uvicorn fieldshift.api:app --reload` from the repo root (port 8000, API docs at `/docs`). Streamlit test harness: always `localhost:8501` (a Cloudflare tunnel exposes it to the team); never start it on another port (8502…): if 8501 is busy, stop that instance and restart it on 8501.
+- **Local servers.** API + PWA: `PYTHONPATH=src uvicorn fieldshift.api:app --reload` from the repo root, always on `localhost:8000` (API docs at `/docs`). **8000 is the only allowed port** because the Cloudflare tunnel points at it: never start the API on another port (8001, 8002…); if 8000 is busy, stop the process holding it and restart the API on 8000. Streamlit test harness: always `localhost:8501` (a Cloudflare tunnel exposes it to the team); never start it on another port (8502…): if 8501 is busy, stop that instance and restart it on 8501.
 - Project license: **MIT** (`LICENSE`, `docs/decisions/0003-project-license.md`). Every dependency and asset must stay compatible with it.
 
 ## Language

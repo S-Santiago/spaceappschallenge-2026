@@ -98,12 +98,12 @@ label { font-weight: 600; }
 .prio + .prio { margin-top: var(--s4); }
 .prio-head { display: flex; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s1); }
 
-select, .crop-input {
+select, .crop-input, .place-search input {
   width: 100%; min-height: var(--target); font: inherit; color: var(--ink); background: var(--ground);
   border: 1px solid var(--line); border-radius: var(--r-md); padding: 0 var(--s3);
 }
-.crop-input { font-size: max(16px, 1rem); } /* 16px+ stops iOS from zooming into the field */
-.crop-input::placeholder { color: var(--muted); }
+.crop-input, .place-search input { font-size: max(16px, 1rem); } /* 16px+ stops iOS from zooming into the field */
+.crop-input::placeholder, .place-search input::placeholder { color: var(--muted); }
 .crop-input[aria-invalid="true"] { border-color: var(--error-line); }
 .field-hint { margin: var(--s1) 0 0; font-size: var(--t-small); color: var(--error-line); }
 .field-hint:empty { display: none; }
@@ -126,6 +126,9 @@ select, .crop-input {
 
 /* ---- map */
 .map { height: 300px; border-radius: var(--r-md); border: 1px solid var(--line); margin-top: var(--s3); background: var(--panel); }
+.place-search { display: flex; gap: var(--s2); margin-top: var(--s3); }
+.place-search input { flex: 1; min-width: 0; }
+.map-note .leaflet-popup-content { margin: var(--s2) var(--s3); font: inherit; font-size: var(--t-small); }
 .map.leaflet-container .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
 .location { margin-top: var(--s3); padding: var(--s3) var(--s4); background: var(--panel); border-radius: var(--r-md); }
 
