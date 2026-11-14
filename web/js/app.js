@@ -373,9 +373,9 @@ async function runAnalysis() {
 
   const body = inputs();
   try {
-    const data = await api.analyze(body, { freePoint: free });
+    const { data, saved } = await api.analyze(body, { freePoint: free });
     setStage(2);
-    state.result = { data, inputs: body, at: new Date().toISOString(), label: free ? `your point (${fmt(body.lat, 2)}, ${fmt(body.lon, 2)})` : fieldInfo()?.name || "your field" };
+    state.result = { data, inputs: body, at: saved || new Date().toISOString(), saved: saved !== null, label: free ? `your point (${fmt(body.lat, 2)}, ${fmt(body.lon, 2)})` : fieldInfo()?.name || "your field" };
     watchPending(state.result);
     setStage(3);
     location.hash = "#/results";
@@ -415,8 +415,8 @@ function watchPending(result, tries = 0) {
   setTimeout(async () => {
     if (state.result !== result) return; // a newer analysis replaced this one
     try {
-      const data = await api.analyze(result.inputs, { freePoint: true });
-      if (state.result !== result) return;
+      const { data, saved } = await api.analyze(result.inputs, { freePoint: true });
+      if (state.result !== result || saved !== null) return; // offline: keep what we have
       result.data = data;
       if (!isPending(result) && location.hash === "#/results") renderResults();
       if (!isPending(result)) state.predictions = null; // bare months known now: alerts may change
@@ -491,6 +491,7 @@ function renderResults(tab = "results") {
     <h1 tabindex="-1" id="r-title">Results for ${esc(label)}</h1>
     <p class="small muted">Based on NASA data for 2005–2025 · analysed ${esc(formatDate(at))}</p>
   </div>
+  ${state.result.saved ? savedBanner(at) : ""}
   ${loadingNdvi
     ? banner("warn", "Satellite greenness is still loading", " Rain, heat and frost results are ready. The months when the field is bare will be added here automatically in a minute or two. Keep this page open.")
     : noNdvi ? banner("warn", "Greenness data unavailable for this point", " Bare months are unknown. Rain, heat and frost still come from NASA POWER.") : ""}
@@ -540,6 +541,13 @@ function renderResults(tab = "results") {
   bindTabs();
 }
 
+/** Shown when an answer came from the phone's cache because there is no connection (sw.js). */
+function savedBanner(iso) {
+  const when = formatDate(iso);
+  return banner("ok", `Saved result from ${when || "an earlier visit"} — you're offline`,
+    " This is the answer FarmLens saved on this phone last time. Connect to the internet to refresh it.");
+}
+
 // ------------------------------------------------------------------ tabs & "What to expect"
 
 /** Tabs follow the ARIA tabs pattern: arrows / Home / End move between them, the hash keeps Back working. */
@@ -573,15 +581,16 @@ async function loadExpect() {
   const show = async (data) => {
     const view = await import("./expect.js");
     if (state.result !== result || location.hash !== "#/expect" || !$("#panel")) return;
-    $("#panel").innerHTML = view.renderExpect(data, result.data?.profile);
+    $("#panel").innerHTML = (state.predictions?.saved != null && !state.result.saved ? savedBanner(state.predictions.saved) : "") +
+      view.renderExpect(data, result.data?.profile);
   };
   if (state.predictions?.key === key) {
     try { await show(state.predictions.data); return; } catch { /* the view module failed to load: fall through */ }
   }
   panel.innerHTML = `<div class="progress" role="status"><ol class="stages"><li class="active"><span class="mark" aria-hidden="true"><span class="spin"></span></span>Loading what to expect from NASA history…</li></ol></div>`;
   try {
-    const [data] = await Promise.all([api.getPredictions(result.inputs, { freePoint: free }), import("./expect.js")]);
-    state.predictions = { key, data };
+    const [{ data, saved }] = await Promise.all([api.getPredictions(result.inputs, { freePoint: free }), import("./expect.js")]);
+    state.predictions = { key, data, saved };
     await show(data);
   } catch (err) {
     if (state.result !== result || location.hash !== "#/expect" || !$("#panel")) return;
@@ -671,6 +680,18 @@ window.addEventListener("offline", updateNet);
 updateNet();
 
 if ("serviceWorker" in navigator) {
+  // A new version takes over at once (skipWaiting in sw.js). Modules already loaded are the old ones, so ask
+  // for a reload instead of mixing versions; the first install (no previous controller) needs nothing.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || document.getElementById("update")) return;
+    const box = document.createElement("div");
+    box.id = "update";
+    box.innerHTML = banner("ok", "FarmLens was updated", " Reload to use the new version.",
+      `<div class="actions"><button type="button" class="btn btn--primary" id="reload">Reload now</button></div>`);
+    document.querySelector(".page").prepend(box);
+    box.querySelector("#reload").addEventListener("click", () => location.reload());
+  });
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 
