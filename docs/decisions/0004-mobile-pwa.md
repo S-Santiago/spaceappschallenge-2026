@@ -21,7 +21,7 @@ FarmLens targets farmers in Málaga's villages with at most a low/mid-range phon
 - **Hosting:** a free host that runs Python (e.g. Render, Hugging Face Spaces, Fly.io), chosen in Sprint 1. Free tiers may sleep → open the app a few minutes before judging and the pitch.
 
 ## Consequences
-- The Streamlit UI (`src/app.py`, `ui_results.py`) is retired once the PWA reaches the same features; its wording, layout and UX review findings carry over.
+- The Streamlit UI (`src/app.py`, `ui_results.py`) was only a **technical test harness** for the engine. It is not part of the product or the demo; it can stay as an internal developer tool. The PWA has its own visual design.
 - New contract: API endpoints and JSON shapes (Shape 1, Shape 2, predictions) documented in `docs/work-plan.md`.
 - `docs/ux-guidelines.md` mobile rules still apply; Streamlit-specific advice no longer does. New checks: installable (manifest + icons), works offline for demo fields, fast first load on Slow 4G.
 - Notifications need user permission; push from a server needs a stored subscription (personal data → explicit consent). Not needed for in-app alerts.
