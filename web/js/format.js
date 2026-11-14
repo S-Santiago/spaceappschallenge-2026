@@ -260,14 +260,30 @@ export function normalizeText(text) {
  * or else contains, the text ("sunfl" → sunflower). Ambiguous or unknown text → null.
  */
 export function findCrop(text, crops) {
+  const hits = matchCrops(text, crops);
+  return hits.length === 1 ? hits[0].id : null;
+}
+
+/** Text of a crop suggestion: English name, Spanish name and Latin name, so any of them can be typed to find it. */
+export function cropOption(crop) {
+  const local = crop.name_es && crop.name_es !== crop.name ? ` (${crop.name_es})` : "";
+  return crop.scientific_name ? `${crop.name}${local} · ${crop.scientific_name}` : `${crop.name}${local}`;
+}
+
+/**
+ * Crops that match what the farmer typed: by common name (English or Spanish), Latin (scientific) name, id or the full suggestion
+ * text. Exact matches win; otherwise names that start with the text, then names that contain it.
+ * Several hits = ambiguous (e.g. "Phaseolus vulgaris" is both green and dry bean).
+ */
+export function matchCrops(text, crops) {
   const q = normalizeText(text);
-  if (!q) return null;
-  const exact = crops.find((c) => normalizeText(c.name) === q || normalizeText(c.id) === q);
-  if (exact) return exact.id;
-  for (const test of [(n) => n.startsWith(q), (n) => n.includes(q)]) {
-    const hits = crops.filter((c) => test(normalizeText(c.name)));
-    if (hits.length === 1) return hits[0].id;
-    if (hits.length > 1) return null;
+  if (!q) return [];
+  const keys = (c) => [c.name, c.name_es, c.scientific_name, c.id, cropOption(c)].filter(Boolean).map(normalizeText);
+  const exact = crops.filter((c) => keys(c).includes(q));
+  if (exact.length) return exact;
+  for (const test of [(k) => k.startsWith(q), (k) => k.includes(q)]) {
+    const hits = crops.filter((c) => keys(c).some(test));
+    if (hits.length) return hits;
   }
-  return null;
+  return [];
 }
