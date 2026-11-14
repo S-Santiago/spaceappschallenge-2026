@@ -232,3 +232,26 @@ export function formatDate(iso) {
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
 }
+
+/** Lower case, no accents, single spaces: "  Maíz " → "maiz". */
+export function normalizeText(text) {
+  return String(text ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[_\s]+/g, " ").trim();
+}
+
+/**
+ * Crop id for what the farmer typed in a crop text field, or null.
+ * Exact name or id first (case and accents ignored); otherwise the only crop whose name starts with,
+ * or else contains, the text ("sunfl" → sunflower). Ambiguous or unknown text → null.
+ */
+export function findCrop(text, crops) {
+  const q = normalizeText(text);
+  if (!q) return null;
+  const exact = crops.find((c) => normalizeText(c.name) === q || normalizeText(c.id) === q);
+  if (exact) return exact.id;
+  for (const test of [(n) => n.startsWith(q), (n) => n.includes(q)]) {
+    const hits = crops.filter((c) => test(normalizeText(c.name)));
+    if (hits.length === 1) return hits[0].id;
+    if (hits.length > 1) return null;
+  }
+  return null;
+}

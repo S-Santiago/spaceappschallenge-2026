@@ -4,7 +4,7 @@
 // - Everything else (POST /api/analyze, map tiles, the map library) goes to the network.
 //   Cached analyses for offline demo fields come in a later step (#14, PR 2).
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `farmlens-shell-${VERSION}`;
 const DATA = `farmlens-data-${VERSION}`;
 const SHELL_FILES = [
