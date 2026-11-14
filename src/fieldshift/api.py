@@ -11,6 +11,8 @@ import asyncio
 import hashlib
 import os
 import unicodedata
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -34,7 +36,16 @@ _inflight: dict[tuple[str, float, float], asyncio.Task] = {}  # one download per
 
 Lang = Literal["en", "es"]
 
-app = FastAPI(title="FarmLens API", version="1")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Build the SQLite DB once, before the first request: concurrent first requests on a fresh DB used to race
+    # inside db.init_db (PR #54). On the hosted demo the DB is rebuilt from the committed seeds at every start.
+    db.init_db()
+    yield
+
+
+app = FastAPI(title="FarmLens API", version="1", lifespan=lifespan)
 
 
 class Priorities(BaseModel):
