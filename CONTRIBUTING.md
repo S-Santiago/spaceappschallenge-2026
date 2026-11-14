@@ -2,7 +2,24 @@
 
 ## Branches
 - `main` must always be demo-able. Freeze risky changes on `main` after **Sunday 15:00**.
+- `main` is **protected** (GitHub ruleset "Protect main", no bypass for anyone): no direct pushes, no force pushes, no deletion, linear history.
 - Use short-lived branches: `feat/<topic>`, `data/<dataset>`, `docs/<topic>`, `fix/<topic>`.
+
+```bash
+git switch main && git pull
+git switch -c feat/my-topic
+# ...work, commit...
+git push -u origin feat/my-topic
+gh pr create          # or open the PR on GitHub
+```
+
+## Pull Requests
+- **Squash merge only** → the **PR title becomes the commit on `main`**: use Conventional Commits (`feat: ...`, `fix: ...`, `docs: ...`).
+- **1 approval required**, from someone **other than the last person who pushed** to the PR.
+- **Pushing after an approval dismisses it** → finish your changes, then ask for review.
+- **All review conversations must be resolved** before merging.
+- After merging, delete the branch and `git switch main && git pull`.
+- **Sunday night:** agree who stays available to approve last-minute fixes until the 23:59 submission — nobody can merge alone.
 - Open a Pull Request (template in `.github/`). Reviewers are requested automatically via `.github/CODEOWNERS`:
 
   | Area | Reviewer |
