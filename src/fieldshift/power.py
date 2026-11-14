@@ -13,7 +13,7 @@ from . import cache
 POWER_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 # Radiation, dew point and wind feed FAO-56 Penman-Monteith ET0 (climate.py, I-02).
 PARAMETERS = ["T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "ALLSKY_SFC_SW_DWN", "T2MDEW", "WS2M"]
-CACHE_KIND = "power_v2"  # bump when PARAMETERS change so old cache files are not reused
+CACHE_KIND = "power"  # = nasa_raw.source in the DB and the data/samples/power_*.json prefix
 START_YEAR = 2005
 END_YEAR = 2025
 FILL_VALUE = -999.0

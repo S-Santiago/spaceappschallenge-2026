@@ -18,6 +18,7 @@ SCALE = 0.0001
 FILL = -3000
 YEARS = (2024, 2025)
 COMPOSITE_DOYS = list(range(1, 366, 16))  # 1, 17, ..., 353 (23 composites per year)
+RETRIES = 4
 
 
 def _chunks() -> list[tuple[str, str]]:
@@ -35,9 +36,18 @@ async def _fetch_chunk(client: httpx.AsyncClient, lat: float, lon: float, start:
         "kmAboveBelow": 0,
         "kmLeftRight": 0,
     }
-    resp = await client.get(ORNL_URL, params=params, headers={"Accept": "application/json"})
-    resp.raise_for_status()
-    return resp.json().get("subset", [])
+    # The ORNL service answers 502/503 or drops the connection under load: retry with backoff.
+    for attempt in range(RETRIES):
+        try:
+            resp = await client.get(ORNL_URL, params=params, headers={"Accept": "application/json"})
+            resp.raise_for_status()
+            return resp.json().get("subset", [])
+        except (httpx.TransportError, httpx.HTTPStatusError) as exc:
+            retryable = isinstance(exc, httpx.TransportError) or exc.response.status_code >= 500
+            if not retryable or attempt == RETRIES - 1:
+                raise
+            await asyncio.sleep(2 * 2**attempt)
+    return []
 
 
 async def fetch_ndvi(lat: float, lon: float) -> dict:
