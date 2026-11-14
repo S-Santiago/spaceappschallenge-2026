@@ -58,9 +58,12 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
 ### Shape 2 — strategies (B → C)
 ```json
 [{"id": "current", "name": "Current rotation", "years": ["durum_wheat", "durum_wheat", "sunflower"],
+  "cover_crop": null,
   "scores": {"water": 62, "soil": 40, "income": 70, "risk": 55, "overall": 57},
+  "score_details": {"nitrogen": 0, "organic_matter": 12, "erosion": 24, "pest_break": 13, "bare_months_per_year": 4.7},
   "why": "...", "evidence": ["..."], "benefits": ["..."], "gaps": ["..."], "risks_to_review": ["..."]}]
 ```
+`id` is `current` or a strategy kind (`legume_break`, `cover_crop`, `water_saving`, `forage_diversification`). `cover_crop` is `null` or `{"after_year": 2, "crop": "vetch_cover"}`. Call `rotations.compare(profile, current, crops, priorities, irrigated, slope)`; use `rotations.label(score)` for good/neutral/poor and `rotations.DISCLAIMER` at the end of the cards.
 
 ## Suggested timeline (Europe/Madrid)
 | When | Milestone |

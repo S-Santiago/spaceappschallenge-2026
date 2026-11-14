@@ -34,4 +34,29 @@ Common to all POWER-based indicators: source NASA POWER daily point API (`commun
 - Hargreaves ET0 depends on the day–night temperature range; on coastal grid cells (small range) it can underestimate ET0 (Málaga demo: ~755 mm/year).
 
 ## Scoring (Shape 2 `scores`)
-_TODO (issue #10/#11, @HaoJunnnzhang): define each sub-score (`water`, `soil`, `income`, `risk`) — inputs, formula, weights — and how farmer priorities change the `overall` weights. `income` relies on `market_value_illustrative` and must be labeled illustrative._
+Implemented in `src/fieldshift/rotations.py` (issue #10). All sub-scores are 0–100, **higher = better for the farmer**. Inputs: Shape 1 profile, crop traits from `data/crops.csv`, farmer inputs (rotation of 1–4 crops, priorities, irrigation yes/no, slope flat/moderate/steep). These are **team assumptions, indicative, not reviewed** by an agronomist yet.
+
+**Crop season and rain coverage.** A crop occupies the months from `sow_month` to `harvest_month` (wrapping over New Year). *Rain coverage* = Σ `rain_mm` (I-01) over those months ÷ mean of `water_need_mm_min/max`, capped at 1. Fallow = 1.
+
+| Score | Formula | Notes |
+|---|---|---|
+| `water` | 100 × mean rain coverage of the main crops; a cover crop counts with weight 0.5 | Rain-fed: how much of the crop's need rain provides. Irrigated: the rest must be irrigated, so a low score = more irrigation water |
+| `soil` | nitrogen (25) + organic matter (25) + erosion (30) + pest break (20) | see below |
+| ↳ nitrogen | 25 if a main crop has `n_fixing = yes`; 15 if only the cover crop does; else 0 | |
+| ↳ organic matter | 25 × mean `residue_organic_matter` (low 0, medium 0.5, high 1); +5 with a cover crop (max 25) | |
+| ↳ erosion | 30 × (1 − min(1, exposure × slope factor)). Exposure = share of the cycle's heavy-rain days (I-07) that fall in bare months (falls back to `rain_mm` if a site has no heavy-rain days). Slope factor: flat 0.5, moderate 0.75, steep 1 | Bare months over a cycle = for each year, the months outside the crop's window, minus the cover crop's months |
+| ↳ pest break | 20 × (1 − share of consecutive years, cyclic, with the same botanical family); a 1-year rotation (monoculture) = 0 | |
+| `income` | mean of `market_value_illustrative` (low 20, medium 50, high 80); fallow 0 | **Illustrative only** — must be labeled as such; real prices go under information gaps |
+| `risk` | mean over years of 100 − penalties. Frost (I-05) / heat (I-06) days in the crop's season: low tolerance & > 1 day → −30; medium & > 5 days → −15. Rain-fed only, rain coverage < 50 %: drought tolerance low −30, medium −15, high −5 | Higher = lower climate risk |
+| `overall` | weighted mean of the four scores; weights = farmer priorities 0–3 each (default 1; all 0 → equal) | Changes the order of alternatives, not the sub-scores |
+
+**UI words:** ≥ 67 good · 34–66 neutral · < 34 poor (`rotations.label`).
+
+**Candidates.** A crop can be proposed only if its penalties add up to < 30 (so, e.g., thirsty crops are excluded when rain-fed). Strategy kinds:
+- `legume_break`: replace one year (or add one, up to 4 years) with a suitable legume.
+- `cover_crop`: same main crops + a `type = cover` crop whose whole window fits between a harvest and the next sowing.
+- `water_saving`: replace the crop with the highest water need by a suitable crop with `drought_tolerance = high` and a lower water need.
+- `forage_diversification`: replace or add a forage crop from a family not in the current rotation.
+
+The best variant of each kind is chosen by `overall`; the engine returns the current rotation + the 3 best kinds, never repeating a rotation. Alternatives are listed by score but never called "the best" in the UI.
+
