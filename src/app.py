@@ -1,4 +1,4 @@
-"""FarmLens — Streamlit app skeleton (issue #12).
+"""FarmLens — Streamlit app (skeleton #12, results view #13 in fieldshift.ui_results).
 
 Run: streamlit run src/app.py
 
@@ -8,28 +8,18 @@ fieldshift.mock_data until issue #14 wires in the real modules.
 
 from __future__ import annotations
 
-import calendar
-
 import streamlit as st
 
 from fieldshift import mock_data as data
+from fieldshift import ui_theme as t
 from fieldshift.mock_data import FarmerInputs
+from fieldshift.ui_results import render_results
 
 st.set_page_config(page_title="FarmLens", page_icon="🌱", layout="centered")
 
-# Streamlit's base font is already 16 px; here: tighter side padding on phones and 48 px buttons.
-st.markdown(
-    """
-    <style>
-    .block-container { padding-top: 1.5rem; padding-left: 1rem; padding-right: 1rem; }
-    div.stButton > button { min-height: 48px; font-size: 18px; font-weight: 600; }
-    [data-testid="stRadioOption"] { min-height: 44px; align-items: center; }
-    [data-testid="stButtonGroup"] button { min-height: 44px; }
-    [data-testid="stTable"] td, [data-testid="stTable"] th { font-size: 16px; padding: 0.3rem 0.4rem; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# The whole design system (tokens + one CSS layer) lives in fieldshift.ui_theme; see DESIGN.md.
+# The CSS follows the active Streamlit theme (light / dark), or the system setting until it is known.
+st.markdown(t.page_css(getattr(st.context.theme, "type", None)), unsafe_allow_html=True)
 
 CROPS = data.get_crops()
 CROP_NAMES = {c["id"]: c["name"] for c in CROPS}
@@ -53,19 +43,21 @@ PRIORITIES = {
     "risk": "🛡️ Low risk",
 }
 
-st.title("🌱 FarmLens")
-st.write(
-    "Compare crop rotations for **your field** using NASA climate data. "
-    "Answer 4 short steps, then tap **Analyze my field**."
+st.markdown(
+    "<header class='fl-head'><h1>FarmLens</h1><p class='fl-lead'>Compare crop rotations for "
+    "<strong>your field</strong> using NASA climate data. Answer 4 short steps, then tap "
+    "<strong>Analyze my field</strong>.</p></header>",
+    unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------------- Step 1
-st.subheader("Step 1 of 4 · Your field")
+st.markdown(t.step_heading(1, 4, "Your field"), unsafe_allow_html=True)
+# Hints are visible text, not "?" tooltips: tooltips need hover and had 16 px targets on phones.
 mode = st.radio(
     "How do you want to choose your field?",
     ["Demo field", "Point on a map"],
+    captions=["Works without internet", "Needs a connection"],
     horizontal=True,
-    help="The demo field works without internet. The map needs a connection.",
 )
 
 if mode == "Demo field":
@@ -79,6 +71,13 @@ else:
     st.caption("Tap your field on the map.")
     start = st.session_state.get("map_point", (36.72, -4.42))
     fmap = folium.Map(location=start, zoom_start=9, control_scale=True)
+    # Leaflet's +/− buttons are 30 px: enlarge them to 44 px touch targets inside the map iframe.
+    fmap.get_root().header.add_child(
+        folium.Element(
+            "<style>.leaflet-touch .leaflet-bar a, .leaflet-bar a"
+            "{width:44px;height:44px;line-height:44px;font-size:22px}</style>"
+        )
+    )
     folium.CircleMarker(start, radius=10, color="#b00020", fill=True, fill_opacity=0.9, tooltip="Your field").add_to(fmap)
     clicked = st_folium(fmap, height=300, use_container_width=True, returned_objects=["last_clicked"])
     if clicked and clicked.get("last_clicked"):
@@ -89,32 +88,47 @@ else:
     lat, lon = st.session_state.get("map_point", start)
     field_name = "Point on the map"
 
-st.info(f"📍 Location: **{lat:.4f}, {lon:.4f}** (latitude, longitude)")
+st.markdown(t.location_line(lat, lon, field_name), unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- Step 2
-st.subheader("Step 2 of 4 · Current rotation")
+st.markdown(t.step_heading(2, 4, "Current rotation"), unsafe_allow_html=True)
 n_years = st.segmented_control(
-    "How many years does your rotation last?", [2, 3, 4], default=3, format_func=lambda n: f"{n} years"
+    "How many years does your rotation last?",
+    [2, 3, 4],
+    default=3,
+    required=True,
+    format_func=lambda n: f"{n} years",
+    width="stretch",
 ) or 3
 rotation = []
 for i in range(n_years):
     default = CROP_IDS.index(DEFAULT_ROTATION[i])
     crop = st.selectbox(f"Year {i + 1}", CROP_IDS, index=default, format_func=CROP_NAMES.get, key=f"year_{i}")
     rotation.append(crop)
+# Live preview of the answer, in the same strip the results use (one visual language for rotations).
+st.markdown(
+    t.rotation_strip(rotation, CROP_NAMES, label="Your current rotation") + t.family_key(rotation),
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------------------- Step 3
-st.subheader("Step 3 of 4 · Your priorities")
-st.caption("0 = not important · 5 = very important")
-priorities = {k: st.slider(label, 0, 5, 3, key=f"prio_{k}") for k, label in PRIORITIES.items()}
+st.markdown(t.step_heading(3, 4, "Your priorities"), unsafe_allow_html=True)
+st.caption("Tap a number: 0 = not important · 5 = very important")
+# Six big buttons instead of a slider: a 0–5 slider had a ~16 px thumb and needed dragging
+# (WCAG 2.5.7 / 2.5.8); one tap is easier on a small phone.
+priorities = {
+    k: st.segmented_control(label, list(range(6)), default=3, required=True, key=f"prio_{k}", width="stretch")
+    for k, label in PRIORITIES.items()
+}
 if sum(priorities.values()) == 0:
     st.caption("All priorities are 0, so they will count the same.")
 
 # ---------------------------------------------------------------- Step 4
-st.subheader("Step 4 of 4 · Your farm")
+st.markdown(t.step_heading(4, 4, "Your farm"), unsafe_allow_html=True)
 irrigation = st.radio(
-    "Irrigation", list(IRRIGATION), format_func=IRRIGATION.get, help="How much water can you add besides rain?"
+    "Irrigation: how much water can you add besides rain?", list(IRRIGATION), format_func=IRRIGATION.get
 )
-slope = st.radio("Slope of the field", list(SLOPE), format_func=SLOPE.get, help="Steeper fields lose more soil.")
+slope = st.radio("Slope of the field (steeper fields lose more soil)", list(SLOPE), format_func=SLOPE.get)
 
 inputs = FarmerInputs(
     lat=lat,
@@ -126,7 +140,7 @@ inputs = FarmerInputs(
     slope=slope,
 )
 
-if st.button("🔎 Analyze my field", type="primary", width="stretch"):
+if st.button("Analyze my field", type="primary", icon=":material/search:", width="stretch"):
     with st.spinner("Analyzing your field…"):
         profile = data.get_climate_profile(inputs.lat, inputs.lon)
         st.session_state["results"] = {
@@ -134,46 +148,25 @@ if st.button("🔎 Analyze my field", type="primary", width="stretch"):
             "profile": profile,
             "strategies": data.get_strategies(profile, inputs),
         }
+        st.session_state["just_analyzed"] = True
 
-# ---------------------------------------------------------------- Results (placeholder, full view = #13)
+# ---------------------------------------------------------------- Results (#13)
+# Feedback sits right under the button that caused it, where the farmer's eyes are.
 results = st.session_state.get("results")
 if not results:
-    st.caption("Your results will appear here after you tap **Analyze my field**.")
+    st.caption("Your results will appear below after you tap **Analyze my field**.")
     st.stop()
 
 if results["inputs"] != inputs.to_dict():
-    st.warning("You changed some answers. Tap **Analyze my field** again to update the results.")
+    st.warning(
+        "You changed some answers. Tap **Analyze my field** again to update the results below.",
+        icon=":material/refresh:",
+    )
+elif st.session_state.pop("just_analyzed", False):
+    st.success("Done. Your results are ready below.", icon=":material/check_circle:")
 
-st.divider()
-st.subheader("✅ Results")
-if data.IS_MOCK:
-    st.warning("⚠️ **MOCK DATA** — example values for testing the app, not real results for your field.")
-st.write("This tool supports, and does not replace, local expertise.")
-
-profile = results["profile"]
-st.markdown("**Your field through the year**")
-rows = [
-    {
-        "Month": calendar.month_abbr[m["month"]],
-        "Rain (mm)": f"{m['rain_mm']:.0f}",
-        "Water balance (mm)": f"{m['water_balance_mm']:+.0f}",
-        "Hot days": f"{m['heat_days']:.1f}",
-        "Frost days": f"{m['frost_days']:.1f}",
-        "Bare field?": "Yes" if m["likely_bare"] else "No",
-    }
-    for m in profile["months"]
-]
-st.table(rows)
-
-st.markdown("**Rotation options**")
-for s in results["strategies"]:
-    with st.container(border=True):
-        st.markdown(f"**{s['name']}** · Score **{s['scores']['overall']}/100**")
-        st.write("Years: " + " → ".join(CROP_NAMES.get(c, c) for c in s["years"]))
-        st.write(f"Why: {s['why']}")
-
-sources = " · ".join(profile["sources"])
-if data.IS_MOCK:
-    st.caption(f"Data sources (planned — the mock values above do not come from them yet): {sources}")
-else:
-    st.caption(f"Data sources: {sources}")
+st.markdown(
+    f"<h2 class='fl-step'><span class='fl-step__t'>Results for {t.e(results['inputs']['field_name'])}</span></h2>",
+    unsafe_allow_html=True,
+)
+render_results(results, CROP_NAMES, is_mock=data.IS_MOCK)

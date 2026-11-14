@@ -14,6 +14,7 @@ Everything in (or used by) this project that the team did not create: libraries,
 | streamlit | 1.67.0 | Web UI framework for the app (`src/app.py`) | Apache-2.0 | https://github.com/streamlit/streamlit | No (keep license notice if redistributed) |
 | folium | 0.20.0 | Builds the Leaflet map for "Point on a map" (step 1) | MIT | https://github.com/python-visualization/folium | No |
 | streamlit-folium | 0.27.4 | Embeds the folium map in Streamlit and returns the clicked point | MIT (from GitHub repo; PyPI metadata has no license field) | https://github.com/randyzwitch/streamlit-folium | No |
+| altair | 6.3.0 | Charts in the results view (`src/fieldshift/ui_results.py`); already installed as a Streamlit dependency, pinned because we import it directly. Rendered by the Vega/Vega-Lite JS bundled in Streamlit (BSD-3-Clause) | BSD-3-Clause | https://github.com/vega/altair | No |
 | Taste skill (`design-taste-frontend`) — dev tooling, not shipped in the app | 2.5.1 (commit f6b7657) | Claude Code skill: art direction (`.claude/skills/design-taste-frontend/`, see [ui-skills.md](ui-skills.md)) | MIT | https://github.com/Leonxlnx/taste-skill | Keep `LICENSE` in the folder. Its bundled photos/icons carry their own licenses (Unsplash License, CC0, CC BY 2.0/4.0, CC BY-SA 3.0/4.0, ISC, MIT; brand logos are trademarks), listed in the folder's `credits.json` / `icons-credits.json` / `photos.json` — not used in the app; any reuse must be registered in §2 with its credit line |
 | Frontend Design skill (`frontend-design`) — dev tooling, not shipped in the app | plugin 1.1.1 | Claude Code skill: UI implementation (`.claude/skills/frontend-design/`) | Apache-2.0 | https://github.com/anthropics/claude-plugins-official | Keep `LICENSE.txt` in the folder |
 | Impeccable skill (`impeccable`) — dev tooling, not shipped in the app | 4.9.1 (commit 1995764), engine 0.1.24 | Claude Code skill: UI audit & refinement (`.claude/skills/impeccable/`) | Apache-2.0 | https://github.com/pbakaus/impeccable | Keep `LICENSE` and `NOTICE.md` in the folder. Engine binary downloaded at first run to `~/.impeccable/bin/` (not in the repo) |
@@ -23,6 +24,7 @@ Everything in (or used by) this project that the team did not create: libraries,
 
 | Asset | Source / author | License | Where used | Attribution text |
 |---|---|---|---|---|
+| Material Symbols (icon font, bundled inside Streamlit, no extra download) | Google | Apache-2.0 | Interface icons via `:material/…:` in `src/app.py` and `src/fieldshift/ui_results.py` (buttons, alerts, expanders) | None required (keep the license notice if the font is redistributed outside Streamlit) |
 | OpenStreetMap standard map tiles | OpenStreetMap contributors (tile.openstreetmap.org) | Data: ODbL 1.0; tiles: OSM Tile Usage Policy (light use, valid User-Agent, attribution, no bulk download) | Step 1 map (`src/app.py`, only when "Point on a map" is chosen) | "© OpenStreetMap contributors" — shown automatically in the map corner by folium |
 
 > Map tiles: OpenStreetMap data requires "© OpenStreetMap contributors" attribution (ODbL). Many tile providers have their own usage policies — check them.
