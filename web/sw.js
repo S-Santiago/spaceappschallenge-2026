@@ -8,7 +8,7 @@
 // - Every cached API response carries X-FarmLens-Saved-At (when it was saved), shown as "Saved result from <date>".
 // - Map tiles and the map library: network only.
 
-const VERSION = "v8";
+const VERSION = "v10";
 const SHELL = `farmlens-shell-${VERSION}`;
 // Data caches keep their names across app updates, so saved results survive a new version of the app.
 const DATA = "farmlens-data-v1";
