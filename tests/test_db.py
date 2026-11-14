@@ -58,7 +58,7 @@ def test_analyses():
 
 
 def test_samples_are_loaded_offline():
-    files = [f for f in db.SAMPLES_DIR.glob("*.json") if f.stem.split("_")[0] in ("power", "modis")]
+    files = [*db.SAMPLES_DIR.glob("power_*.json"), *db.SAMPLES_DIR.glob("modis_*.json")]
     assert files
     for file in files:
         source, lat, lon = file.stem.split("_")
