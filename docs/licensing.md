@@ -1,6 +1,6 @@
 # Project license
 
-> 🔴 **Status: pending decision.** No `LICENSE` file has been added yet. Until one is added, default copyright applies (all rights reserved), which conflicts with the spirit of an open hackathon submission — decide before submitting.
+> 🟢 **Status: decided — MIT** ([`LICENSE`](../LICENSE), decision [0003](decisions/0003-project-license.md)).
 
 ## Why it matters
 Submitting to NASA Space Apps implies publishing the solution under the participation terms. The repository is the *Final Project* link, so it should state clearly what others may do with the code.
@@ -22,4 +22,4 @@ Documentation and original images can optionally use **CC BY 4.0**.
 - NASA names and insignia: not licensed by us; we do not use NASA logos.
 
 ## Decision
-_TODO: record with `/record-decision` (e.g. `0003-project-license.md`), then add the `LICENSE` file and update the README badge/table._
+**MIT**, recorded in [decisions/0003-project-license.md](decisions/0003-project-license.md).
