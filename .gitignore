@@ -55,5 +55,8 @@ desktop.ini
 # Claude Code local-only settings
 .claude/settings.local.json
 
+# Taste skill runtime state (screenshots, caches; see docs/ui-skills.md)
+.taste-skill/
+
 # Organizer event material (not ours to redistribute)
 event-material/

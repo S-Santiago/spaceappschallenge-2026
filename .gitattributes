@@ -2,3 +2,6 @@
 *.png binary
 *.jpg binary
 *.pdf binary
+
+# Windows batch files (vendored Impeccable launcher) need CRLF: cmd.exe breaks `goto`/`call :label` with LF
+*.cmd text eol=crlf

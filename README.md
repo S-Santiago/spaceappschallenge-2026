@@ -125,6 +125,34 @@ Then open the URL Streamlit prints (usually http://localhost:8501). No API keys 
 | [docs/team-setup.md](docs/team-setup.md) | **Teammates start here**: Claude Code setup, shared skills & agents |
 | [docs/indicators.md](docs/indicators.md) | Catalog of agroclimatic indicators |
 | [docs/crop-traits.md](docs/crop-traits.md) | Crop characteristics table & references |
+| [docs/ui-skills.md](docs/ui-skills.md) | UI/UX skills for Claude Code: sources, versions and coexistence rules |
+
+### UI/UX skills for Claude Code (developers)
+
+The repo ships three third-party UI/UX skills so anyone who opens it with Claude Code has them, with nothing to install:
+
+| Skill | Role | Use it for |
+|---|---|---|
+| `/design-taste-frontend` ([Taste](https://github.com/Leonxlnx/taste-skill), MIT) | **1 · Art direction** | Palette, type, tone and visual personality — what "good" looks like for FarmLens |
+| `/frontend-design` ([Anthropic](https://github.com/anthropics/claude-plugins-official), Apache-2.0) | **2 · Implementation** | Turning that direction into coherent, working Streamlit UI |
+| `/impeccable` ([Impeccable](https://github.com/pbakaus/impeccable), Apache-2.0) | **3 · Audit & refinement** | `audit`, `critique`, `polish`, `typeset`, `layout`, `harden`… on screens that already exist |
+
+- **Where**: `.claude/skills/design-taste-frontend/`, `.claude/skills/frontend-design/`, `.claude/skills/impeccable/` — complete upstream copies (instructions, references, scripts, assets), unmodified.
+- **How Claude Code finds them**: any folder `.claude/skills/<name>/SKILL.md` in the project is loaded as a project skill when Claude Code is opened from the repository root. Type `/` to see them; Claude can also pick one automatically from its description.
+- **Who decides what**: Taste sets the direction, Frontend Design implements it, Impeccable audits it and only *proposes* changes to the direction. Our own rules (mobile-first for low-end phones in [`docs/ux-guidelines.md`](docs/ux-guidelines.md), Streamlit only, licensing) override all three. Full rules: [`docs/ui-skills.md`](docs/ui-skills.md).
+- **Requirements**: Taste's scripts need Node 22+ and Chrome/Edge/Chromium. Impeccable downloads its engine binary to `~/.impeccable/bin/` on first use and sends anonymous telemetry unless `DO_NOT_TRACK=1` is set.
+
+Example prompts (name the skill so Claude uses the right one):
+
+```text
+/design-taste-frontend Propose an art direction for the FarmLens Streamlit app: farmers in southern Spain on low-end phones, outdoor sunlight, slow data. Palette tokens, one font stack, tone of voice. No photos, no animation.
+/frontend-design Apply the agreed art direction (DESIGN.md) to the results view in src/fieldshift/ui_results.py, using Streamlit components and the global CSS layer in src/app.py.
+/impeccable audit the 4-step form in src/app.py at 360 px width (Operate mode). List defects by severity; do not change the palette.
+/impeccable polish the strategy cards in src/fieldshift/ui_results.py
+/impeccable critique http://localhost:8501
+```
+
+**Add / update / remove a skill**: copy the full folder into `.claude/skills/<name>/` (`<name>` = the `name:` in its `SKILL.md`, no symlinks), keep its license file, and register it in `docs/ui-skills.md`, `docs/third-party.md`, `docs/tools.md` and `CLAUDE.md`; to update, re-copy the upstream folder and bump the version; to remove, delete the folder and those rows. Step-by-step: [`docs/ui-skills.md` §6](docs/ui-skills.md#6-updating-adding-or-removing-a-skill).
 
 ## 8. Use of AI
 

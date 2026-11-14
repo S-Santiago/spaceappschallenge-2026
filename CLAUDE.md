@@ -51,4 +51,5 @@
 ## Skills (`.claude/skills/`)
 - Compliance: `nasa-dataset-check`, `log-ai-usage`, `add-dependency`, `record-decision`, `ux-review`, `submission-check`, `demo-builder`.
 - Core product: `nasa-power-fetch` → `agro-indicator` → `crop-traits` → `rotation-card`. Any derived number must be defined in `docs/indicators.md`; any crop value must have a source in `data/crops.csv`.
+- UI/UX (vendored third-party, do not edit their files): `design-taste-frontend` (art direction) → `frontend-design` (implementation) → `impeccable` (audit & refinement). Follow the hierarchy and conflict rules in `docs/ui-skills.md`; project rules (`docs/ux-guidelines.md`, Streamlit) override all three.
 - Security: run the built-in `/security-review` before merging a branch into `main` and before the demo goes public.

@@ -51,16 +51,20 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
               "soil_wetness": 0.6, "frost_days": 0.2, "heat_days": 0, "heavy_rain_days": 0.4,
               "ndvi": 0.15, "likely_bare": true}],
   "trends": {"rain_change_pct": -8, "heat_days_change": 3.1},
-  "sources": ["NASA POWER 2005-2025", "MODIS MOD13Q1 2024-2025"]
+  "sources": ["NASA POWER 2005-2025", "MODIS MOD13Q1 2024-2025"],
+  "limits": {"en": ["Climate values are NASA satellite and model estimates ..."], "es": ["Los datos de clima son ..."]}
 }
 ```
 
 ### Shape 2 — strategies (B → C)
 ```json
 [{"id": "current", "name": "Current rotation", "years": ["durum_wheat", "durum_wheat", "sunflower"],
+  "cover_crop": null,
   "scores": {"water": 62, "soil": 40, "income": 70, "risk": 55, "overall": 57},
+  "score_details": {"nitrogen": 0, "organic_matter": 12, "erosion": 24, "pest_break": 13, "bare_months_per_year": 4.7},
   "why": "...", "evidence": ["..."], "benefits": ["..."], "gaps": ["..."], "risks_to_review": ["..."]}]
 ```
+`id` is `current` or a strategy kind (`legume_break`, `cover_crop`, `water_saving`, `forage_diversification`). `cover_crop` is `null` or `{"after_year": 2, "crop": "vetch_cover"}`. Call `rotations.compare(profile, current, crops, priorities, irrigated, slope, lang="en"|"es")`; use `rotations.label(score, lang)` for good/neutral/poor and `rotations.DISCLAIMER[lang]` at the end of the cards. Scope: Málaga province only; inland farmland such as Vega de Antequera (37.05, -4.60) gives a much more realistic profile than Málaga city, whose MODIS pixel is urban and whose NASA cell is coastal (no heat days).
 
 ## Suggested timeline (Europe/Madrid)
 | When | Milestone |

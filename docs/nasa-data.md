@@ -22,12 +22,12 @@ Both resources below are NASA resources named in the official challenge statemen
 | Access date | 2026-11-14 |
 | Access method | REST API, no login/key — `src/fieldshift/power.py` (`fetch_daily`), JSON cache in `src/fieldshift/cache.py` (to be replaced by `db.py`, #6) |
 | License / terms | No license stated on the official referencing page. Required: cite **POWER's Reference** and **POWER's Data Reference** (service name, version, date accessed). The project asks users to send a reference/link of any publication or presentation to larc-power-project@mail.nasa.gov and to notify it if data is passed on to others. See section 4. |
-| Variables & units | `T2M_MAX` Temperature at 2 m maximum (°C) · `T2M_MIN` Temperature at 2 m minimum (°C) · `PRECTOTCORR` Precipitation corrected (mm/day) · `GWETROOT` Root zone soil wetness (dimensionless, 0–1). Units as returned by the API |
+| Variables & units | `T2M_MAX` Temperature at 2 m maximum (°C) · `T2M_MIN` Temperature at 2 m minimum (°C) · `PRECTOTCORR` Precipitation corrected (mm/day) · `GWETROOT` Root zone soil wetness (dimensionless, 0–1) · `ALLSKY_SFC_SW_DWN` All-sky surface shortwave downward irradiance (MJ m⁻² day⁻¹) · `T2MDEW` Dew/frost point at 2 m (°C) · `WS2M` Wind speed at 2 m (m/s). Units as returned by the API |
 | Spatial coverage & resolution | Global. Meteorology: **½° latitude × ⅝° longitude** (≈ 55 × 55 km at Málaga) from MERRA-2 / GEOS assimilation models. Value for the grid cell containing the point; API returns cell elevation (e.g. 144.5 m for 36.72, −4.42) |
 | Temporal coverage & resolution | Daily; we use **2005-01-01 → 2025-12-31** (local solar time, `time_standard: LST`) |
 | Missing values / quality flags | Fill value **−999** → converted to missing (`None`) in `power.py` |
 | Limits — what it does NOT allow us to conclude | Model/reanalysis estimates, **not measurements at the farm**; a ~55 km cell cannot capture valleys, slopes or plot-level microclimate. `GWETROOT` is model output, not satellite-measured soil moisture. 2005–2014 vs 2016–2025 shows a change between decades, not a proven long-term climate trend |
-| Processing applied | Observation/model output (POWER) → transformation (monthly means, counts over thresholds, Hargreaves ET₀, decade comparison — catalog in `docs/indicators.md`) → inference (rotation suggestions in `rotations.py`) |
+| Processing applied | Observation/model output (POWER) → transformation (monthly means, counts over thresholds, FAO-56 Penman-Monteith ET₀ from temperature, radiation, dew point and wind (Hargreaves only for days missing those), decade comparison — catalog in `docs/indicators.md`) → inference (rotation suggestions in `rotations.py`) |
 | Synthetic data? | No |
 | Role in the solution | Core evidence for every rotation card (water balance, frost/heat risk, heavy-rain erosion risk, trends). Without it the tool cannot describe the field's climate or justify any suggestion |
 | Small test done | Yes — Málaga (36.72, −4.42): 7,670 daily records 2005–2025 (team test); 3-day API check on 2026-11-14 confirmed version, units and fill value. Demo samples: `data/samples/` (#8) |
@@ -50,6 +50,18 @@ Both resources below are NASA resources named in the official challenge statemen
 | Synthetic data? | No |
 | Role in the solution | Identifies the bare-soil window of the current rotation → evidence for cover-crop and erosion-reduction strategies. Without it, bare periods would be assumed, not observed |
 | Small test done | Yes — Málaga (36.72, −4.42): 45 composites for 2024–2025, ~25 s first call (team test). Demo path uses pre-loaded data (#8) |
+
+### Official resources not used (and why)
+| Resource | Why not (yet) | What we use instead |
+|---|---|---|
+| SMAP soil moisture | Earthdata Login + 9–36 km grid; little time | POWER `GWETROOT` (model root-zone wetness) |
+| GPM IMERG precipitation | Earthdata Login, large files | POWER `PRECTOTCORR` |
+| SRTM elevation | Needs login or an API key | Slope entered by the farmer |
+| ECOSTRESS | Irregular revisit, AppEEARS login | POWER-based Penman-Monteith ET0 |
+| Landsat / VIIRS | More processing than MODIS for a 2-day build | MODIS NDVI |
+| GRACE / GRACE-FO, GEDI | ~300 km / forest-oriented | — (future) |
+| USDA / USGS partner datasets (WSS, CDL, PRISM, SSURGO, NAIP, NLCD, NWIS, OpenET, LANDFIRE, CoCoRaHS, AMS, NASS) | U.S. only; our scope is Málaga | — |
+| FAO GAEZ | Global, possible future check of crop suitability | — |
 
 ## 2. Candidate datasets (to evaluate — NOT yet verified)
 
@@ -111,3 +123,6 @@ All of the above except AppEEARS/Earthdata tools are named in the official state
 **D-02 · MODIS MOD13Q1 v061**
 - Product: *Didan, K. (2021). MODIS/Terra Vegetation Indices 16-Day L3 Global 250m SIN Grid V061 [Data set]. NASA Land Processes Distributed Active Archive Center. https://doi.org/10.5067/MODIS/MOD13Q1.061. Date accessed: 2026-11-14.*
 - Access service: *ORNL DAAC. 2018. Terrestrial Ecology Subsetting & Visualization Services (TESViS) RESTful Web Service. https://doi.org/10.3334/ORNLDAAC/1600.*
+
+**Method reference (ET₀, I-02)**
+- Allen, R.G., Pereira, L.S., Raes, D., Smith, M. (1998). *Crop evapotranspiration — FAO Irrigation and Drainage Paper 56*. FAO, Rome.
