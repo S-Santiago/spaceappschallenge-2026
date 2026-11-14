@@ -9,6 +9,7 @@ Everything in (or used by) this project that the team did not create: libraries,
 | Name | Version | Purpose | License | Link | Notes (attribution required?) |
 |---|---|---|---|---|---|
 | httpx | 0.28.1 | HTTP client for NASA POWER and ORNL MODIS APIs | BSD-3-Clause | https://www.python-httpx.org/ | No |
+| pytest | 9.2.0 | Unit tests (`tests/`) | MIT | https://pytest.org/ | No |
 
 ## 2. Assets (images, icons, fonts, audio, map tiles)
 

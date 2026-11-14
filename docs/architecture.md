@@ -15,7 +15,7 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 | Database | SQLite | `src/fieldshift/db.py`, schema + seed | @HectorLopGar-Dev | 🔴 #6 |
 | Crop catalogue | CSV seed → `crops` table | `data/crops.csv` | @HectorLopGar-Dev | 🔴 #7 |
 | Demo fields (offline) | committed seed | `data/samples/` | @HectorLopGar-Dev | 🔴 #8 |
-| Climate indicators → Shape 1 | Python | `src/fieldshift/climate.py` | @HaoJunnnzhang | 🔴 #9 |
+| Climate indicators → Shape 1 | Python | `src/fieldshift/climate.py` | @HaoJunnnzhang | 🟡 #9 (built; DB hook pending #6) |
 | Rotation engine → Shape 2 | Python | `src/fieldshift/rotations.py` | @HaoJunnnzhang | 🔴 #10 |
 | Tests | pytest | `tests/` | @HaoJunnnzhang | 🔴 #11 |
 | UI | Streamlit | `src/app.py` | @S-Santiago | 🔴 #12 · #13 |
@@ -43,4 +43,6 @@ Defined in [indicators.md](indicators.md). Thresholds and formulas must be docum
 - MODIS NDVI: only 2024–2025, 250 m pixels may mix several plots.
 - Market value of crops is illustrative.
 - Hosted demo: disk resets on restart (DB rebuilt from seed; saved analyses lost).
-- _More from #11 (thresholds, uncertainty statements)._
+- Thresholds are team assumptions documented in [indicators.md](indicators.md): frost Tmin < 0 °C, heat Tmax > 35 °C, heavy rain ≥ 30 mm/day, likely bare NDVI < 0.25. None is crop-specific.
+- ET0 is Hargreaves (temperature only), not Penman-Monteith; it can be biased on coastal cells.
+- _More from #11 (scoring, uncertainty statements)._
