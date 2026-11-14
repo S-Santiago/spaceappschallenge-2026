@@ -220,6 +220,11 @@ def need_mm(crop: dict) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
+def _need_known(crop: dict) -> bool:
+    """Fallow (needs nothing) or a crop with a sourced seasonal water need."""
+    return is_fallow(crop) or need_mm(crop) > 0
+
+
 def crop_name(crop: dict, lang: str = "en") -> str:
     """Spanish name from an optional `name_es` column, falling back to `name`."""
     return (lang == "es" and crop.get("name_es")) or crop.get("name") or crop.get("crop_id")
@@ -332,11 +337,12 @@ def score(years: list[dict], cover: tuple[int, dict] | None, profile: dict, irri
     n = len(years)
     cover_crop = cover[1] if cover else None
 
-    # water: share of crop water need covered by rain; a cover crop counts as half a crop
-    water_items = [(rain_coverage(c, profile), 1.0) for c in years]
-    if cover_crop:
+    # water: share of crop water need covered by rain; a cover crop counts as half a crop.
+    # Crops with an unknown water need are left out (not counted as fully covered); all unknown -> neutral 50.
+    water_items = [(rain_coverage(c, profile), 1.0) for c in years if _need_known(c)]
+    if cover_crop and _need_known(cover_crop):
         water_items.append((rain_coverage(cover_crop, profile), 0.5))
-    water = 100 * sum(v * w for v, w in water_items) / sum(w for _, w in water_items)
+    water = 100 * sum(v * w for v, w in water_items) / sum(w for _, w in water_items) if water_items else 50
 
     # soil = nitrogen 25 + organic matter 25 + erosion 30 + pest break 20
     legumes = [c for c in years if c.get("n_fixing") == "yes"]
@@ -410,7 +416,7 @@ def candidates(current: list[str], crops: dict, profile: dict, irrigated: bool) 
               if (c.get("type") == "forage" or c.get("forage_value") == "high") and c.get("family") not in families]
     thirstiest = max(range(len(current)), key=lambda i: need_mm(crops[current[i]]))
     savers = [cid for cid, c in ok.items()
-              if c.get("drought_tolerance") == "high" and need_mm(c) < need_mm(crops[current[thirstiest]])]
+              if c.get("drought_tolerance") == "high" and 0 < need_mm(c) < need_mm(crops[current[thirstiest]])]
     covers = [cid for cid, c in crops.items() if c.get("type") == "cover" and suitable(c, profile, irrigated)]
     years = [crops[c] for c in current]
 
