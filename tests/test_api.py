@@ -163,3 +163,59 @@ def test_power_down_is_a_friendly_503(client, monkeypatch):
     resp = client.post("/api/analyze", json={"lat": 41.0, "lon": -2.0, "rotation": ["barley"]})
     assert resp.status_code == 503
     assert "connection refused" not in resp.json()["detail"]
+
+
+@pytest.mark.parametrize("field", ["antequera", "campillos", "guadalhorce"])
+def test_predictions_demo_field(client, field):
+    body = client.get("/api/predictions", params={"field": field}).json()
+    assert body["period"] == "2005-2025" and "Not a weather forecast" in body["basis"]
+    assert len(body["rain_weeks"]) == 52 and body["rain_weeks"][0]["start"] == "01-01"
+    assert body["frost"]["spring"]["years"] == 21
+    assert {m["month"] for m in body["heavy_rain"]["months"]} == set(range(1, 13))
+    assert isinstance(body["alerts"], list)  # demo fields have pre-loaded MODIS, so bare months are known
+
+
+def test_predictions_alerts_follow_rotation_and_slope(client):
+    params = {"field": "antequera", "rotation": ROTATION}
+    flat = {a["month"]: a for a in client.get("/api/predictions", params=params).json()["alerts"]}
+    assert flat[11]["level"] == "high" and "crop_calendar" in flat[11]["sources"]  # docs/indicators.md, P-07
+    assert flat[10]["level"] == "medium"
+    steep = {a["month"]: a for a in client.get("/api/predictions", params={**params, "slope": "steep"}).json()["alerts"]}
+    assert steep[10]["level"] == "high"  # raise_for_slope
+
+
+def test_predictions_free_point_uses_the_power_cache(client, monkeypatch):
+    calls = []
+
+    async def fake_power(lat, lon):
+        calls.append((lat, lon))
+        return _sample("power")
+
+    monkeypatch.setattr(api.power, "fetch_daily", fake_power)
+    body = client.get("/api/predictions", params={"lat": 40.0, "lon": -3.0}).json()
+    assert calls == [(40.0, -3.0)]
+    assert len(body["rain_weeks"]) == 52
+    assert body["alerts"] is None  # no MODIS downloaded and no rotation: bare months unknown, not "no alerts"
+
+
+@pytest.mark.parametrize("params, status", [
+    ({"field": "nowhere"}, 404),
+    ({}, 422),
+    ({"lat": 37.0}, 422),
+    ({"lat": 91, "lon": -4.6}, 422),
+    ({"lat": 37.0, "lon": "east"}, 422),
+    ({"field": "antequera", "rotation": ["banana"]}, 422),
+    ({"field": "antequera", "slope": "cliff"}, 422),
+])
+def test_predictions_rejects_bad_input(client, params, status):
+    assert client.get("/api/predictions", params=params).status_code == status
+
+
+def test_predictions_power_down_is_a_friendly_503(client, monkeypatch):
+    async def down(lat, lon):
+        raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(api.power, "fetch_daily", down)
+    resp = client.get("/api/predictions", params={"lat": 41.0, "lon": -2.0})
+    assert resp.status_code == 503
+    assert "connection refused" not in resp.json()["detail"]

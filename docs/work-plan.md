@@ -77,6 +77,7 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
 | `GET /api/crops?lang=en\|es` | `[{"id", "name", "type", "family", "n_fixing", "sow_month", "harvest_month", "confidence"}]` sorted by `name` in `lang` (accents ignored). **PWA crop field:** a text input with the names as suggestions (`<input list="crops">` + `<datalist>`, no JS library) and the chosen `id` sent in `rotation` |
 | `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "pending", "disclaimer", "score_limits"}` (`score_limits`: one sentence per score, in the request language) |
 | `GET /api/analyses/{id}` | A stored analysis: `{"id", "lat", "lon", "inputs", "strategies", "created_at"}` |
+| `GET /api/predictions?field=<slug>` (or `lat`, `lon`) `&rotation=<id>&rotation=<id>…&slope=flat\|moderate\|steep` | Predictions shape below (P-01, P-02, P-03, P-07). Same POWER path and cache as `/api/analyze` (demo fields never call NASA; a new point waits for POWER, `503` if unreachable). MODIS is used only if already downloaded. `rotation` (1–4 crop ids of the **current** rotation, optional) enables the crop-calendar source of `alerts`; `slope` is applied with `raise_for_slope`. Without MODIS and without `rotation`, `alerts` is `null`. Errors: `404` unknown field, `422` missing/invalid location, unknown crop or slope. ~40 ms, ~7 KB for a demo field |
 
 ```json
 POST /api/analyze
@@ -92,7 +93,7 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
 **Points that are not demo fields.** NASA POWER answers in ~3 s, but the MODIS service (ORNL) can take minutes for a new point. The API waits for POWER (up to 60 s) and for MODIS only 3 s (`FIELDSHIFT_MODIS_WAIT_S`); if MODIS is not ready it answers anyway with `"pending": ["ndvi"]` and `likely_bare: null` in every month (bare-soil months unknown), while the MODIS download continues in the background. A retry joins that download instead of starting a new one; once it lands, the full profile is stored and `"pending": []`. **PWA:** show the results, say "satellite greenness still loading" when `pending` contains `ndvi`, and ask again after ~1 minute. Measured: new point ~6 s, same point afterwards < 0.3 s.
 
 ### Predictions shape (P-01, P-03 — #37; P-02, P-07 — #38)
-`predictions.build_predictions(power_payload)` in `src/fieldshift/predictions.py` (pure function over the same POWER payload `climate.py` uses; no network). Proposed endpoint for #39: `GET /api/predictions?field=<slug>` (or `lat`, `lon`).
+`predictions.build_predictions(power_payload)` in `src/fieldshift/predictions.py` (pure function over the same POWER payload `climate.py` uses; no network). Served by `GET /api/predictions` (table above).
 
 ```json
 {"period": "2005-2025",
@@ -115,7 +116,7 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
  "alerts": [      // P-07; null if neither MODIS nor a rotation was given
    {"month": 11, "prob": 0.52, "years": 21, "sources": ["crop_calendar"], "level": "high"}]}
 ```
-Call `build_predictions(power, modis, rotation)` with `rotation` = list of crop dicts of the farmer's **current** rotation (`[db.get_engine_crops()[c] for c in rotation_ids]`). Apply `predictions.raise_for_slope(level, slope)` with the farmer's slope before showing the alert.
+Call `build_predictions(power, modis, rotation)` with `rotation` = list of crop dicts of the farmer's **current** rotation (`[db.get_engine_crops()[c] for c in rotation_ids]`). The endpoint applies `predictions.raise_for_slope(level, slope)` with the farmer's slope, so the PWA shows `level` as it comes.
 Values above are the real output for Vega de Antequera. UI wording (farmer sentences) in `docs/indicators.md` → Predictions.
 
 ## Suggested timeline (Europe/Madrid)
