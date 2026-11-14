@@ -58,6 +58,8 @@ def test_analyses():
 
 
 def test_samples_are_loaded_offline():
-    for file in db.SAMPLES_DIR.glob("*.json"):
+    files = [*db.SAMPLES_DIR.glob("power_*.json"), *db.SAMPLES_DIR.glob("modis_*.json")]
+    assert files
+    for file in files:
         source, lat, lon = file.stem.split("_")
         assert db.get_raw(source, float(lat), float(lon)) is not None
