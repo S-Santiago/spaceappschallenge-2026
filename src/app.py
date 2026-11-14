@@ -16,15 +16,45 @@ from fieldshift.ui_results import render_results
 
 st.set_page_config(page_title="FarmLens", page_icon="🌱", layout="centered")
 
-# Streamlit's base font is already 16 px; here: tighter side padding on phones and 48 px buttons.
+# Global accessibility layer (one place for the whole app; see docs/ux-guidelines.md).
+# Streamlit's base font is already 16 px. Rules: every touch target ≥ 48 px high (WCAG 2.5.8 +
+# our low-end-phone guideline), one strong focus ring that works on light and dark themes
+# (WCAG 2.4.7 / 2.4.11), no text below 14 px, honour prefers-reduced-motion.
 st.markdown(
     """
     <style>
+    :root { --fl-target: 48px; --fl-focus: #1a73e8; }
     .block-container { padding-top: 1.5rem; padding-left: 1rem; padding-right: 1rem; }
-    div.stButton > button { min-height: 48px; font-size: 18px; font-weight: 600; }
-    [data-testid="stRadioOption"] { min-height: 44px; align-items: center; }
-    [data-testid="stButtonGroup"] button { min-height: 44px; }
-    [data-testid="stTable"] td, [data-testid="stTable"] th { font-size: 16px; padding: 0.3rem 0.4rem; }
+
+    /* Touch targets */
+    div.stButton > button { min-height: var(--fl-target); font-size: 18px; font-weight: 600; }
+    [data-testid="stRadioOption"] { display: flex; min-height: var(--fl-target); align-items: center; }
+    [data-testid="stButtonGroup"] button { min-height: var(--fl-target); min-width: 44px; font-size: 16px; }
+    [data-testid="stSelectbox"] [role="group"] { min-height: var(--fl-target); align-items: stretch; }
+    [data-testid="stExpander"] summary { min-height: var(--fl-target); }
+    [data-testid="stElementToolbar"] button { min-width: 44px; min-height: 44px; }
+
+    /* Selected segment: theme text colour + bold (red-on-dark text was 3.6:1); border/tint still mark it */
+    div[data-testid="stButtonGroup"] button[role="radio"][aria-checked="true"],
+    div[data-testid="stButtonGroup"] button[role="radio"][aria-checked="true"] p { color: inherit; font-weight: 700; }
+
+    /* Heading permalink icons: 16 px targets and extra tab stops with no use for farmers */
+    [data-testid="stHeaderActionElements"] { display: none; }
+
+    /* One visible focus ring for every control (≥ 3:1 on both light and dark backgrounds) */
+    a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex="0"]:focus-visible,
+    [data-testid="stSelectbox"] [role="group"]:has(input:focus-visible),
+    [data-testid="stRadioOption"]:has(input:focus-visible),
+    [data-testid="stCheckbox"] label:has(input:focus-visible) {
+        outline: 3px solid var(--fl-focus); outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -60,11 +90,12 @@ st.write(
 
 # ---------------------------------------------------------------- Step 1
 st.subheader("Step 1 of 4 · Your field")
+# Hints are visible text, not "?" tooltips: tooltips need hover and had 16 px targets on phones.
 mode = st.radio(
     "How do you want to choose your field?",
     ["Demo field", "Point on a map"],
+    captions=["Works without internet", "Needs a connection"],
     horizontal=True,
-    help="The demo field works without internet. The map needs a connection.",
 )
 
 if mode == "Demo field":
@@ -78,6 +109,13 @@ else:
     st.caption("Tap your field on the map.")
     start = st.session_state.get("map_point", (36.72, -4.42))
     fmap = folium.Map(location=start, zoom_start=9, control_scale=True)
+    # Leaflet's +/− buttons are 30 px: enlarge them to 44 px touch targets inside the map iframe.
+    fmap.get_root().header.add_child(
+        folium.Element(
+            "<style>.leaflet-touch .leaflet-bar a, .leaflet-bar a"
+            "{width:44px;height:44px;line-height:44px;font-size:22px}</style>"
+        )
+    )
     folium.CircleMarker(start, radius=10, color="#b00020", fill=True, fill_opacity=0.9, tooltip="Your field").add_to(fmap)
     clicked = st_folium(fmap, height=300, use_container_width=True, returned_objects=["last_clicked"])
     if clicked and clicked.get("last_clicked"):
@@ -93,7 +131,12 @@ st.info(f"📍 Location: **{lat:.4f}, {lon:.4f}** (latitude, longitude)")
 # ---------------------------------------------------------------- Step 2
 st.subheader("Step 2 of 4 · Current rotation")
 n_years = st.segmented_control(
-    "How many years does your rotation last?", [2, 3, 4], default=3, format_func=lambda n: f"{n} years"
+    "How many years does your rotation last?",
+    [2, 3, 4],
+    default=3,
+    required=True,
+    format_func=lambda n: f"{n} years",
+    width="stretch",
 ) or 3
 rotation = []
 for i in range(n_years):
@@ -103,17 +146,22 @@ for i in range(n_years):
 
 # ---------------------------------------------------------------- Step 3
 st.subheader("Step 3 of 4 · Your priorities")
-st.caption("0 = not important · 5 = very important")
-priorities = {k: st.slider(label, 0, 5, 3, key=f"prio_{k}") for k, label in PRIORITIES.items()}
+st.caption("Tap a number: 0 = not important · 5 = very important")
+# Six big buttons instead of a slider: a 0–5 slider had a ~16 px thumb and needed dragging
+# (WCAG 2.5.7 / 2.5.8); one tap is easier on a small phone.
+priorities = {
+    k: st.segmented_control(label, list(range(6)), default=3, required=True, key=f"prio_{k}", width="stretch")
+    for k, label in PRIORITIES.items()
+}
 if sum(priorities.values()) == 0:
     st.caption("All priorities are 0, so they will count the same.")
 
 # ---------------------------------------------------------------- Step 4
 st.subheader("Step 4 of 4 · Your farm")
 irrigation = st.radio(
-    "Irrigation", list(IRRIGATION), format_func=IRRIGATION.get, help="How much water can you add besides rain?"
+    "Irrigation: how much water can you add besides rain?", list(IRRIGATION), format_func=IRRIGATION.get
 )
-slope = st.radio("Slope of the field", list(SLOPE), format_func=SLOPE.get, help="Steeper fields lose more soil.")
+slope = st.radio("Slope of the field (steeper fields lose more soil)", list(SLOPE), format_func=SLOPE.get)
 
 inputs = FarmerInputs(
     lat=lat,

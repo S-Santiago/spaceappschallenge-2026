@@ -277,7 +277,14 @@ def render_calendar_table(profile: dict[str, Any]) -> None:
         f"<td>{r['frost']}</td><td>{r['heat']}</td><td>{r['field']}</td></tr>"
         for r in calendar_rows(profile)
     )
-    st.markdown(f"<table class='fl-cal'><thead>{head}</thead><tbody>{body}</tbody></table>", unsafe_allow_html=True)
+    # The table scrolls inside its own region (never the page) if it ever gets wider than the phone;
+    # tabindex lets keyboard users scroll it; the caption names the table for screen readers.
+    st.markdown(
+        "<div class='fl-scroll' role='region' aria-label='Month-by-month climate table' tabindex='0'>"
+        "<table class='fl-cal'><caption class='fl-sr'>Average month, 2005–2025, for the area around your field"
+        f"</caption><thead>{head}</thead><tbody>{body}</tbody></table></div>",
+        unsafe_allow_html=True,
+    )
     st.caption(
         "Average month, 2005–2025. **Water need** = water the air takes from a crop (ET0). "
         "**Balance** = rain − water need: 🔻 deficit (too little rain) · 💧 spare water. "
@@ -292,12 +299,12 @@ def render_rain_chart(profile: dict[str, Any]) -> None:
         _empty("The rain chart is not available for this field yet.")
         return
     rows = [{"Month": MONTH_ABBR[i], "order": i, "Rain": rain[i], "Water need (ET0)": et0[i]} for i in range(12)]
-    x = alt.X("Month:N", sort=MONTH_ABBR, title=None, axis=alt.Axis(labelAngle=0, labelFontSize=12))
+    x = alt.X("Month:N", sort=MONTH_ABBR, title=None, axis=alt.Axis(labelAngle=0, labelFontSize=14))
     y_title = "mm per month"
     color = alt.Color(
         "series:N",
         scale=alt.Scale(domain=["Rain", "Water need (ET0)"], range=["#1f6fb2", "#b3541e"]),
-        legend=alt.Legend(title=None, orient="top", labelFontSize=14, symbolSize=150),
+        legend=alt.Legend(title=None, orient="top", labelFontSize=15, symbolSize=150),
     )
     base = alt.Chart(alt.Data(values=rows))
     bars = base.transform_fold(["Rain"], as_=["series", "mm"]).mark_bar(opacity=0.85).encode(
@@ -306,8 +313,8 @@ def render_rain_chart(profile: dict[str, Any]) -> None:
     line = base.transform_fold(["Water need (ET0)"], as_=["series", "mm"]).mark_line(
         point=alt.OverlayMarkDef(shape="diamond", size=60), strokeWidth=3, strokeDash=[6, 3]
     ).encode(x=x, y="mm:Q", color=color, tooltip=["Month:N", alt.Tooltip("mm:Q", title="Water need (mm)")])
-    chart = (bars + line).properties(height=240).configure_axis(titleFontSize=13, labelFontSize=12)
-    st.altair_chart(chart, use_container_width=True)
+    chart = (bars + line).properties(height=240).configure_axis(titleFontSize=14, labelFontSize=14)
+    st.altair_chart(chart, width="stretch")
     st.caption(
         "Blue bars = rain. Dashed brown line with ◆ = water need. "
         "Where the line is above the bars, the field is short of water."
@@ -429,12 +436,19 @@ def render_sources(profile: dict[str, Any], is_mock: bool) -> None:
 
 CSS = """
 <style>
+.fl-scroll { overflow-x: auto; max-width: 100%; }
+.fl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 table.fl-cal { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.25; }
 table.fl-cal th, table.fl-cal td { padding: 0.35rem 0.2rem; text-align: right; border-bottom: 1px solid rgba(128,128,128,0.35); }
-table.fl-cal thead th { font-size: 13px; font-weight: 600; vertical-align: bottom; }
+table.fl-cal thead th { font-size: 14px; font-weight: 600; vertical-align: bottom; }
 table.fl-cal th[scope=row], table.fl-cal thead th:first-child { text-align: left; }
 table.fl-cal td:last-child, table.fl-cal thead th:last-child { text-align: left; white-space: nowrap; }
 table.fl-cal td:nth-child(4) { white-space: nowrap; }
+/* Smallest phones (320 px): tighter cells so all 7 columns fit without scrolling */
+@media (max-width: 360px) {
+  table.fl-cal { font-size: 14px; }
+  table.fl-cal th, table.fl-cal td { padding: 0.35rem 0.12rem; }
+}
 </style>
 """
 

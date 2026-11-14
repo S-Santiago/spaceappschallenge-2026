@@ -5,6 +5,7 @@
 
 | | |
 |---|---|
+| **Project name** | **FarmLens** (the Python package keeps the internal name `src/fieldshift/`, after the challenge title "Field Shift") |
 | **Event** | NASA Space Apps Challenge 2026 · Local event: Málaga (42 Málaga Fundación Telefónica) |
 | **Dates** | 14–15 November 2026 · Development started Sat 14, 09:00 local time |
 | **Official deadline** | Sun 15 November 2026, **before 23:59** local time (Submit for Judging) |
