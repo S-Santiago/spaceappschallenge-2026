@@ -1,7 +1,7 @@
 # 0002 · Tech stack: Python + Streamlit + SQLite
 
 - **Date:** 2026-11-14
-- **Status:** accepted
+- **Status:** accepted · **UI part superseded by [0004](0004-mobile-pwa.md)** (PWA instead of Streamlit); Python + SQLite still apply
 - **Deciders:** team (issue #1, epic #16)
 
 ## Context
