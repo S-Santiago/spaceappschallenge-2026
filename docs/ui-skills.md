@@ -17,7 +17,7 @@ Copied on 2026-11-14. Folder names match each skill's `name:` field; Taste's own
 These skills are written for generic products (Taste mainly for marketing websites). **Our own constraints override all three**:
 
 1. `CLAUDE.md` and [`ux-guidelines.md`](ux-guidelines.md) — farmers on low/mid-range phones, slow mobile data, little tech experience: mobile-first, lightweight, 48 px targets, ≥16 px text, WCAG 2.2 AA contrast, no colour-only states.
-2. [Decision 0002](decisions/0002-tech-stack.md) — the app is **Streamlit**. No React/Tailwind/other framework because a skill suggests it.
+2. Decisions [0004](decisions/0004-mobile-pwa.md) and [0005](decisions/0005-pwa-vanilla-js.md) — the app is a **PWA in vanilla JS with no build step** (< 200 KB of JS). No React/Tailwind/other framework because a skill suggests it.
 3. Honesty, licensing and branding rules — no NASA branding, every external asset registered in [`third-party.md`](third-party.md), simulated data labelled as such.
 
 If a skill instruction conflicts with any of these, the project rule wins and the skill instruction is skipped (say so in the PR).
@@ -26,8 +26,8 @@ If a skill instruction conflicts with any of these, the project rule wins and th
 
 | Order | Skill | Owns | Must not |
 |---|---|---|---|
-| 1 | **Taste** (`/design-taste-frontend`) | The art direction: palette, type pairing, tone of voice, visual personality, what "good" looks like for FarmLens | Dictate implementation details, or impose its marketing-site page plan (hero, one section per screen, stock photographs, shaders/WebGL scenes) on the Streamlit app |
-| 2 | **Frontend Design** (`/frontend-design`) | Turning that direction into working, coherent UI in our stack (Streamlit components + the single global CSS layer in `src/app.py`) | Pick a new palette, typeface or personality when a Taste direction already exists; its "take aesthetic risk" applies only inside that direction |
+| 1 | **Taste** (`/design-taste-frontend`) | The art direction: palette, type pairing, tone of voice, visual personality, what "good" looks like for FarmLens | Dictate implementation details, or impose its marketing-site page plan (hero, one section per screen, stock photographs, shaders/WebGL scenes) on the app |
+| 2 | **Frontend Design** (`/frontend-design`) | Turning that direction into working, coherent UI in our stack (HTML/JS modules in `web/js/` + the single stylesheet `web/styles.css`) | Pick a new palette, typeface or personality when a Taste direction already exists; its "take aesthetic risk" applies only inside that direction |
 | 3 | **Impeccable** (`/impeccable audit`, `critique`, `polish`, …) | Auditing the implementation, detecting defects and fixing or proposing fixes | Replace the art direction. It may fix defects directly (contrast, spacing, touch targets, states, consistency); anything that changes the direction is a **proposal** the team approves first |
 
 Rules of thumb:

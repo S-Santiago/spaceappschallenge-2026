@@ -68,7 +68,7 @@ At least one NASA resource listed by the challenge is **mandatory** for Global A
 
 ## 5. How to run it
 
-**Public demo (no install, no login):** _TODO (#15): Streamlit Community Cloud link._
+**Public demo (no install, no login):** _TODO (#15): public link to the mobile web app (PWA)._
 
 **Run locally** (Python 3.11+):
 
@@ -98,8 +98,8 @@ Then open http://localhost:8000 on a phone-sized window. One service runs the AP
 ├── docs/               # ALL documentation (index: docs/README.md)
 ├── notebooks/          # Exploratory analysis
 ├── src/
-│   ├── app.py          # Streamlit app (entry point)
-│   └── fieldshift/     # NASA clients (power.py, modis.py), indicators, rotation engine, DB
+│   └── fieldshift/     # API (api.py), NASA clients (power.py, modis.py), indicators, rotation engine, predictions, DB
+├── web/                # Mobile web app (PWA): HTML/CSS/JS modules, service worker, no build step
 ├── CLAUDE.md           # Instructions for AI agents working in this repo
 ├── CONTRIBUTING.md     # Team workflow
 └── README.md
@@ -134,22 +134,22 @@ The repo ships three third-party UI/UX skills so anyone who opens it with Claude
 | Skill | Role | Use it for |
 |---|---|---|
 | `/design-taste-frontend` ([Taste](https://github.com/Leonxlnx/taste-skill), MIT) | **1 · Art direction** | Palette, type, tone and visual personality — what "good" looks like for FarmLens |
-| `/frontend-design` ([Anthropic](https://github.com/anthropics/claude-plugins-official), Apache-2.0) | **2 · Implementation** | Turning that direction into coherent, working Streamlit UI |
+| `/frontend-design` ([Anthropic](https://github.com/anthropics/claude-plugins-official), Apache-2.0) | **2 · Implementation** | Turning that direction into coherent, working UI in the PWA (`web/`) |
 | `/impeccable` ([Impeccable](https://github.com/pbakaus/impeccable), Apache-2.0) | **3 · Audit & refinement** | `audit`, `critique`, `polish`, `typeset`, `layout`, `harden`… on screens that already exist |
 
 - **Where**: `.claude/skills/design-taste-frontend/`, `.claude/skills/frontend-design/`, `.claude/skills/impeccable/` — complete upstream copies (instructions, references, scripts, assets), unmodified.
 - **How Claude Code finds them**: any folder `.claude/skills/<name>/SKILL.md` in the project is loaded as a project skill when Claude Code is opened from the repository root. Type `/` to see them; Claude can also pick one automatically from its description.
-- **Who decides what**: Taste sets the direction, Frontend Design implements it, Impeccable audits it and only *proposes* changes to the direction. Our own rules (mobile-first for low-end phones in [`docs/ux-guidelines.md`](docs/ux-guidelines.md), Streamlit only, licensing) override all three. Full rules: [`docs/ui-skills.md`](docs/ui-skills.md).
+- **Who decides what**: Taste sets the direction, Frontend Design implements it, Impeccable audits it and only *proposes* changes to the direction. Our own rules (mobile-first for low-end phones in [`docs/ux-guidelines.md`](docs/ux-guidelines.md), vanilla JS PWA with no build step, licensing) override all three. Full rules: [`docs/ui-skills.md`](docs/ui-skills.md).
 - **Requirements**: Taste's scripts need Node 22+ and Chrome/Edge/Chromium. Impeccable downloads its engine binary to `~/.impeccable/bin/` on first use and sends anonymous telemetry unless `DO_NOT_TRACK=1` is set.
 
 Example prompts (name the skill so Claude uses the right one):
 
 ```text
-/design-taste-frontend Propose an art direction for the FarmLens Streamlit app: farmers in southern Spain on low-end phones, outdoor sunlight, slow data. Palette tokens, one font stack, tone of voice. No photos, no animation.
-/frontend-design Apply the agreed art direction (DESIGN.md) to the results view in src/fieldshift/ui_results.py, using Streamlit components and the global CSS layer in src/app.py.
-/impeccable audit the 4-step form in src/app.py at 360 px width (Operate mode). List defects by severity; do not change the palette.
-/impeccable polish the strategy cards in src/fieldshift/ui_results.py
-/impeccable critique http://localhost:8501
+/design-taste-frontend Propose an art direction for the FarmLens mobile web app: farmers in southern Spain on low-end phones, outdoor sunlight, slow data. Palette tokens, one font stack, tone of voice. No photos, no animation.
+/frontend-design Apply the agreed art direction (DESIGN.md) to the results view in web/js/app.js, using the tokens and components in web/styles.css.
+/impeccable audit the 4-step form in web/js/app.js at 360 px width (Operate mode). List defects by severity; do not change the palette.
+/impeccable polish the strategy cards in web/js/app.js
+/impeccable critique http://localhost:8000
 ```
 
 **Add / update / remove a skill**: copy the full folder into `.claude/skills/<name>/` (`<name>` = the `name:` in its `SKILL.md`, no symlinks), keep its license file, and register it in `docs/ui-skills.md`, `docs/third-party.md`, `docs/tools.md` and `CLAUDE.md`; to update, re-copy the upstream folder and bump the version; to remove, delete the folder and those rows. Step-by-step: [`docs/ui-skills.md` §6](docs/ui-skills.md#6-updating-adding-or-removing-a-skill).
@@ -165,11 +165,14 @@ Honest status — updated as the work lands (built · simulated · next).
 | Part | Status |
 |---|---|
 | NASA POWER and MODIS data clients | ✅ Built and tested on real API calls |
-| Streamlit app: 4-step form, mobile-first layout | ✅ Built |
-| Results in the app | 🟡 **Simulated** — example data until the real modules are connected (#14) |
-| Climate indicators (field calendar, trends) | 🔧 In progress (#9) |
-| Rotation engine (current + 3 alternatives) | 🔧 In progress (#10) |
-| Database, crop catalogue, offline demo fields | 🔧 In progress (#6, #7, #8) |
+| Mobile web app (PWA): 4-step form, results, What to expect, installable | ✅ Built |
+| Results in the app | ✅ Built — real API and engine, no example data (#14) |
+| Climate indicators (field calendar, trends) and predictions (statistics over 2005–2025, not forecasts) | ✅ Built |
+| Rotation engine (current + 3 alternatives) | ✅ Built |
+| Database, crop catalogue, offline demo fields | ✅ Built |
+| Tested on a real low-end Android phone | 🔧 In progress (#14) |
+| Public link | 🔧 Next (#15) |
+| Streamlit UI (early test harness) | Retired — replaced by the PWA (decision 0004) |
 
 **Known limits:** NASA POWER describes a ~55 km area, not the plot; root-zone soil wetness is a model estimate; MODIS covers only 2024–2025 at 250 m; crop market values are illustrative. Details: [`docs/architecture.md`](docs/architecture.md#known-limitations).
 

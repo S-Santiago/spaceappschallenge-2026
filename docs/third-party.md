@@ -11,26 +11,22 @@ Everything in (or used by) this project that the team did not create: libraries,
 | httpx | 0.28.1 | HTTP client for NASA POWER and ORNL MODIS APIs | BSD-3-Clause | https://www.python-httpx.org/ | No |
 | SQLite (Python `sqlite3`) | bundled with Python | Local database (`src/fieldshift/db.py`) | Public domain | https://www.sqlite.org/copyright.html | No |
 | pytest | 9.2.0 | Tests (dev only, `requirements-dev.txt`) | MIT | https://docs.pytest.org/ | No |
-| streamlit | 1.67.0 | Web UI framework for the app (`src/app.py`) | Apache-2.0 | https://github.com/streamlit/streamlit | No (keep license notice if redistributed) |
-| folium | 0.20.0 | Builds the Leaflet map for "Point on a map" (step 1) | MIT | https://github.com/python-visualization/folium | No |
-| streamlit-folium | 0.27.4 | Embeds the folium map in Streamlit and returns the clicked point | MIT (from GitHub repo; PyPI metadata has no license field) | https://github.com/randyzwitch/streamlit-folium | No |
-| altair | 6.3.0 | Charts in the results view (`src/fieldshift/ui_results.py`); already installed as a Streamlit dependency, pinned because we import it directly. Rendered by the Vega/Vega-Lite JS bundled in Streamlit (BSD-3-Clause) | BSD-3-Clause | https://github.com/vega/altair | No |
 | Taste skill (`design-taste-frontend`) — dev tooling, not shipped in the app | 2.5.1 (commit f6b7657) | Claude Code skill: art direction (`.claude/skills/design-taste-frontend/`, see [ui-skills.md](ui-skills.md)) | MIT | https://github.com/Leonxlnx/taste-skill | Keep `LICENSE` in the folder. Its bundled photos/icons carry their own licenses (Unsplash License, CC0, CC BY 2.0/4.0, CC BY-SA 3.0/4.0, ISC, MIT; brand logos are trademarks), listed in the folder's `credits.json` / `icons-credits.json` / `photos.json` — not used in the app; any reuse must be registered in §2 with its credit line |
 | Frontend Design skill (`frontend-design`) — dev tooling, not shipped in the app | plugin 1.1.1 | Claude Code skill: UI implementation (`.claude/skills/frontend-design/`) | Apache-2.0 | https://github.com/anthropics/claude-plugins-official | Keep `LICENSE.txt` in the folder |
 | Impeccable skill (`impeccable`) — dev tooling, not shipped in the app | 4.9.1 (commit 1995764), engine 0.1.24 | Claude Code skill: UI audit & refinement (`.claude/skills/impeccable/`) | Apache-2.0 | https://github.com/pbakaus/impeccable | Keep `LICENSE` and `NOTICE.md` in the folder. Engine binary downloaded at first run to `~/.impeccable/bin/` (not in the repo) |
-| Leaflet (JS, loaded by folium from a CDN) | 1.9.3 | Interactive map in the browser | BSD-2-Clause | https://github.com/Leaflet/Leaflet | "Leaflet" link shown in the map corner (kept by default) |
 | Leaflet (JS + CSS, vendored in `web/vendor/leaflet/`, unmodified) | 1.9.4 (from unpkg.com, npm package `leaflet`) | PWA "Another point on the map" (step 1); loaded only when that option is chosen | BSD-2-Clause | https://github.com/Leaflet/Leaflet | `LICENSE` kept next to the files; "Leaflet" link shown in the map corner |
 | fastapi | 0.162.7 | HTTP JSON API for the PWA (`src/fieldshift/api.py`) | MIT | https://github.com/fastapi/fastapi | No |
 | uvicorn | 0.54.0 | ASGI server that runs the API | BSD-3-Clause | https://github.com/encode/uvicorn | No |
 | starlette (via fastapi) | 1.10.0 | Web toolkit under FastAPI; also serves the PWA static files | BSD-3-Clause | https://github.com/encode/starlette | No |
 | pydantic (via fastapi) | 2.14.3 | Validates API request bodies | MIT | https://github.com/pydantic/pydantic | No |
 
+> Removed on 2026-11-14 with the Streamlit test harness (decision 0004): streamlit, folium, streamlit-folium, altair, the CDN copy of Leaflet loaded by folium and the Material Symbols icon font. None of them ships with the app any more.
+
 ## 2. Assets (images, icons, fonts, audio, map tiles)
 
 | Asset | Source / author | License | Where used | Attribution text |
 |---|---|---|---|---|
-| Material Symbols (icon font, bundled inside Streamlit, no extra download) | Google | Apache-2.0 | Interface icons via `:material/…:` in `src/app.py` and `src/fieldshift/ui_results.py` (buttons, alerts, expanders) | None required (keep the license notice if the font is redistributed outside Streamlit) |
-| OpenStreetMap standard map tiles | OpenStreetMap contributors (tile.openstreetmap.org) | Data: ODbL 1.0; tiles: OSM Tile Usage Policy (light use, valid User-Agent, attribution, no bulk download) | Step 1 map (`web/js/map.js` and `src/app.py`, only when the map option is chosen) | "© OpenStreetMap contributors" with a link to the copyright page — shown in the map corner |
+| OpenStreetMap standard map tiles | OpenStreetMap contributors (tile.openstreetmap.org) | Data: ODbL 1.0; tiles: OSM Tile Usage Policy (light use, valid User-Agent, attribution, no bulk download) | Step 1 map (`web/js/map.js`, only when the map option is chosen) | "© OpenStreetMap contributors" with a link to the copyright page — shown in the map corner |
 
 > Map tiles: OpenStreetMap data requires "© OpenStreetMap contributors" attribution (ODbL). Many tile providers have their own usage policies — check them.
 

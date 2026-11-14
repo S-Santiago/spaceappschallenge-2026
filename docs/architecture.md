@@ -1,6 +1,6 @@
 # Architecture
 
-Stack: **Python 3.11+ · SQLite** engine ([0002](decisions/0002-tech-stack.md)) behind a **FastAPI** JSON API, and a **PWA in vanilla JS** with a hand-written service worker, served by the same service from `web/` ([0004](decisions/0004-mobile-pwa.md), [0005](decisions/0005-pwa-vanilla-js.md)). The Streamlit app (`src/app.py`) is only an internal test harness. Data contracts (Shape 1, Shape 2) and owners: [work-plan.md](work-plan.md).
+Stack: **Python 3.11+ · SQLite** engine ([0002](decisions/0002-tech-stack.md)) behind a **FastAPI** JSON API, and a **PWA in vanilla JS** with a hand-written service worker, served by the same service from `web/` ([0004](decisions/0004-mobile-pwa.md), [0005](decisions/0005-pwa-vanilla-js.md)). The early Streamlit test harness (`src/app.py`) was retired on 2026-11-14 once the PWA reached parity with real data (#14). Data contracts (Shape 1, Shape 2) and owners: [work-plan.md](work-plan.md).
 
 ## Design constraint: low-end phones
 Primary users are farmers with at most a low/mid-range phone and poor mobile data. The UI is **mobile-first** (360 px, single column, light pages) and the demo path must not depend on live NASA calls. Details: [ux-guidelines.md](ux-guidelines.md#mobile-first-low-end-phones-primary-target).
@@ -19,8 +19,8 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 | Rotation engine → Shape 2 | Python | `src/fieldshift/rotations.py` | @HaoJunnnzhang | 🟡 #10 (built; needs real `crops.csv` from #7) |
 | Tests | pytest | `tests/` | @HaoJunnnzhang | 🟡 #11 (26 tests) |
 | API | FastAPI | `src/fieldshift/api.py` | @HectorLopGar-Dev | ✅ built (#36, PR #47) |
-| App (PWA) | HTML + CSS + vanilla JS modules, manifest, hand-written service worker, no build step | `web/` | @S-Santiago | 🟡 #35 · #14 (form, results and loading/error states wired to the real API; offline analyses pending) · #40 |
-| Internal test harness (not the product) | Streamlit | `src/app.py` | @S-Santiago | ✅ built |
+| App (PWA) | HTML + CSS + vanilla JS modules, manifest, hand-written service worker, no build step | `web/` | @S-Santiago | ✅ #35 · #14 · #40 (real API, loading/error states, offline analyses and predictions; real-phone check pending) |
+| ~~Internal test harness~~ | ~~Streamlit~~ | ~~`src/app.py`~~ | @S-Santiago | Retired 2026-11-14 (decision 0004) |
 | Hosting | Free Python host (Render / HF Spaces / Fly.io) | — | @HectorLopGar-Dev | 🔴 #39 |
 
 ## Data flow

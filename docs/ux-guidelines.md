@@ -31,7 +31,7 @@ Adapted from the *Launch route* sheet of the Málaga UX desk (Ladies That UX Má
 ### ⚠️ Red alert — must NOT appear in the demo
 - Placeholder text or data: "lorem ipsum", "Title here", "asdf", "TODO", "test".
 - Buttons that do nothing in the flow you are going to show.
-- Technical errors on screen: "Error 500", "undefined", "NaN", "None", Python tracebacks, Streamlit red exception boxes.
+- Technical errors on screen: "Error 500", "undefined", "NaN", "None", Python tracebacks, raw API error messages.
 - States distinguished only by color, without text or icon.
 
 ## Mobile-first, low-end phones (primary target)
@@ -40,7 +40,7 @@ Our users are farmers with **at most a low/mid-range Android phone**, small scre
 
 | Area | Rule |
 |---|---|
-| Layout | Single column. Must work at **360 × 640 px** with no horizontal scroll. Streamlit: `layout="centered"`, no side-by-side columns for key content (they stack badly), **no essential inputs in the sidebar** (it is hidden behind a menu on phones) |
+| Layout | Single column. Must work at **360 × 640 px** with no horizontal scroll. No side-by-side columns for key content (they stack badly), **no essential inputs hidden behind a menu** |
 | Flow | One step per screen section: field → current rotation → priorities → **one big "Analyze my field" button** → results. Few inputs, sensible defaults, demo field preselected |
 | Inputs | Selectboxes/radio/sliders with large targets (≥ 48 px); avoid free typing; no map required — a map is optional, demo fields and a simple list come first |
 | Weight | Text, icons and simple tables first. Charts: lightweight and few; avoid heavy interactive maps/3D (pydeck) on the main path. No large images; compress any image; no custom web fonts |
