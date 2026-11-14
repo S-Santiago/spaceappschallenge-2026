@@ -280,7 +280,10 @@ def climate_penalties(crop: dict, profile: dict, irrigated: bool) -> list[dict]:
 
 
 def suitable(crop: dict, profile: dict, irrigated: bool) -> bool:
-    """A crop can be proposed only if it is not heavily penalised by the local climate."""
+    """A crop can be proposed only if it is not heavily penalised by the local climate,
+    and never on a rain-fed field if the crop table says it needs irrigation."""
+    if not irrigated and crop.get("irrigation_required") == "yes":
+        return False
     return sum(p["penalty"] for p in climate_penalties(crop, profile, irrigated)) < 30
 
 

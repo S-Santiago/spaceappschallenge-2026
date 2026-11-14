@@ -184,3 +184,10 @@ def test_unknown_water_need_is_never_a_water_saver(crops, profile):
                                      water_need_mm_min=None, water_need_mm_max=None))
     savers = {tuple(o["years"]) for o in r.candidates(["maize"], crops, profile, irrigated=True)["water_saving"]}
     assert ("mystery",) not in savers
+
+
+def test_irrigation_required_crops_only_on_irrigated_fields(crops, profile):
+    tomato = dict(crops["maize"], crop_id="tomato_like", irrigation_required="yes", drought_tolerance="high",
+                  frost_tolerance="high", heat_tolerance="high")
+    assert not r.suitable(tomato, profile, irrigated=False)
+    assert r.suitable(tomato, profile, irrigated=True)

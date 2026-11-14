@@ -36,6 +36,8 @@ MIGRATIONS = [
     ALTER TABLE crops ADD COLUMN frost_tolerance TEXT CHECK (frost_tolerance IN ('low', 'medium', 'high'));
     ALTER TABLE crops ADD COLUMN heat_tolerance TEXT CHECK (heat_tolerance IN ('low', 'medium', 'high'));
     """,
+    # 3: crops that only make sense with irrigation in Andalusia (never proposed for rain-fed fields)
+    "ALTER TABLE crops ADD COLUMN irrigation_required TEXT CHECK (irrigation_required IN ('yes', 'no'));",
 ]
 
 _ready: set[Path] = set()
