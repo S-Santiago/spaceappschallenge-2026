@@ -8,7 +8,7 @@ Everything a judge, mentor or teammate needs to understand, run and verify this 
 | 1b | [work-plan.md](work-plan.md) — proposed MVP, 4-person split, interfaces, timeline | Team owner | 🟡 Proposal |
 | 2 | [hackathon-rules.md](hackathon-rules.md) — rules, deadlines, deliverables, criteria | Team owner | 🟢 Done |
 | 3 | [nasa-data.md](nasa-data.md) — data registry & traceability | Data | 🟡 Candidates only |
-| 4 | [architecture.md](architecture.md) — design & stack | Tech lead | 🔴 Stack TBD |
+| 4 | [architecture.md](architecture.md) — design & stack | Tech lead | 🟢 Stack decided (Streamlit + SQLite) |
 | 5 | [decisions/](decisions/) — decision records | Everyone | 🟡 Started |
 | 6 | [tools.md](tools.md) — tools used and how | Everyone | 🟡 Living doc |
 | 7 | [ai-usage.md](ai-usage.md) — AI declaration | Everyone | 🟡 Living doc |

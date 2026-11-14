@@ -3,7 +3,8 @@
 ## Context
 - Team project for **NASA Space Apps Challenge 2026 · Málaga**, **Challenge 06: Adapting farms with NASA data** — a decision-support tool combining NASA Earth observations with local soil info, crop traits and farmer priorities to compare **crop-rotation strategies** (≥3, including the current one; each with why / evidence / benefits / information gaps / risks needing local review). Full statement: `docs/challenge.md`. The tool supports, never replaces, farmers' judgment.
 - Development window: Sat 14 Nov 2026 09:00 → **Sun 15 Nov 2026 23:59 (Europe/Madrid)**, the official NASA deadline. Local pitches Sun 17:30–19:00. Time is the scarcest resource: prefer the simplest thing that can be demoed.
-- Tech stack: **not decided yet**. Read `docs/architecture.md` before assuming one. Do not introduce a framework without recording it in `docs/decisions/`.
+- Tech stack: **Python 3.11+ · Streamlit · SQLite** (`docs/decisions/0002-tech-stack.md`). Do not introduce another framework without a new decision record.
+- **Target users: farmers with at most a low/mid-range phone, slow or unstable mobile data and little tech experience.** Everything user-facing must be **mobile-first and lightweight** (see `docs/ux-guidelines.md` → "Mobile-first, low-end phones"). Desktop is secondary.
 - Project license: **pending** (`docs/licensing.md`). Do not add a LICENSE file unless the team asks.
 
 ## Language

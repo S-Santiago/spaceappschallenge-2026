@@ -19,4 +19,8 @@ Check each item against `docs/ux-guidelines.md` and give ✅/⚠️/❌ with evi
 
 Plus farmer context: data date + source + uncertainty visible; readable outdoors.
 
+8. **Mobile-first, low-end phone** (primary target — see `docs/ux-guidelines.md`): works at 360 px width with no horizontal scroll; single column (`layout="centered"`, no key content in `st.columns`, no essential inputs in the sidebar); one primary button; few inputs with defaults; no heavy maps/3D on the main path; demo-field results < 3 s; progress shown for live calls. If possible test with DevTools device mode (360 px, Slow 4G, CPU 4× slowdown).
+
+Treat any failure of item 8 as ❌ blocking.
+
 Finish with the top 3 fixes ordered by impact on the demo. Answer in Spanish.

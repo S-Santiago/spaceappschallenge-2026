@@ -21,6 +21,14 @@ data/processed/*
 *.tiff
 *.zarr/
 
+# Generated SQLite database (schema + seed are committed, the .db file is built at startup)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
 # Python
 __pycache__/
 *.py[cod]

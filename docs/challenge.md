@@ -79,7 +79,7 @@ Combine NASA Earth observations with local agricultural information into an **ap
 | Question (participant guide) | Our answer |
 |---|---|
 | What concrete problem do we tackle? | _TODO_ — e.g. choosing a rotation for a rain-fed field under increasing drought/heat |
-| Who is affected? (farmer type, region, crops) | _TODO_ — e.g. Andalusian dryland cereal farmers (wheat/barley) considering legumes |
+| Who is affected? (farmer type, region, crops) | Small farmers with **at most a low/mid-range phone, poor connectivity and few tech resources** — _TODO: region/crops_ (e.g. Andalusian dryland cereal farmers considering legumes) |
 | What exactly does the challenge ask? | Decision support comparing ≥3 rotations (incl. current) with why / evidence / benefits / gaps / risks |
 | Which NASA resource adds real value? | _TODO_ — candidates in [nasa-data.md](nasa-data.md) |
 | What can we demonstrate in two days? | _TODO_ |

@@ -38,7 +38,7 @@ Rules on `main`:
 - All review conversations must be **resolved** before merging.
 - Merge method: **squash only** (linear history; the PR title becomes the commit, so write it as `feat: ...`).
 - The branch is **deleted automatically** after merge. If GitHub says the branch is out of date, click *Update branch*.
-- Reviews are requested automatically (`.github/CODEOWNERS`).
+- Reviews are requested automatically by area (`.github/CODEOWNERS`, see CONTRIBUTING.md).
 - Emergency only (e.g. minutes before the deadline): the repo admin can merge a PR bypassing the rules. Direct pushes stay blocked even for the admin.
 
 ## 4. What is shared vs personal

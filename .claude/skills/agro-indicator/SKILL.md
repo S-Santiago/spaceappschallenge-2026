@@ -12,20 +12,24 @@ Open `docs/indicators.md`. If the indicator exists, implement/reuse it **exactly
 
 Each catalog entry must have: **ID · name · plain-language meaning · formula · inputs (dataset + variables) · unit · time aggregation · thresholds and where they come from · source/reference · limits · farmer-friendly sentence template**.
 
-## 2. Standard definitions (use these unless the team decides otherwise)
-| ID | Indicator | Definition |
+## 2. Team definitions (issue #9 — these are the agreed ones)
+Monthly values are the **2005–2025 mean** of each calendar month (NASA POWER); NDVI uses 2024–2025 (MODIS).
+
+| ID | Shape 1 field | Definition |
 |---|---|---|
-| I-01 | Frost days | Days with `T2M_MIN < 0 °C` (per month / season / year) |
-| I-02 | Heat-stress days | Days with `T2M_MAX >` crop heat threshold from `data/crops.csv` |
-| I-03 | Growing degree days | Σ max(0, (Tmax+Tmin)/2 − Tbase), Tbase from `data/crops.csv` |
-| I-04 | Reference evapotranspiration (ET₀) | FAO-56 Penman-Monteith if all inputs exist; otherwise FAO-56 Hargreaves: 0.0023·(Tmean+17.8)·(Tmax−Tmin)^0.5·Ra (Ra in mm/day). State which one was used |
-| I-05 | Climatic water balance | Precipitation − ET₀ (mm) per month/season |
-| I-06 | Dry spells | Longest run of consecutive days with precipitation < 1 mm |
-| I-07 | Extreme rain days | Days above the local 95th percentile of wet-day precipitation (erosion risk) |
-| I-08 | Anomaly | Value − mean of the same calendar period over a baseline (default 1991–2020); say if the baseline is shorter |
-| I-09 | Frost-free season | Days between last spring frost and first autumn frost |
-| I-10 | Bare-field periods | Periods where a vegetation index (MODIS/Landsat NDVI) stays below a threshold; threshold is an assumption to state and justify |
-| I-11 | Trend | Change per decade (e.g. linear fit / Sen's slope) with the period used; never extrapolate beyond the data |
+| I-01 | `rain_mm` | Mean monthly sum of `PRECTOTCORR` (mm) |
+| I-02 | `et0_mm` | Reference evapotranspiration, FAO-56 **Hargreaves**: 0.0023·(Tmean+17.8)·(Tmax−Tmin)^0.5·Ra, with Ra (extraterrestrial radiation, mm/day equivalent) computed from latitude and day of year (FAO-56 eq. 21); Tmean = (Tmax+Tmin)/2. Monthly sum (mm) |
+| I-03 | `water_balance_mm` | `rain_mm − et0_mm` (negative = deficit) |
+| I-04 | `soil_wetness` | Mean `GWETROOT` (0–1, **model-based root-zone wetness**, not a satellite measurement) |
+| I-05 | `frost_days` | Mean number of days per month with `T2M_MIN < 0 °C` |
+| I-06 | `heat_days` | Mean number of days per month with `T2M_MAX > 35 °C` |
+| I-07 | `heavy_rain_days` | Mean number of days per month with `PRECTOTCORR ≥ 30 mm` (erosion risk) |
+| I-08 | `ndvi` | Mean MODIS MOD13Q1 NDVI of the composites falling in that month (2024–2025) |
+| I-09 | `likely_bare` | `ndvi` below a documented threshold (assumption — justify the value in the catalog) |
+| I-10 | `trends.rain_change_pct` | Annual rain, mean 2016–2025 vs mean 2005–2014, in % |
+| I-11 | `trends.heat_days_change` | Annual heat days, mean 2016–2025 minus mean 2005–2014 |
+
+Optional later (only if time): crop-specific heat thresholds, growing degree days, dry spells, frost-free season. Add them to the catalog first.
 
 ## 3. Implementation rules
 - Inputs come from `src/fieldshift/power.py` (`fetch_daily`) and `src/fieldshift/modis.py` (`fetch_ndvi`). Do not re-download data in this module.
