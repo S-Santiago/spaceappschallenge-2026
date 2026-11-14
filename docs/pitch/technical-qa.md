@@ -29,7 +29,7 @@ All of these are team assumptions, documented with sources in `docs/indicators.m
 - **Greenness covers only 2024–2025,** and a 250 m pixel can mix several plots.
 - **Ten years against ten years is a change, not a proven climate trend.** Example: Vega de Antequera had 14.6 % less rain and 13 more days above 35 °C per year in 2016–2025 than in 2005–2014.
 - **Income is illustrative:** a low/medium/high label, not real prices.
-- **Not a forecast:** everything is "based on the last 20 years of NASA data".
+- **Not a forecast:** everything is "based on 21 years of NASA data (2005–2025), not a weather forecast".
 - Every value and prediction has its own one-line limit, in English and Spanish (`docs/architecture.md`).
 
 ## Demo-field numbers (2005–2025 means)
