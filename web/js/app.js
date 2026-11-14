@@ -5,7 +5,7 @@
 
 import * as api from "./api.js";
 import {
-  MONTH_ABBR, MONTHS, cropName, errorMessage, esc, findCrop, fmt, formatDate, keyFacts, levelText, ndviMissing, num, trendFacts,
+  MONTH_ABBR, MONTHS, cropName, cropOption, errorMessage, esc, matchCrops, fmt, formatDate, keyFacts, levelText, ndviMissing, num, trendFacts,
 } from "./format.js";
 import { inMalaga, mountMap } from "./map.js";
 
@@ -164,7 +164,7 @@ function renderForm() {
       <fieldset style="margin-top:12px"><legend>How many years before it repeats?</legend>
         <div class="segmented">${[1, 2, 3, 4].map((n) => `<label><input type="radio" name="years" value="${n}"${n === state.rotation.length ? " checked" : ""}><span>${n} ${n === 1 ? "year" : "years"}</span></label>`).join("")}</div>
       </fieldset>
-      <datalist id="crop-list">${state.crops.map((c) => `<option value="${esc(c.name)}"></option>`).join("")}</datalist>
+      <datalist id="crop-list">${state.crops.map((c) => `<option value="${esc(cropOption(c))}"></option>`).join("")}</datalist>
       <div id="years" style="margin-top:16px">${yearRows()}</div>
       <div id="strip" style="margin-top:16px">${strip(state.rotation, "Your current rotation")}</div>
     </section>
@@ -226,7 +226,7 @@ function yearRows() {
     <div class="year-row"><label for="y${i}">Year ${i + 1}</label>
       <input id="y${i}" class="crop-input" data-year="${i}" list="crop-list" value="${esc(cropName(id, state.names))}"
         autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done"
-        placeholder="Type a crop, e.g. wheat" aria-describedby="y${i}-hint">
+        placeholder="Type a crop or Latin name, e.g. wheat" aria-describedby="y${i}-hint">
       <p class="field-hint" id="y${i}-hint" role="status"></p></div>`).join("");
 }
 
@@ -241,15 +241,16 @@ function setYear(input, id) {
 function onCropInput(e) {
   const t = e.target;
   if (t.dataset.year === undefined) return;
-  const id = findCrop(t.value, state.crops);
-  if (id && state.names[id].toLowerCase() === t.value.trim().toLowerCase()) setYear(t, id);
+  // A suggestion picked from the list arrives as its full text ("Sunflower · Helianthus annuus").
+  const picked = state.crops.find((c) => cropOption(c) === t.value.trim() || c.name === t.value.trim());
+  if (picked) setYear(t, picked.id);
 }
 
 /** On focus the field is emptied so every suggestion shows; leaving it resolves or restores the crop. */
 function onCropFocus(e) {
   const t = e.target;
   if (t.dataset.year === undefined) return;
-  t.placeholder = t.value || "Type a crop, e.g. wheat";
+  t.placeholder = t.value || "Type a crop or Latin name, e.g. wheat";
   t.value = "";
   $(`#${t.id}-hint`).textContent = "";
   t.removeAttribute("aria-invalid");
@@ -260,15 +261,18 @@ function onCropBlur(e) {
   if (t.dataset.year === undefined) return;
   const i = Number(t.dataset.year);
   const typed = t.value.trim();
-  const id = findCrop(typed, state.crops);
-  if (id) {
-    setYear(t, id);
+  const hits = matchCrops(typed, state.crops);
+  const kept = cropName(state.rotation[i], state.names);
+  if (hits.length === 1) {
+    setYear(t, hits[0].id);
   } else if (typed) {
-    $(`#${t.id}-hint`).textContent = `"${typed}" is not in the crop list, so ${cropName(state.rotation[i], state.names)} was kept. Type part of a name and pick one of the suggestions.`;
+    $(`#${t.id}-hint`).textContent = hits.length
+      ? `"${typed}" matches ${hits.length} crops (${hits.slice(0, 4).map((c) => c.name).join(", ")}${hits.length > 4 ? "…" : ""}), so ${kept} was kept. Pick one of the suggestions.`
+      : `"${typed}" is not in the crop list, so ${kept} was kept. Type part of a common or Latin name and pick one of the suggestions.`;
     t.setAttribute("aria-invalid", "true");
   }
   t.value = cropName(state.rotation[i], state.names);
-  t.placeholder = "Type a crop, e.g. wheat";
+  t.placeholder = "Type a crop or Latin name, e.g. wheat";
 }
 
 function renderYears() {

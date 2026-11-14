@@ -76,7 +76,9 @@ def fields() -> list[dict]:
 @app.get("/api/crops")
 def crops(lang: Lang = "en") -> list[dict]:
     """Crops the farmer can pick for the current rotation, sorted by name in `lang` (accents ignored)."""
-    return [{"id": c["crop_id"], "name": rotations.crop_name(c, lang), "type": c["type"], "family": c["family"],
+    return [{"id": c["crop_id"], "name": rotations.crop_name(c, lang), "name_es": c["name_es"],
+             "scientific_name": c["scientific_name"],
+             "type": c["type"], "family": c["family"],
              "n_fixing": c["n_fixing"] == "yes", "sow_month": c["sow_month"], "harvest_month": c["harvest_month"],
              "confidence": c["confidence"]}
             for c in sorted(db.get_engine_crops().values(),
