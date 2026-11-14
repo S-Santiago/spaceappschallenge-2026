@@ -162,3 +162,9 @@ def test_invalid_rotation(crops, profile):
         r.compare(profile, ["banana"], crops)
     with pytest.raises(ValueError):
         r.compare(profile, ["barley"], crops, lang="fr")
+
+
+def test_score_limits_cover_every_score_in_both_languages():
+    assert set(r.SCORE_LIMITS) == set(r.PRIORITIES) | {"overall"}
+    for text in r.SCORE_LIMITS.values():
+        assert text["en"] and text["es"]

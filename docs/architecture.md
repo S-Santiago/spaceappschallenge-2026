@@ -55,6 +55,42 @@ Migration 2 adds `name`, `name_es`, `frost_tolerance`, `heat_tolerance` to `crop
 
 Coordinates are rounded to 2 decimals (~1 km) everywhere. Main functions: `get_crops()`, `get_crop()`, `get_locations()`, `get_location()`, `get_raw()`/`save_raw()`, `get_profile(lat, lon, version=None)`/`save_profile()`, `save_analysis()`/`get_analysis()`/`list_analyses()`.
 
+## Limits per value shown to the farmer (#44)
+Every number in the UI gets one short sentence saying what it cannot tell. Texts live in code, in English and Spanish, so the PWA shows them next to the value (e.g. an "i" or a line under the number). Tests check that every value has both languages.
+
+| ID | Value | Limit (English; Spanish in code) | Source in code / API |
+|---|---|---|---|
+| I-01 | `rain_mm` | Average for 2005-2025 over an area of about 50 km; a single year can be much wetter or drier. | `climate.FIELD_LIMITS` → profile `field_limits` |
+| I-02 | `et0_mm` | Estimated from NASA sunshine, humidity and wind for the area; local wind or sea breeze can change it. | 〃 |
+| I-03 | `water_balance_mm` | Rain minus the water the air asks for; irrigation, runoff and water stored in your soil are not counted. | 〃 |
+| I-04 | `soil_wetness` | Model estimate for the area, not a measurement; use it to compare months, not to decide when to irrigate. | 〃 |
+| I-05 | `frost_days` | Days below 0 °C for the area; valley bottoms and hollows can get more frost than shown. | 〃 |
+| I-06 | `heat_days` | Days above 35 °C; some crops suffer at lower temperatures when they flower, so heat stress can be higher. | 〃 |
+| I-07 | `heavy_rain_days` | Days with 30 mm or more for the area; a local storm can be stronger than the area average. | 〃 |
+| I-08 | `ndvi` | Satellite greenness for 2024-2025 only, from a 250 m square that may include other plots. | 〃 |
+| I-09 | `likely_bare` | A guess from greenness; stubble, dry grass or a mixed square can be counted wrongly. | 〃 |
+| I-10 | `rain_change_pct` | Compares 2016-2025 with 2005-2014; ten years is short, so this is a change, not a proven trend. | 〃 |
+| I-11 | `heat_days_change` | Same sentence as I-10. | 〃 |
+| Score | `water` | Compares rain in the crop's months (plus some stored winter rain) with a typical need; your soil type and yields are not modelled. | `rotations.SCORE_LIMITS` → `/api/analyze` `score_limits` (in the request language) |
+| Score | `soil` | Simple points for nitrogen, organic matter, erosion and pest break from general crop traits, not a soil test. | 〃 |
+| Score | `income` | Illustrative only: a low/medium/high market label, not real prices, costs or subsidies. | 〃 |
+| Score | `risk` | Frost, heat and dry seasons against general crop tolerances; pests, diseases and market risk are not included. | 〃 |
+| Score | `overall` | Weighted by your priorities; it orders the options but does not say which one is best for you. | 〃 |
+
+**Predictions (P-01…P-07): draft sentences, not in code yet.** The owners of #37/#38/#39 should adapt them to the final method and add them next to each prediction in the API. Every prediction also carries "Based on the last 20 years of NASA data, not a weather forecast."
+
+| ID | Draft limit |
+|---|---|
+| P-01 | Share of the last 20 years with rain in that week; it does not forecast this year's weather. |
+| P-02 | Built from about 20 yearly maxima for a ~50 km area; return periods longer than ~20 years are very uncertain, and a local storm can be stronger. |
+| P-03 | Frost dates for the area over 20 years; frost hollows can freeze later in spring and earlier in autumn. |
+| P-04 | A 20-year slope with its confidence interval; if the interval includes zero we cannot say the climate is changing. |
+| P-05 | Compares this season's rain with the last 20 years for the area; the most recent days of NASA data may be missing. |
+| P-06 | Combines rain and frost odds with general crop limits; soil condition and local advice decide the real sowing date. |
+| P-07 | Uses the bare months seen in 2024-2025; your field may be covered differently this year. |
+
+The general statements (`climate.LIMITS`, `rotations.DISCLAIMER`) stay as they are, at the end of the results.
+
 ## Known limitations
 - NASA POWER is modelled/derived data on a ~50 km grid: describes the area, not the plot.
 - `GWETROOT` is model-based root-zone wetness, not satellite-measured soil moisture.
@@ -64,5 +100,5 @@ Coordinates are rounded to 2 decimals (~1 km) everywhere. Main functions: `get_c
 - Thresholds are team assumptions documented in [indicators.md](indicators.md): frost Tmin < 0 °C, heat Tmax > 35 °C, heavy rain ≥ 30 mm/day, likely bare NDVI < 0.25. None is crop-specific.
 - ET0 is FAO-56 Penman-Monteith from NASA POWER radiation, humidity and wind (Hargreaves only as a fallback for missing days); still a ~50 km cell value.
 - Rotation scores use simple, documented rules ([indicators.md → Scoring](indicators.md#scoring-shape-2-scores)): rain in the crop's months vs its seasonal water need; stored soil water, yields and real prices are not modelled. `income` is illustrative.
-- Uncertainty statements for the UI (English and Spanish): `climate.LIMITS`, returned in every profile as `limits`.
+- Uncertainty statements for the UI (English and Spanish): `climate.LIMITS`, returned in every profile as `limits`; one sentence per value in `field_limits` and `score_limits` (see above).
 - Coastal grid cells (Málaga city, Cártama): no heat days and an urban MODIS pixel in the city; the demo field should be inland farmland (e.g. Vega de Antequera).

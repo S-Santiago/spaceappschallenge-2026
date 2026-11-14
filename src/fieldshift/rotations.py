@@ -40,6 +40,35 @@ DISCLAIMER = {
     "en": "This tool supports, and does not replace, your judgment and local agricultural advice.",
     "es": "Esta herramienta te ayuda a decidir, pero no sustituye tu criterio ni el consejo agronómico local.",
 }
+# One short limits sentence per score (#44), shown next to each score in the UI.
+SCORE_LIMITS = {
+    "water": {
+        "en": "Compares rain in the crop's months (plus some stored winter rain) with a typical need; "
+              "your soil type and yields are not modelled.",
+        "es": "Compara la lluvia en los meses del cultivo (más algo de agua guardada del invierno) con una necesidad "
+              "típica; no tiene en cuenta tu tipo de suelo ni los rendimientos.",
+    },
+    "soil": {
+        "en": "Simple points for nitrogen, organic matter, erosion and pest break from general crop traits, "
+              "not a soil test.",
+        "es": "Puntos sencillos de nitrógeno, materia orgánica, erosión y rotura de plagas según rasgos generales "
+              "de los cultivos, no un análisis de suelo.",
+    },
+    "income": {
+        "en": "Illustrative only: a low/medium/high market label, not real prices, costs or subsidies.",
+        "es": "Solo orientativo: una etiqueta de mercado bajo/medio/alto, no precios, costes ni ayudas reales.",
+    },
+    "risk": {
+        "en": "Frost, heat and dry seasons against general crop tolerances; pests, diseases and market risk "
+              "are not included.",
+        "es": "Heladas, calor y temporadas secas frente a tolerancias generales de los cultivos; no incluye plagas, "
+              "enfermedades ni riesgo de mercado.",
+    },
+    "overall": {
+        "en": "Weighted by your priorities; it orders the options but does not say which one is best for you.",
+        "es": "Ponderado según tus prioridades; ordena las opciones pero no dice cuál es la mejor para ti.",
+    },
+}
 LABELS = {
     "en": {"good": "good", "neutral": "neutral", "poor": "poor"},
     "es": {"good": "bueno", "neutral": "regular", "poor": "malo"},

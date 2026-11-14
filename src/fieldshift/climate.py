@@ -41,6 +41,56 @@ LIMITS = {
     ],
 }
 
+# One short limits sentence per indicator (#44), keyed by the profile field. Shown next to each value in the UI.
+FIELD_LIMITS = {
+    "rain_mm": {  # I-01
+        "en": "Average for 2005-2025 over an area of about 50 km; a single year can be much wetter or drier.",
+        "es": "Media de 2005-2025 para una zona de unos 50 km; un año concreto puede ser mucho más húmedo o seco.",
+    },
+    "et0_mm": {  # I-02
+        "en": "Estimated from NASA sunshine, humidity and wind for the area; local wind or sea breeze can change it.",
+        "es": "Estimado con datos de NASA de sol, humedad y viento de la zona; el viento local o la brisa del mar "
+              "pueden cambiarlo.",
+    },
+    "water_balance_mm": {  # I-03
+        "en": "Rain minus the water the air asks for; irrigation, runoff and water stored in your soil are not counted.",
+        "es": "Lluvia menos el agua que pide el aire; no cuenta el riego, la escorrentía ni el agua guardada en tu suelo.",
+    },
+    "soil_wetness": {  # I-04
+        "en": "Model estimate for the area, not a measurement; use it to compare months, not to decide when to irrigate.",
+        "es": "Estimación de un modelo para la zona, no una medida; sirve para comparar meses, no para decidir cuándo regar.",
+    },
+    "frost_days": {  # I-05
+        "en": "Days below 0 °C for the area; valley bottoms and hollows can get more frost than shown.",
+        "es": "Días bajo 0 °C en la zona; los fondos de valle y las hondonadas pueden tener más heladas.",
+    },
+    "heat_days": {  # I-06
+        "en": "Days above 35 °C; some crops suffer at lower temperatures when they flower, so heat stress can be higher.",
+        "es": "Días por encima de 35 °C; algunos cultivos sufren con menos calor en la floración, así que el estrés "
+              "puede ser mayor.",
+    },
+    "heavy_rain_days": {  # I-07
+        "en": "Days with 30 mm or more for the area; a local storm can be stronger than the area average.",
+        "es": "Días con 30 mm o más en la zona; una tormenta local puede ser más fuerte que la media de la zona.",
+    },
+    "ndvi": {  # I-08
+        "en": "Satellite greenness for 2024-2025 only, from a 250 m square that may include other plots.",
+        "es": "Verdor visto por satélite solo en 2024-2025, en un cuadrado de 250 m que puede incluir otras parcelas.",
+    },
+    "likely_bare": {  # I-09
+        "en": "A guess from greenness; stubble, dry grass or a mixed square can be counted wrongly.",
+        "es": "Una estimación a partir del verdor; el rastrojo, la hierba seca o un cuadrado mixto pueden confundirla.",
+    },
+    "rain_change_pct": {  # I-10
+        "en": "Compares 2016-2025 with 2005-2014; ten years is short, so this is a change, not a proven trend.",
+        "es": "Compara 2016-2025 con 2005-2014; diez años es poco, así que es un cambio, no una tendencia demostrada.",
+    },
+    "heat_days_change": {  # I-11
+        "en": "Compares 2016-2025 with 2005-2014; ten years is short, so this is a change, not a proven trend.",
+        "es": "Compara 2016-2025 con 2005-2014; diez años es poco, así que es un cambio, no una tendencia demostrada.",
+    },
+}
+
 GSC = 0.0820  # solar constant, MJ m-2 min-1 (FAO-56)
 MJ_TO_MM = 0.408  # MJ m-2 day-1 -> mm day-1 equivalent evaporation (FAO-56)
 SIGMA = 4.903e-9  # Stefan-Boltzmann constant, MJ K-4 m-2 day-1
@@ -229,6 +279,7 @@ def build_profile(lat: float, lon: float, power_data: dict, modis_data: dict | N
         "trends": trends(stats),
         "sources": sources,
         "limits": LIMITS,
+        "field_limits": FIELD_LIMITS,
         "quality": {
             "missing_days": sum(s["missing_days"] for s in stats.values()),
             "skipped_month_years": sum(any(v is None for v in s.values()) for s in stats.values()),

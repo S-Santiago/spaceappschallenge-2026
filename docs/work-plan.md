@@ -52,7 +52,8 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
               "ndvi": 0.15, "likely_bare": true}],
   "trends": {"rain_change_pct": -8, "heat_days_change": 3.1},
   "sources": ["NASA POWER 2005-2025", "MODIS MOD13Q1 2024-2025"],
-  "limits": {"en": ["Climate values are NASA satellite and model estimates ..."], "es": ["Los datos de clima son ..."]}
+  "limits": {"en": ["Climate values are NASA satellite and model estimates ..."], "es": ["Los datos de clima son ..."]},
+  "field_limits": {"rain_mm": {"en": "Average for 2005-2025 over an area of about 50 km; ...", "es": "..."}, "...": {}}
 }
 ```
 
@@ -74,7 +75,7 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
 | `GET /api/health` | `{"status": "ok"}` (use it to wake the free host before the pitch) |
 | `GET /api/fields` | Demo fields: `[{"slug", "name", "lat", "lon", "elevation_m", "description"}]` |
 | `GET /api/crops?lang=en\|es` | `[{"id", "name", "type", "family", "n_fixing", "sow_month", "harvest_month", "confidence"}]` |
-| `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "disclaimer"}` |
+| `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "disclaimer", "score_limits"}` (`score_limits`: one sentence per score, in the request language) |
 | `GET /api/analyses/{id}` | A stored analysis: `{"id", "lat", "lon", "inputs", "strategies", "created_at"}` |
 
 ```json
