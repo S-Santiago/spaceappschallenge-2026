@@ -22,7 +22,8 @@ Everything in (or used by) this project that the team did not create: libraries,
 
 | Dataset | Provider | Terms | Citation |
 |---|---|---|---|
-| _none yet_ | | | |
+| NASA POWER Daily API v2.10.3 (D-01) | NASA LaRC POWER Project | No license stated; cite POWER's Reference + Data Reference; publication/redistribution notification requested | [nasa-data.md §4](nasa-data.md#4-citation-list) |
+| MODIS MOD13Q1 v061 NDVI (D-02) via ORNL DAAC TESViS | NASA LP DAAC / ORNL DAAC | Openly shared without restriction (EOSDIS Data Use and Citation Guidance); citation required | [nasa-data.md §4](nasa-data.md#4-citation-list) |
 
 ## 4. Code snippets copied or adapted
 
