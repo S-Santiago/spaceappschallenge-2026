@@ -5,7 +5,15 @@
 
 import { MONTHS, MONTH_ABBR, fmt, formatRuns, monthRuns, num } from "./format.js";
 
-export const BASIS = "Based on the last 20 years of NASA data — not a weather forecast.";
+export const BASIS = "Based on 21 years of NASA data (2005–2025) — not a weather forecast.";
+
+/** The basis line for the period the API reports ("2005-2025" → 21 years); BASIS when the period is missing. */
+export function basisFor(period) {
+  const m = /^(\d{4})-(\d{4})$/.exec(String(period ?? ""));
+  if (!m) return BASIS;
+  const years = Number(m[2]) - Number(m[1]) + 1;
+  return `Based on ${years} years of NASA data (${m[1]}–${m[2]}) — not a weather forecast.`;
+}
 export const FROST_CAVEAT = "Frost near the ground and in valley bottoms can come later and be harder than shown. Check with local experience.";
 export const WEEKS = 52;
 
@@ -136,7 +144,7 @@ export function fromMonth(items, from, key = "month") {
   return [...(items || [])].sort((a, b) => ((a[key] - from + 12) % 12) - ((b[key] - from + 12) % 12));
 }
 
-const LEVELS = { high: { icon: "⚠️", word: "High" }, medium: { icon: "🔶", word: "Medium" } };
+const LEVELS = { high: { icon: "⚠️", word: "High" }, medium: { icon: "⚠️", word: "Medium" } }; // level = the word, one icon
 const SOURCES = { crop_calendar: "crop calendar", satellite: "satellite" };
 
 /**

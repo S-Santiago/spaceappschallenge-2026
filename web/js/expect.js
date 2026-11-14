@@ -4,14 +4,14 @@
 
 import { MONTHS, MONTH_ABBR, esc, fmt, num, trendFacts } from "./format.js";
 import {
-  BASIS, FROST_CAVEAT, WEEKS, alertCards, frostSentences, fromMonth, heatFacts, heavySentence, mmdd, nextWeeks,
-  rainSentence, rainYearSummary, returnSentence, weekOfYear,
+  FROST_CAVEAT, basisFor, count, WEEKS, alertCards, frostSentences, fromMonth, heatFacts, heavySentence, mmdd, nextWeeks,
+  rainYearSummary, returnSentence, weekOfYear,
 } from "./expect-format.js";
 
-const basisLine = `<p class="basis small">ℹ️ ${esc(BASIS)}</p>`;
-
+// The "not a weather forecast" basis is said once, at the top of the tab, and repeated in the footer (UX review #40):
+// repeating it in every card buried the content.
 function card(title, body, extra = "") {
-  return `<article class="card exp-card${extra}"><h4>${title}</h4>${body}${basisLine}</article>`;
+  return `<article class="card exp-card${extra}"><h4>${title}</h4>${body}</article>`;
 }
 
 /** 52-week strip of P-01 prob_rain, hand-drawn SVG (no chart library), with today marked. */
@@ -51,12 +51,15 @@ export function rainStrip(rainWeeks, today = new Date()) {
 
 function rainSection(pred, today) {
   const weeks = nextWeeks(pred?.rain_weeks, today);
-  const cards = weeks.map((w, i) => {
-    const text = rainSentence(w);
-    if (!text) return "";
-    const title = i === 0 ? `This week · from ${esc(mmdd(w.start))}` : `Week of ${esc(mmdd(w.start))}`;
-    return card(`🌧️ ${title}`, `<p>${esc(text)}</p>`);
+  const rows = weeks.map((w, i) => {
+    const wet = count(w?.prob_rain, w?.years), useful = count(w?.prob_useful_rain, w?.years);
+    if (wet === null || !mmdd(w.start)) return "";
+    const label = i === 0 ? `This week (from ${mmdd(w.start)})` : `Week of ${mmdd(w.start)}`;
+    const rain = wet === 0 ? `no rain in the last ${w.years} years`
+      : `rain in ${wet} of ${w.years} years${useful ? `, ${useful} with more than 10 mm` : ""}`;
+    return `<li><span class="ico" aria-hidden="true">🌧️</span><span><strong>${esc(label)}</strong>: ${esc(rain)}</span></li>`;
   }).join("");
+  const cards = rows ? card("🌧️ Rain week by week", `<ul class="facts">${rows}</ul>`) : "";
   const strip = rainStrip(pred?.rain_weeks, today);
   if (!cards && !strip) return "";
   return `<section class="section" aria-labelledby="h-rain"><h3 id="h-rain">Rain in the next 4 weeks</h3>
@@ -107,13 +110,19 @@ function heavySection(pred, today) {
 export function alertsSection(pred, today = new Date()) {
   const cards = alertCards(pred?.alerts, num(pred?.heavy_rain?.threshold_mm) ?? 20, today);
   if (!cards.length) return "";
+  const level = cards.some((c) => c.level === "high") ? "high" : "medium";
+  const sources = [...new Set(cards.flatMap((c) => (c.source ? c.source.split(" and ") : [])))].join(" and ");
+  const rows = cards.map((c) => {
+    const freq = /\((\d+ of \d+ years)\)/.exec(c.text)?.[1];
+    return `<li><span class="ico" aria-hidden="true">${c.icon}</span><span><strong>${esc(MONTHS[c.month - 1])}</strong> <span class="level">${esc(c.levelWord)}</span>${
+      freq ? ` heavy rain in ${esc(freq)}` : ""}</span></li>`;
+  }).join("");
   return `<section class="section" aria-labelledby="h-alerts"><h3 id="h-alerts">Heavy rain on bare soil</h3>
-    <p class="small muted">Heavy-rain days often fall when the field is bare in these months. Upcoming months first.</p>
-    ${cards.map((c) => `<article class="card exp-card alert alert--${c.level}" aria-label="${esc(`${c.title}: ${c.levelWord} alert`)}">
-      <h4><span aria-hidden="true">${c.icon}</span> ${esc(MONTHS[c.month - 1])} <span class="level">${esc(c.levelWord)}</span></h4>
-      <p>${esc(c.text)}</p>
-      <p class="small muted" style="margin-top:4px">${c.source ? `Bare months from the ${esc(c.source)}. ` : ""}${esc(c.threshold)}</p>
-      ${basisLine}</article>`).join("")}</section>`;
+    <article class="card exp-card alert alert--${level}" aria-label="Heavy rain on bare soil: ${cards.length} ${cards.length === 1 ? "month" : "months"}, upcoming first">
+      <p>Heavy-rain days often fall when the field is bare in these months. Bare soil can wash away — a cover crop or leaving stubble helps.</p>
+      <ul class="facts" style="margin-top:12px">${rows}</ul>
+      <p class="small muted" style="margin-top:12px">${sources ? `Bare months from the ${esc(sources)}. ` : ""}${esc(cards[0].threshold)} Upcoming months first.</p>
+    </article></section>`;
 }
 
 /** The whole tab panel. */
@@ -121,7 +130,7 @@ export function renderExpect(pred, profile, today = new Date()) {
   const sections = [alertsSection(pred, today), rainSection(pred, today), frostSection(pred), heatSection(profile), heavySection(pred, today)]
     .filter(Boolean).join("");
   const period = String(pred?.period || "2005-2025").replace("-", "–");
-  return `<p class="basis basis--lead">ℹ️ ${esc(BASIS)}</p>
+  return `<p class="basis basis--lead">ℹ️ ${esc(basisFor(pred?.period))}</p>
     ${sections || `<p class="muted" style="margin-top:16px">What to expect is not available for this field. Try again later, or try a demo field.</p>`}
     <section class="section foot" aria-labelledby="h-exp-src"><h3 id="h-exp-src">Where these numbers come from</h3>
       <p class="small" style="margin-top:8px">Counts of years in NASA POWER daily data, ${esc(period)}, for an area of about 50 km around your field. They say what happened in past years, not what the weather will do. Your valley, slope or coast can differ.</p></section>`;

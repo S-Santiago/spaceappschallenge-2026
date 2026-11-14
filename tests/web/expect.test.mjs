@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { predictionsQuery } from "../../web/js/api.js";
 import { renderExpect, alertsSection, rainStrip } from "../../web/js/expect.js";
 import {
-  BASIS, FROST_CAVEAT, alertCards, count, frostSentences, heatFacts, heavySentence, mmdd, nextWeeks, rainSentence,
+  BASIS, FROST_CAVEAT, alertCards, basisFor, count, frostSentences, heatFacts, heavySentence, mmdd, nextWeeks, rainSentence,
   rainYearSummary, returnSentence, weekOfYear,
 } from "../../web/js/expect-format.js";
 
@@ -114,18 +114,20 @@ test("the alert section is absent unless the payload has alerts", () => {
   assert.match(html, /Heavy rain on bare soil/);
   assert.match(html, /heavy-rain days often fall when the field is bare/i);
   assert.match(html, /<span class="level">High<\/span>/);
-  assert.equal((html.match(/class="card exp-card alert/g) || []).length, 4);
+  assert.equal((html.match(/class="card exp-card alert/g) || []).length, 1); // one card, one row per month
+  assert.equal((html.match(/<li>/g) || []).length, 4);
 });
 
-test("the full tab: basis on the screen and every card, frost caveat always, no red-alert text", () => {
+test("the full tab: basis once at the top (not in every card), frost caveat always, no red-alert text", () => {
   const html = renderExpect(PRED, heatProfile(ANTEQUERA_HEAT), TODAY);
   const cards = html.match(/<article class="card exp-card[^]*?<\/article>/g);
-  assert.ok(cards.length >= 4 + 1 + 1 + 1 + 4, `cards: ${cards.length}`); // 4 alerts, frost, heat, heavy, 4 weeks
-  for (const c of cards) assert.ok(c.includes(BASIS), c.slice(0, 80));
-  assert.ok(html.startsWith(`<p class="basis basis--lead">ℹ️ ${BASIS.replace("—", "—")}`));
+  assert.equal(cards.length, 5, `cards: ${cards.length}`); // alerts, rain weeks, frost, heat, heavy
+  for (const c of cards) assert.ok(!c.includes("not a weather forecast"), c.slice(0, 80));
+  assert.ok(html.startsWith(`<p class="basis basis--lead">ℹ️ ${BASIS}`));
+  assert.equal(BASIS, "Based on 21 years of NASA data (2005–2025) — not a weather forecast.");
   assert.ok(html.includes(FROST_CAVEAT));
-  assert.ok(html.includes("This week · from 12 Nov"));
-  assert.ok(html.includes("In the week of 26 Nov it rained in 16 of the last 21 years (in 9 of them more than 10 mm)."));
+  assert.ok(html.includes("<strong>This week (from 12 Nov)</strong>"));
+  assert.ok(html.includes("<strong>Week of 26 Nov</strong>: rain in 16 of 21 years, 9 with more than 10 mm"));
   assert.ok(html.includes("About 13 more very hot days a year than in 2005–2014."));
   assert.doesNotMatch(html.replace(/aria-[a-z]+="[^"]*"/g, ""), RED_ALERT);
   assert.doesNotMatch(html, /forecast says|will rain|erosion measured/i);
@@ -158,4 +160,10 @@ test("predictions query: demo field or point, current rotation repeated, slope",
   assert.equal(predictionsQuery({ field: "antequera", rotation: ["durum_wheat", "sunflower"], slope: "flat" }),
     "field=antequera&rotation=durum_wheat&rotation=sunflower&slope=flat");
   assert.equal(predictionsQuery({ lat: 37.1, lon: -4.6, rotation: [], slope: "steep" }), "lat=37.1&lon=-4.6&slope=steep");
+});
+
+test("basis line follows the API period", () => {
+  assert.equal(basisFor("2005-2025"), "Based on 21 years of NASA data (2005–2025) — not a weather forecast.");
+  assert.equal(basisFor("2006-2025"), "Based on 20 years of NASA data (2006–2025) — not a weather forecast.");
+  assert.equal(basisFor(null), BASIS);
 });
