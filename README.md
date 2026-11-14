@@ -1,4 +1,4 @@
-# 🌱 [Project name TBD] — NASA Space Apps Challenge 2026 · Málaga
+# 🌱 FarmLens — NASA Space Apps Challenge 2026 · Málaga
 
 > **Challenge 06 · Adapting farms with NASA data**
 > *A decision-support tool that combines NASA Earth observations with local soil information, crop characteristics and farmer priorities to help farmers explore crop-rotation strategies that strengthen soil health and resilience to changing climate and water conditions.* — full statement in [`docs/challenge.md`](docs/challenge.md)
@@ -9,7 +9,7 @@
 | **Dates** | 14–15 November 2026 · Development started Sat 14, 09:00 local time |
 | **Official deadline** | Sun 15 November 2026, **before 23:59** local time (Submit for Judging) |
 | **Status** | 🚧 In development |
-| **License** | ⏳ Pending — see [`docs/licensing.md`](docs/licensing.md) |
+| **License** | [MIT](LICENSE) (code & docs). NASA data and third-party components keep their own terms — see [`docs/licensing.md`](docs/licensing.md) |
 
 ---
 
@@ -33,7 +33,8 @@ At least one NASA resource listed by the challenge is **mandatory** for Global A
 
 | Resource | Role in the solution |
 |---|---|
-| _TODO_ | _TODO_ |
+| [NASA POWER](https://power.larc.nasa.gov/) Daily API v2.10.3 — temperature, precipitation, root-zone soil wetness, 2005–2025 | Climate profile of the field: water balance, frost/heat/heavy-rain days, decade trends → evidence for every rotation card |
+| [MODIS/Terra MOD13Q1 v061](https://doi.org/10.5067/MODIS/MOD13Q1.061) NDVI, 250 m, 16-day (via ORNL DAAC) — 2024–2025 | Detects the months the field is likely bare → cover-crop and erosion-reduction suggestions |
 
 ## 5. How to run it
 
