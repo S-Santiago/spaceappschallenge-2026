@@ -5,3 +5,6 @@
 
 # Windows batch files (vendored Impeccable launcher) need CRLF: cmd.exe breaks `goto`/`call :label` with LF
 *.cmd text eol=crlf
+
+# Append-only AI usage log: keep rows added in parallel by different people (no sequence numbers)
+docs/ai-usage.md merge=union
