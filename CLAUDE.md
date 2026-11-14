@@ -21,6 +21,7 @@
 
 ## Working conventions
 - Small commits, Conventional Commits style (`feat:`, `fix:`, `docs:`, `data:`, `chore:`).
+- **No AI authorship in git**: never add `Co-Authored-By` or "Generated with" lines to commits or PRs. AI usage is declared only in `docs/ai-usage.md`.
 - Large data never goes into git: use `data/raw/` and `data/processed/` (ignored); keep download scripts and a small sample in `data/samples/`.
 - Record significant decisions as `docs/decisions/NNNN-title.md` (skill `record-decision`).
 - Keep `README.md` sections 1–5 up to date: judges read the README first.

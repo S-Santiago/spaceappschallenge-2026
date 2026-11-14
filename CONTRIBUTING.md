@@ -7,7 +7,7 @@
 
 ## Commits
 Conventional Commits: `feat:`, `fix:`, `docs:`, `data:`, `chore:`, `refactor:`.
-If an AI tool generated a substantial part of a commit, keep its trailer (e.g. `Co-Authored-By:`) **and** log it in `docs/ai-usage.md`.
+Commits are authored by team members only: no AI co-author trailers (`Co-Authored-By:` from AI tools) in commits or PRs. Claude Code is configured for this in `.claude/settings.json`. AI usage is declared in `docs/ai-usage.md` instead (required by NASA).
 
 ## Definition of done for any change
 - [ ] Works, or is clearly marked as simulated/mock.

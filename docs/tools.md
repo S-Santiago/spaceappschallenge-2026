@@ -23,6 +23,7 @@ The repo ships project-level configuration for [Claude Code](https://docs.claude
 1. Install Claude Code and log in (each teammate with their own account).
 2. Open a terminal in the repo root and run `claude`.
 3. Claude automatically reads [`CLAUDE.md`](../CLAUDE.md) (project rules) and discovers `.claude/agents/` and `.claude/skills/`.
+4. The shared [`.claude/settings.json`](../.claude/settings.json) disables AI co-author attribution in commits and PRs for every teammate (`attribution.commit` / `attribution.pr` empty). Personal overrides go in `.claude/settings.local.json` (git-ignored) — do not re-enable attribution there.
 
 ### Agents (`.claude/agents/*.md`)
 Sub-agents with a focused role. Invoke them by asking, e.g. *"use the nasa-data-scout agent to find soil moisture data for Málaga"*, or with `@agent-name`.
