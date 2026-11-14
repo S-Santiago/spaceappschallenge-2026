@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Official title** | _TODO: copy the exact English title from the official challenge page_ (Spanish page: "Cambio de campo: adaptación de las granjas a los datos de la NASA") |
+| **Official title** | **Field Shift: Adapting Farms with NASA Data** (Spanish page: "Cambio de campo: adaptación de las granjas a los datos de la NASA") |
 | **Event** | NASA Space Apps Challenge 2026 |
 | **Difficulty** | Intermediate · Advanced |
 | **Subjects** | Arts & multimedia · Earth science · Software |
-| **Official link** | _TODO: paste URL_ |
-| **Resources tab** | _TODO: paste the official Resources list (section 6). More resources may be added before the hackathon._ |
+| **Official link** | https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/ (read 2026-11-14) |
+| **Resources tab** | See section 6 (copied 2026-11-14). More resources may be added before the hackathon. |
 
 > The text below is the team's English working rendering of the official statement (the copy we received was a Spanish machine translation, where "SI" means AI). The official English page prevails.
 
@@ -91,7 +91,24 @@ Combine NASA Earth observations with local agricultural information into an **ap
 - **Out of scope / future:** _TODO_
 
 ## 6. Official resources (Resources tab)
-_TODO: paste here. Register the ones we use in [nasa-data.md](nasa-data.md)._
+Copied from the official page on 2026-11-14. Register the ones we use in [nasa-data.md](nasa-data.md). **At least one NASA resource below must have a real role** (Global Awards rule). Non-U.S. Government sites have their own data-use terms.
+
+**NASA**
+| Resource | Link | What it offers |
+|---|---|---|
+| SMAP | https://www.earthdata.nasa.gov/data/platforms/space-based-platforms/smap | Surface soil moisture & freeze/thaw, every 2–3 days |
+| GPM & IMERG | https://gpm.nasa.gov/data | Global precipitation rate/accumulation |
+| Landsat | https://earthexplorer.usgs.gov/ | 30 m reflectance / NDVI |
+| MODIS | https://lpdaac.usgs.gov/products/ | 250–1000 m vegetation indices |
+| VIIRS | https://search.earthdata.nasa.gov/search?q=VIIRS | Vegetation indices (MODIS successor) |
+| NASA POWER | https://power.larc.nasa.gov/ | Agroclimatology: temperature, humidity, radiation, derived indicators |
+| SRTM | https://www.earthdata.nasa.gov/data/instruments/srtm | Elevation → slope, runoff, erosion risk |
+| ECOSTRESS | https://ecostress.jpl.nasa.gov/data | Land-surface temperature & evapotranspiration (~70 m) |
+| NLDAS / GLDAS | https://www.earthdata.nasa.gov/ (search "GLDAS") | Gridded soil moisture, ET, temperature, precipitation |
+| GEDI | https://gedi.umd.edu/data | Vegetation structure / biomass |
+
+**Partners & others** (many are USA-only; for Málaga prefer the global ones marked 🌍)
+USDA Ag Data Commons · Web Soil Survey · CropScape (CDL) · PRISM · SSURGO/STATSGO2 · NAIP · NLCD · CoCoRaHS · USGS NWIS · USDA AMS Market News · USDA NASS QuickStats · OpenET · LANDFIRE · 🌍 FAO GAEZ (https://gaez.fao.org/) · 🌍 Copernicus Sentinel-2 (https://dataspace.copernicus.eu/) · 🌍 ERA5 (https://cds.climate.copernicus.eu/).
 
 ## 7. Double-diamond notes (from the brainstorming poster)
 | Box | Notes |

@@ -4,7 +4,8 @@ Everything a judge, mentor or teammate needs to understand, run and verify this 
 
 | # | Document | Owner (role) | Status |
 |---|---|---|---|
-| 1 | [challenge.md](challenge.md) — challenge statement & interpretation | Product | 🟡 Draft |
+| 1 | [challenge.md](challenge.md) — challenge statement & interpretation | Product | 🟡 Official statement in; interpretation TODO |
+| 1b | [work-plan.md](work-plan.md) — proposed MVP, 4-person split, interfaces, timeline | Team owner | 🟡 Proposal |
 | 2 | [hackathon-rules.md](hackathon-rules.md) — rules, deadlines, deliverables, criteria | Team owner | 🟢 Done |
 | 3 | [nasa-data.md](nasa-data.md) — data registry & traceability | Data | 🟡 Candidates only |
 | 4 | [architecture.md](architecture.md) — design & stack | Tech lead | 🔴 Stack TBD |
