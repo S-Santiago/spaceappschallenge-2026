@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>FarmLens — compare crop rotations for your field</title>
   <meta name="description" content="Compare crop rotations for your field in Málaga province using NASA climate and satellite data.">
-  <meta name="theme-color" content="#2E5B44">
+  <meta name="theme-color" content="#285943">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -14,9 +14,8 @@
 </head>
 <body>
   <div class="page">
-    <div id="net" class="banner" role="status" hidden>
-      <strong>You're offline</strong>
-      Demo fields you opened before still work. A new point on the map needs a connection.
+    <div id="net" class="banner banner--warn" role="status" hidden>
+      <strong>You're offline</strong> Fields you opened before still work. A new map point needs internet.
     </div>
     <main id="app" tabindex="-1">
       <noscript><p>FarmLens needs JavaScript to run. Please turn it on in your browser settings.</p></noscript>
