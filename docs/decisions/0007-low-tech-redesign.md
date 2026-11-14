@@ -1,4 +1,4 @@
-# 0006 · PWA redesign for farmers with little tech experience
+# 0007 · PWA redesign for farmers with little tech experience
 
 - **Date:** 2026-11-14 19:00
 - **Status:** accepted

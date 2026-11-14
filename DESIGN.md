@@ -2,7 +2,7 @@
 
 The visual direction of the app and the rules that keep it consistent. Read with
 [`docs/ux-guidelines.md`](docs/ux-guidelines.md) (project rules, they win) and [`docs/ui-skills.md`](docs/ui-skills.md).
-Why it looks this way: [decision 0006](docs/decisions/0006-low-tech-redesign.md).
+Why it looks this way: [decision 0007](docs/decisions/0007-low-tech-redesign.md).
 
 - **Surface mode:** Operate (Impeccable). The farmer comes to finish one task: compare rotations for their field.
   Familiar controls, plain words, precision over decoration.
