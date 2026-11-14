@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FarmLens — compare crop rotations for your field</title>
+  <meta name="description" content="Compare crop rotations for your field in Málaga province using NASA climate and satellite data.">
+  <meta name="theme-color" content="#2E5B44">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div class="page">
+    <div id="net" class="banner" role="status" hidden>
+      <strong>You're offline</strong>
+      Demo fields you opened before still work. A new point on the map needs a connection.
+    </div>
+    <main id="app" tabindex="-1">
+      <noscript><p>FarmLens needs JavaScript to run. Please turn it on in your browser settings.</p></noscript>
+      <p class="muted" id="boot">Loading FarmLens…</p>
+    </main>
+  </div>
+</body>
+</html>
