@@ -78,12 +78,12 @@ cd spaceappschallenge-2026
 python -m venv .venv
 # Windows: .venv\Scripts\activate   ·   macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run src/app.py
+uvicorn fieldshift.api:app --app-dir src --port 8000
 ```
 
-Then open the URL Streamlit prints (usually http://localhost:8501). No API keys are needed: NASA POWER and the ORNL DAAC MODIS service are open, and the demo fields work offline from `data/samples/`.
+Then open http://localhost:8000 on a phone-sized window. One service runs the API (`/api/...`, interactive docs at `/docs`) and serves the mobile web app from `web/`. No API keys are needed: NASA POWER and the ORNL DAAC MODIS service are open, and the three demo fields answer from the NASA data pre-loaded in `data/samples/`. A new point on the map fetches NASA data live (the first time can take a minute or more).
 
-<!-- TODO (#14): confirm these steps once the DB and real modules are wired in; add `pytest` command (#11). -->
+**Tests:** `pip install -r requirements-dev.txt`, then `PYTHONPATH=src pytest` (engine, API and PWA checks) and `node --test "tests/web/*.test.mjs"` (PWA helpers, Node 18+, no packages).
 
 ## 6. Repository map
 

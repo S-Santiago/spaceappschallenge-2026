@@ -2,6 +2,23 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "farmlens-api",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": [
+        "fieldshift.api:app",
+        "--app-dir",
+        "src",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "src"
+      ],
+      "port": 8000
+    },
+    {
       "name": "farmlens",
       "runtimeExecutable": ".venv/bin/streamlit",
       "runtimeArgs": [
