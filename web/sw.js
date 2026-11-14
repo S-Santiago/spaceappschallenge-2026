@@ -9,7 +9,7 @@ const SHELL = `farmlens-shell-${VERSION}`;
 const DATA = `farmlens-data-${VERSION}`;
 const SHELL_FILES = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
-  "js/app.js", "js/api.js", "js/format.js", "js/map.js",
+  "js/app.js", "js/api.js", "js/format.js", "js/map.js", "js/expect.js", "js/expect-format.js",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
 const DATA_PATHS = ["/api/fields", "/api/crops"];

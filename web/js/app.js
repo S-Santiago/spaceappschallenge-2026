@@ -1,6 +1,7 @@
-// FarmLens PWA (decision 0005: vanilla JS, no build). Two screens with a tiny hash router:
+// FarmLens PWA (decision 0005: vanilla JS, no build). Screens with a tiny hash router:
 //   #/          the 4-step form (field → current rotation → priorities → farm)
-//   #/results   the answer from POST /api/analyze (real engine; no mock data anywhere)
+//   #/results   tab "Rotation options": the answer from POST /api/analyze (real engine; no mock data anywhere)
+//   #/expect    tab "What to expect": GET /api/predictions (statistics over NASA history), view loaded on demand
 
 import * as api from "./api.js";
 import {
@@ -50,7 +51,9 @@ const state = {
   field: null, point: null, mapApi: null,
   rotation: [], priorities: { water: 1, soil: 1, income: 1, risk: 1 }, irrigation: "none", slope: "flat",
   edited: false, busy: false, result: null,
+  predictions: null, // {key, data} for the current analysis inputs
 };
+const TABS = [["results", "Rotation options"], ["expect", "What to expect"]];
 
 // ------------------------------------------------------------------ helpers
 
@@ -416,6 +419,7 @@ function watchPending(result, tries = 0) {
       if (state.result !== result) return;
       result.data = data;
       if (!isPending(result) && location.hash === "#/results") renderResults();
+      if (!isPending(result)) state.predictions = null; // bare months known now: alerts may change
     } catch { /* keep the results we have; try again below */ }
     watchPending(result, tries + 1);
   }, PENDING_RETRY_MS);
@@ -436,7 +440,7 @@ function scoreBar(value, label) {
   return `<div class="bar bar--${levelKey(label, value)}" aria-hidden="true"><i style="width:${n}%"></i></div>`;
 }
 
-function renderResults() {
+function renderResults(tab = "results") {
   const { data, label, at, inputs: used } = state.result;
   const profile = data?.profile || {};
   const strategies = Array.isArray(data?.strategies) ? data.strategies : [];
@@ -481,7 +485,7 @@ function renderResults() {
     ? "Greenness data (MODIS) was still loading for this point, so the months when the field is bare are not known yet."
     : "Greenness data (MODIS) was not available for this point, so the months when the field is bare are unknown.");
 
-  app.innerHTML = `
+  const head = `
   <div class="results-head">
     <a class="btn" href="#/" id="back">← Change answers</a>
     <h1 tabindex="-1" id="r-title">Results for ${esc(label)}</h1>
@@ -490,7 +494,19 @@ function renderResults() {
   ${loadingNdvi
     ? banner("warn", "Satellite greenness is still loading", " Rain, heat and frost results are ready. The months when the field is bare will be added here automatically in a minute or two. Keep this page open.")
     : noNdvi ? banner("warn", "Greenness data unavailable for this point", " Bare months are unknown. Rain, heat and frost still come from NASA POWER.") : ""}
+  <div class="tabs" role="tablist" aria-label="Results">${TABS.map(([id, text]) => `
+    <button type="button" class="tab" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="panel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${text}</button>`).join("")}
+  </div>`;
 
+  if (tab === "expect") {
+    app.innerHTML = `${head}<div id="panel" role="tabpanel" aria-labelledby="tab-expect" tabindex="-1"></div>`;
+    bindTabs();
+    loadExpect();
+    return;
+  }
+
+  app.innerHTML = `${head}
+  <div id="panel" role="tabpanel" aria-labelledby="tab-results" tabindex="-1">
   <section class="section" aria-labelledby="h-opt">
     <h2 id="h-opt">Rotation options</h2>
     <p class="small muted">Your current rotation first, then other options by overall score. Scores out of 100 (Good 67 or more · Fair 34–66 · Poor under 34), weighted by your priorities: ${esc(weights)}.</p>
@@ -519,8 +535,62 @@ function renderResults() {
     <ul class="limits" style="margin-top:8px">${limits.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>
     <p style="margin-top:16px"><strong>${esc(data?.disclaimer || "This tool supports, and does not replace, your judgment and local agricultural advice.")}</strong></p>
     <div class="actions"><a class="btn btn--block" href="#/">← Change answers</a></div>
-  </section>`;
-  $("#r-title").focus({ preventScroll: true });
+  </section>
+  </div>`;
+  bindTabs();
+}
+
+// ------------------------------------------------------------------ tabs & "What to expect"
+
+/** Tabs follow the ARIA tabs pattern: arrows / Home / End move between them, the hash keeps Back working. */
+function bindTabs() {
+  const tabs = [...app.querySelectorAll('[role="tab"]')];
+  tabs.forEach((btn, i) => {
+    btn.addEventListener("click", () => openTab(btn.dataset.tab));
+    btn.addEventListener("keydown", (e) => {
+      const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      openTab(tabs[(to + tabs.length) % tabs.length].dataset.tab);
+    });
+  });
+}
+
+function openTab(tab) {
+  const hash = `#/${tab}`;
+  if (location.hash !== hash) location.hash = hash; // route() renders and focuses the tab
+}
+
+function predictionsKey(inputs) {
+  return api.predictionsQuery(inputs);
+}
+
+async function loadExpect() {
+  const panel = $("#panel");
+  const result = state.result;
+  const key = predictionsKey(result.inputs);
+  const free = !result.inputs.field;
+  const show = async (data) => {
+    const view = await import("./expect.js");
+    if (state.result !== result || location.hash !== "#/expect" || !$("#panel")) return;
+    $("#panel").innerHTML = view.renderExpect(data, result.data?.profile);
+  };
+  if (state.predictions?.key === key) {
+    try { await show(state.predictions.data); return; } catch { /* the view module failed to load: fall through */ }
+  }
+  panel.innerHTML = `<div class="progress" role="status"><ol class="stages"><li class="active"><span class="mark" aria-hidden="true"><span class="spin"></span></span>Loading what to expect from NASA history…</li></ol></div>`;
+  try {
+    const [data] = await Promise.all([api.getPredictions(result.inputs, { freePoint: free }), import("./expect.js")]);
+    state.predictions = { key, data };
+    await show(data);
+  } catch (err) {
+    if (state.result !== result || location.hash !== "#/expect" || !$("#panel")) return;
+    const msg = errorMessage(err.kind || "server", { freePoint: free });
+    $("#panel").innerHTML = `<div style="margin-top:16px">${banner("error", msg.title, ` ${msg.text}`,
+      `<div class="actions"><button type="button" class="btn btn--primary" id="retry-expect">Try again</button><button type="button" class="btn btn--block" id="to-options">See rotation options</button></div>`)}</div>`;
+    $("#retry-expect").addEventListener("click", loadExpect);
+    $("#to-options").addEventListener("click", () => openTab("results"));
+  }
 }
 
 function climateChart(profile) {
@@ -569,14 +639,25 @@ function calendar(profile, noNdvi) {
 
 // ------------------------------------------------------------------ router & connectivity
 
+let lastScreen = null;
+
 function route() {
   if (!state.crops.length) return;
-  if (location.hash === "#/results" && state.result) {
+  const tab = { "#/results": "results", "#/expect": "expect" }[location.hash];
+  if (tab && state.result) {
     state.mapApi = null;
-    renderResults();
-    window.scrollTo(0, 0);
+    const fromTab = lastScreen === "results" || lastScreen === "expect";
+    renderResults(tab);
+    lastScreen = tab;
+    if (fromTab) {
+      $(`#tab-${tab}`).focus({ preventScroll: true }); // switching tabs: keep the place, focus stays on the tab
+    } else {
+      window.scrollTo(0, 0);
+      $("#r-title").focus({ preventScroll: true });
+    }
   } else {
-    if (location.hash === "#/results") history.replaceState(null, "", "#/");
+    lastScreen = "form";
+    if (tab) history.replaceState(null, "", "#/");
     state.mapApi = null;
     renderForm();
   }
