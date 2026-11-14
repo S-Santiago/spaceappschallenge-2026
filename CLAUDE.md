@@ -3,7 +3,8 @@
 ## Context
 - Team project for **NASA Space Apps Challenge 2026 · Málaga**, **Challenge 06: Adapting farms with NASA data** — a decision-support tool combining NASA Earth observations with local soil info, crop traits and farmer priorities to compare **crop-rotation strategies** (≥3, including the current one; each with why / evidence / benefits / information gaps / risks needing local review). Full statement: `docs/challenge.md`. The tool supports, never replaces, farmers' judgment.
 - Development window: Sat 14 Nov 2026 09:00 → **Sun 15 Nov 2026 23:59 (Europe/Madrid)**, the official NASA deadline. Local pitches Sun 17:30–19:00. Time is the scarcest resource: prefer the simplest thing that can be demoed.
-- Tech stack: **not decided yet**. Read `docs/architecture.md` before assuming one. Do not introduce a framework without recording it in `docs/decisions/`.
+- Tech stack: **Python 3.11+ · Streamlit · SQLite** (`docs/decisions/0002-tech-stack.md`). Do not introduce another framework without a new decision record.
+- **Target users: farmers with at most a low/mid-range phone, slow or unstable mobile data and little tech experience.** Everything user-facing must be **mobile-first and lightweight** (see `docs/ux-guidelines.md` → "Mobile-first, low-end phones"). Desktop is secondary.
 - Project license: **pending** (`docs/licensing.md`). Do not add a LICENSE file unless the team asks.
 
 ## Language
@@ -18,6 +19,16 @@
 5. **Privacy**: no credentials, API keys or personal data in the repo. Secrets go in `.env` (git-ignored); document variables in `.env.example`. No names, voices or recognizable images of minors.
 6. **Honesty**: clearly separate *built*, *simulated* and *future* in docs and demo. Never present unverified AI output as verified.
 7. **Never commit organizer event material** (PDFs, posters, judge photos). It lives outside the repo.
+
+## Git workflow — `main` is protected
+- **Never commit or push to `main`** (direct pushes, force pushes and deletion are rejected by GitHub).
+- Always: `git switch main && git pull` → `git switch -c <type>/<topic>` (`feat/`, `fix/`, `data/`, `docs/`, `chore/`) → commit → `git push -u origin <branch>` → `gh pr create --fill`.
+- **No approval is required**: the author may merge their own PR (`gh pr merge --squash`) once all review conversations are resolved. Only merge when the user asks you to.
+- **Squash only** → the PR title becomes the commit on `main`: write it as Conventional Commits in English (`feat: add climate indicators`).
+- Fill the PR template checklist. No AI attribution lines in the PR body or commits.
+- For risky changes (shared code, data pipeline, demo path) suggest asking the reviewer in `.github/CODEOWNERS` first.
+- If a push to `main` is rejected, do not work around it: move the commits to a new branch, push it and open a PR.
+- If GitHub says the branch is out of date, update it (`gh pr update-branch` or rebase on `origin/main`).
 
 ## Working conventions
 - Small commits, Conventional Commits style (`feat:`, `fix:`, `docs:`, `data:`, `chore:`).

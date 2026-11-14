@@ -35,7 +35,7 @@ Each card maps 1:1 to a Shape 2 object: `why`, `evidence[]`, `benefits[]`, `gaps
 
 ## 4. Hard rules
 - **No claim without evidence.** Every statement in "Why" and "Benefits" must point to an indicator, a crop trait with source, or farmer input. If it cannot, move it to "Information gaps".
-- **No invented numbers** (yields, prices, savings). Use qualitative levels unless a cited source gives a number.
+- **No invented numbers** (yields, prices, savings). Use qualitative levels unless a cited source gives a number. The `income` score comes from `market_value_illustrative` → label it "illustrative" in the card and the UI, and list real local prices under "Information gaps".
 - Never rank a strategy as "the best": present trade-offs.
 - Always end with the disclaimer: *"This tool supports, and does not replace, your judgment and local agricultural advice."*
 - Use plain words for farmers; explain any technical term in one line (or link to the glossary).

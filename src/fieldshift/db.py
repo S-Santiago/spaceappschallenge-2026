@@ -114,7 +114,10 @@ def _seed_samples(conn: sqlite3.Connection) -> None:
     # Sample files are named like the old JSON cache: <source>_<lat>_<lon>.json
     have = {(s, la, lo) for s, la, lo in conn.execute("SELECT source, lat, lon FROM nasa_raw")}
     for file in sorted(SAMPLES_DIR.glob("*.json")):
-        source, lat, lon = file.stem.split("_")
+        parts = file.stem.split("_")
+        if len(parts) != 3:
+            continue
+        source, lat, lon = parts
         if source not in ("power", "modis"):
             continue
         lat, lon = _key(float(lat), float(lon))

@@ -76,19 +76,41 @@ Combine NASA Earth observations with local agricultural information into an **ap
 
 ## 5. Our interpretation
 
+### Focus: Málaga province
+Málaga has a lot of agriculture spread across many small villages where farmers are **poorly connected to technology**. FarmLens targets them: a simple, mobile-first tool that turns NASA data into rotation options they can understand on a low/mid-range phone.
+
 | Question (participant guide) | Our answer |
 |---|---|
-| What concrete problem do we tackle? | _TODO_ — e.g. choosing a rotation for a rain-fed field under increasing drought/heat |
-| Who is affected? (farmer type, region, crops) | _TODO_ — e.g. Andalusian dryland cereal farmers (wheat/barley) considering legumes |
+| What concrete problem do we tackle? | Farmers in Málaga's villages must decide which crops to rotate while rainfall drops, summers get hotter and irrigation water is restricted — without tools that translate climate data into decisions |
+| Who is affected? (farmer type, region, crops) | Small and medium farmers in Málaga province — rain-fed cereal/sunflower in the inland plains (Antequera, Campillos) and small irrigated farms with field crops (maize, alfalfa, faba bean) in the Guadalhorce valley — with **at most a low/mid-range phone, poor connectivity and few tech resources** |
 | What exactly does the challenge ask? | Decision support comparing ≥3 rotations (incl. current) with why / evidence / benefits / gaps / risks |
-| Which NASA resource adds real value? | _TODO_ — candidates in [nasa-data.md](nasa-data.md) |
-| What can we demonstrate in two days? | _TODO_ |
-| What evidence would make us change approach? | _TODO_ |
+| Which NASA resource adds real value? | NASA POWER (field climate profile and 2005–2025 trends) and MODIS MOD13Q1 NDVI (bare-soil months) — see [nasa-data.md](nasa-data.md) |
+| What can we demonstrate in two days? | Pick one of the demo fields on a phone → climate calendar and trends from NASA data → current rotation + 3 alternatives with the five explanations, working offline from pre-loaded data |
+| What evidence would make us change approach? | If the two demo fields produce the same suggestions (data not driving the result), or if the app is not usable on a real low-end phone by Sat 17:30 (fallback in decision 0002) |
+
+### Demo personas (fictional)
+| Persona | Field | Situation |
+|---|---|---|
+| **Antonio, 58** | 40 ha of rain-fed durum wheat and sunflower, Vega de Antequera | Cheap Android phone, poor coverage in the field. Springs are drier and summers hotter; unsure whether to add chickpea or stop sowing sunflower |
+| **Carmen, 45** | 8 ha small family irrigated farm with maize, alfalfa and faba bean, Guadalhorce valley (Cártama) | Irrigation restrictions due to drought; uses WhatsApp but no farming apps. Wants a rotation that uses less water and avoids bare soil |
+
+Personas, farm sizes and crops are illustrative; climate data for each field is real (NASA POWER / MODIS).
+
+### Demo fields (pre-loaded, offline — issue #8)
+Each field falls in a **different NASA POWER grid cell** (checked 2026-11-14 with the POWER climatology API):
+
+| ID | Field | Lat, Lon | POWER cell elevation | Mean rain | Mean July max | Type |
+|---|---|---|---|---|---|---|
+| F1 | Vega de Antequera | 37.05, −4.60 | 520 m | 1.28 mm/day (~470 mm/yr) | 40.6 °C | Inland rain-fed (Antonio) |
+| F2 | Guadalhorce valley, Cártama | 36.72, −4.65 | 145 m | 1.38 mm/day (~500 mm/yr) | 33.9 °C | Near-coast irrigated field crops (maize, alfalfa, faba bean), water-limited (Carmen) |
+| F3 *(optional)* | Campillos | 37.05, −4.86 | 444 m | 1.40 mm/day (~510 mm/yr) | 41.9 °C | Hottest rain-fed plain |
+
+**Grid-cell caveat (use it in the pitch, Validity criterion):** Antequera and the Axarquía fall in the same ~55 km POWER cell, and so do Campillos and Ronda — POWER describes the area, not the plot. MODIS NDVI (250 m) is the field-level signal.
 
 ### Scope for the hackathon
-- **Must have (demo):** _TODO_ — location input → climate/water profile from NASA data → farmer priorities → 3 rotations compared with the five explanations
-- **Nice to have:** _TODO_ — interactive map, timeline, scenario sliders, AI explanation layer
-- **Out of scope / future:** _TODO_
+- **Must have (demo):** demo-field picker (F1, F2) → current rotation + priorities → climate calendar + trends from NASA POWER → bare months from MODIS → current + 3 alternative rotations with why / evidence / benefits / gaps / risks → works on a low/mid-range phone and offline for demo fields
+- **Nice to have:** F3, custom location (map or coordinates), scenario sliders, AI-written plain-language explanations (declared)
+- **Out of scope / future:** vegetable/horticultural crops (not in the crop catalogue), plot-level data (Landsat/ECOSTRESS), real market prices, soil tests, Spanish UI for farmers, SMAP/GPM integration
 
 ## 6. Official resources (Resources tab)
 Copied from the official page on 2026-11-14. Register the ones we use in [nasa-data.md](nasa-data.md). **At least one NASA resource below must have a real role** (Global Awards rule). Non-U.S. Government sites have their own data-use terms.

@@ -21,6 +21,8 @@ python -c "import asyncio; from src.fieldshift import power; d = asyncio.run(pow
 ```
 (adjust the import to how the package is installed/run; check `README.md`.)
 
+> **Transition (issue #6):** the JSON cache in `cache.py` is being replaced by the SQLite `db` module (`src/fieldshift/db.py`, owner @HectorLopGar-Dev). Once `db.py` exists on `main`, store and read through it (e.g. `db.get_profile` / `db.save_profile`) instead of `cache.py`, and keep the committed seed for offline demo fields. Check which one is current before acting.
+
 ## 2. Pre-cache for the demo (offline-safe)
 Copy `data/processed/cache/power_<lat>_<lon>.json` to `data/samples/` for every demo location so the app works without internet. Check the file size (keep samples small; if > 5 MB, tell the team).
 

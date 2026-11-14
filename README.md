@@ -1,4 +1,4 @@
-# 🌱 [Project name TBD] — NASA Space Apps Challenge 2026 · Málaga
+# 🌱 FarmLens — NASA Space Apps Challenge 2026 · Málaga
 
 > **Challenge 06 · Adapting farms with NASA data**
 > *A decision-support tool that combines NASA Earth observations with local soil information, crop characteristics and farmer priorities to help farmers explore crop-rotation strategies that strengthen soil health and resilience to changing climate and water conditions.* — full statement in [`docs/challenge.md`](docs/challenge.md)
@@ -9,21 +9,50 @@
 | **Dates** | 14–15 November 2026 · Development started Sat 14, 09:00 local time |
 | **Official deadline** | Sun 15 November 2026, **before 23:59** local time (Submit for Judging) |
 | **Status** | 🚧 In development |
-| **License** | ⏳ Pending — see [`docs/licensing.md`](docs/licensing.md) |
+| **License** | [MIT](LICENSE) (code & docs). NASA data and third-party components keep their own terms — see [`docs/licensing.md`](docs/licensing.md) |
 
 ---
 
 ## 1. Summary (50–200 words)
 
-> _TODO: Fill in once the solution is defined. This text is copied to the Project page on spaceappschallenge.org. It must say **what we built, how it answers the challenge and why it matters**._
+<!-- Copied to the Project page on spaceappschallenge.org. Keep it between 50 and 200 words and in sync with section 9 (what is really built). -->
+
+FarmLens is a mobile-first web tool that helps small farmers in Málaga, Spain, choose crop rotations that cope with hotter summers, drier springs and water restrictions. A farmer picks their field, enters the current rotation, irrigation, slope and priorities (save water, soil health, income, low risk). FarmLens turns 20 years of NASA POWER daily climate data (2005–2025) into a 12-month field calendar of rain, water deficit, frost, heat and heavy-rain days, and uses MODIS satellite vegetation data to find the months when the soil is left bare. It then compares the current rotation with three alternatives, such as adding a legume, sowing a cover crop in the bare window or switching to a less thirsty crop. For each option it explains why it is suggested, the evidence behind it, its benefits, what we do not know and which risks a local expert should check. It is designed for low-end phones and works offline for the demo fields. FarmLens supports, and does not replace, farmers' judgment.
 
 ## 2. The problem
 
-_TODO: Which farmers / region / crop? Which climate impact (drought, heat stress, irregular rainfall, frost…)? What decision do they struggle to make today?_
+Málaga province has a lot of agriculture spread across many small villages, where most farmers have **at most a low/mid-range phone, poor mobile coverage in the field and little access to digital tools**.
+
+They face a hard, recurring decision: **which crops to rotate next season**. The climate is changing under their feet:
+
+- **Heat:** in the inland plains, the average July maximum is already about **40 °C** (NASA POWER, Antequera area).
+- **Water:** rain-fed fields get only around **470–510 mm of rain a year**, and irrigated farms in the Guadalhorce valley face **drought restrictions**.
+- **Soil:** fields left bare after harvest are exposed to heavy autumn storms that wash soil away.
+
+Choosing a new crop is risky: a crop that improves the soil may need too much water, not fit the season or not sell locally. Satellite and climate data that could help exist, but they are not available in a form a farmer can use on a cheap phone.
+
+<!-- TODO (#9): add 1–2 trend numbers from climate.py (2005–2014 vs 2016–2025: rain change %, extra heat days) for F1 and F2. -->
+
+**Who we design for (fictional personas):** *Antonio*, 58, 40 ha of rain-fed durum wheat and sunflower near Antequera; *Carmen*, 45, 8 ha of irrigated maize, alfalfa and faba bean in the Guadalhorce valley. Details in [`docs/challenge.md`](docs/challenge.md#demo-personas-fictional).
 
 ## 3. Our solution
 
-_TODO: What it does, main user flow, screenshot or diagram._
+**FarmLens** turns NASA data into rotation options a farmer can read on a phone, in four short steps:
+
+1. **Your field**: pick a demo field (works offline) or a point on a map.
+2. **Current rotation**: the crop of each year (2–4 years).
+3. **Your priorities**: save water, soil health, income, low risk.
+4. **Your farm**: irrigation and slope → **Analyze my field**.
+
+**What the farmer gets:**
+
+| Result | Built from |
+|---|---|
+| 📅 **Field calendar (12 months)**: rain, water surplus/deficit, frost days, hot days, heavy-rain days, months with bare soil | NASA POWER 2005–2025 + MODIS NDVI 2024–2025 |
+| 📈 **What is changing**: last 10 years vs previous 10 (rain, hot days) | NASA POWER |
+| 🔄 **Current rotation + 3 alternatives**, each with a score and an explanation | Climate profile + crop catalogue (sourced) + farmer inputs |
+
+<!-- TODO (#13): add a phone screenshot of the results here (assets/), no personal data. -->
 
 Required by the challenge — for **at least three rotation strategies (including the current one)** the tool explains: why it was suggested · supporting evidence · benefits · information gaps · risks needing local review. It supports, and does not replace, farmers' judgment.
 
@@ -33,17 +62,27 @@ At least one NASA resource listed by the challenge is **mandatory** for Global A
 
 | Resource | Role in the solution |
 |---|---|
-| _TODO_ | _TODO_ |
+| [NASA POWER](https://power.larc.nasa.gov/) Daily API v2.10.3 — temperature, precipitation, root-zone soil wetness, 2005–2025 | Climate profile of the field: water balance, frost/heat/heavy-rain days, decade trends → evidence for every rotation card |
+| [MODIS/Terra MOD13Q1 v061](https://doi.org/10.5067/MODIS/MOD13Q1.061) NDVI, 250 m, 16-day (via ORNL DAAC) — 2024–2025 | Detects the months the field is likely bare → cover-crop and erosion-reduction suggestions |
 
 ## 5. How to run it
 
-> _TODO: complete once the stack is chosen. A judge must be able to run or review the project in a few minutes._
+**Public demo (no install, no login):** _TODO (#15): Streamlit Community Cloud link._
+
+**Run locally** (Python 3.11+):
 
 ```bash
 git clone https://github.com/S-Santiago/spaceappschallenge-2026.git
 cd spaceappschallenge-2026
-# ...install & run steps...
+python -m venv .venv
+# Windows: .venv\Scripts\activate   ·   macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run src/app.py
 ```
+
+Then open the URL Streamlit prints (usually http://localhost:8501). No API keys are needed: NASA POWER and the ORNL DAAC MODIS service are open, and the demo fields work offline from `data/samples/`.
+
+<!-- TODO (#14): confirm these steps once the DB and real modules are wired in; add `pytest` command (#11). -->
 
 ## 6. Repository map
 
@@ -57,7 +96,9 @@ cd spaceappschallenge-2026
 ├── data/               # Data folder — raw/processed are git-ignored; see data/README.md
 ├── docs/               # ALL documentation (index: docs/README.md)
 ├── notebooks/          # Exploratory analysis
-├── src/                # Source code (stack TBD)
+├── src/
+│   ├── app.py          # Streamlit app (entry point)
+│   └── fieldshift/     # NASA clients (power.py, modis.py), indicators, rotation engine, DB
 ├── CLAUDE.md           # Instructions for AI agents working in this repo
 ├── CONTRIBUTING.md     # Team workflow
 └── README.md
@@ -90,7 +131,20 @@ AI tools were used during this hackathon. Tools, scope and human verification ar
 
 ## 9. Limitations & next steps
 
-_TODO: What works today, what is simulated, what is planned._
+Honest status — updated as the work lands (built · simulated · next).
+
+| Part | Status |
+|---|---|
+| NASA POWER and MODIS data clients | ✅ Built and tested on real API calls |
+| Streamlit app: 4-step form, mobile-first layout | ✅ Built |
+| Results in the app | 🟡 **Simulated** — example data until the real modules are connected (#14) |
+| Climate indicators (field calendar, trends) | 🔧 In progress (#9) |
+| Rotation engine (current + 3 alternatives) | 🔧 In progress (#10) |
+| Database, crop catalogue, offline demo fields | 🔧 In progress (#6, #7, #8) |
+
+**Known limits:** NASA POWER describes a ~55 km area, not the plot; root-zone soil wetness is a model estimate; MODIS covers only 2024–2025 at 250 m; crop market values are illustrative. Details: [`docs/architecture.md`](docs/architecture.md#known-limitations).
+
+**Next steps:** Spanish version of the app (UI texts kept in one place to make translation easy), plot-level satellite data (Landsat, ECOSTRESS), SMAP soil moisture and GPM rainfall, real local prices, soil tests, vegetable crops.
 
 ## 10. Acknowledgements
 
