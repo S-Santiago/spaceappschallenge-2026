@@ -59,9 +59,11 @@ font. One family; fixed rem scale, ratio ≈ 1.2: h1 28 px, step h2 22 px, secti
 | Step heading | Number disc + title + visible "Step N of 4" (UX launch route 02). The number is a real sequence. |
 | Rotation strip (signature) | Years side by side as field plots, filled by crop family, each with "Year N" and the crop name. Used in step 2 (live preview of the answer), in every option card, with a colour key listing only the families shown. |
 | Comparison list | Rotation options in the same order as the cards (current first, then by overall fit), score + bar. The answer before the evidence. |
-| Score bars | One bar style for overall and the four dimensions; the number and level (Low / Medium / High) are always printed, the bar is hidden from screen readers. |
+| Score bars | One bar style (6 px) for overall and the four dimensions, filled by level: good = pine `--good`, fair = ochre `--fair`, poor = clay `--poor`. The number and level word are always printed (colour is never the only cue); the bar is hidden from screen readers. |
 | Tags | Only "Best fit for your priorities" (filled accent). The current rotation needs no tag: its title says it. |
 | Alerts | Streamlit `st.info / warning / success` with Material icons; feedback appears right under the button that caused it. |
+| Banners (PWA) | 1 px border in the state colour + tinted background (no thick coloured side stripe). |
+| Disclosures (PWA) | `<details>` with a drawn chevron on the right, accent-ink label, 48 px row; the chevron turns when open. |
 | Icons | Interface chrome uses Material Symbols (bundled in Streamlit). Data pictograms (💧 🌱 💶 🛡️, 🔻, 🟫) stay in content because they link the priorities to the scores and are covered by tests; they always sit next to a word. |
 | Cards | Only for the rotation options (comparable items with expanders). No card inside a card. |
 

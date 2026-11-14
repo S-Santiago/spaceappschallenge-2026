@@ -423,9 +423,17 @@ function watchPending(result, tries = 0) {
 
 // ------------------------------------------------------------------ results screen
 
-function scoreBar(value) {
+// Level key for the bar colour (the level word is always printed next to it, so colour is never the only cue).
+function levelKey(label, value) {
+  if (label === "good" || label === "poor") return label;
+  if (label === "neutral" || label === "fair") return "fair";
+  const n = num(value);
+  return n === null ? "fair" : n >= 67 ? "good" : n >= 34 ? "fair" : "poor";
+}
+
+function scoreBar(value, label) {
   const n = Math.max(0, Math.min(100, num(value) ?? 0));
-  return `<div class="bar" aria-hidden="true"><i style="width:${n}%"></i></div>`;
+  return `<div class="bar bar--${levelKey(label, value)}" aria-hidden="true"><i style="width:${n}%"></i></div>`;
 }
 
 function renderResults() {
@@ -436,23 +444,28 @@ function renderResults() {
   const loadingNdvi = isPending(state.result);
   const noNdvi = ndviMissing(profile);
 
+  // DESIGN.md "Tags": only the alternative with the highest overall score gets "Best fit for your priorities".
+  const alternatives = strategies.filter((s) => s.id !== "current" && num(s.scores?.overall) !== null);
+  const bestId = alternatives.length ? alternatives.reduce((a, b) => (num(b.scores.overall) > num(a.scores.overall) ? b : a)).id : null;
+  const bestTag = `<span class="tag">Best fit for your priorities</span>`;
+
   const compare = strategies.length ? `<ul class="compare">${strategies.map((s) => `
-      <li><div class="row"><span>${esc(s.id === "current" ? "Your current rotation" : s.name || "Rotation option")}</span><span>${fmt(s.scores?.overall)}/100 · ${levelText(s.labels?.overall, s.scores?.overall)}</span></div>
+      <li${s.id === bestId ? ' class="is-best"' : ""}>${s.id === bestId ? bestTag : ""}<div class="row"><span>${esc(s.id === "current" ? "Your current rotation" : s.name || "Rotation option")}</span><span class="score">${fmt(s.scores?.overall)}/100 · ${levelText(s.labels?.overall, s.scores?.overall)}</span></div>
         <div class="small muted">${esc((s.years || []).map((id) => cropName(id, state.names)).join(" → "))}${s.cover_crop ? ` + ${esc(cropName(s.cover_crop.crop, state.names))}` : ""}</div>
-        ${scoreBar(s.scores?.overall)}</li>`).join("")}</ul>`
+        ${scoreBar(s.scores?.overall, s.labels?.overall)}</li>`).join("")}</ul>`
     : banner("warn", "No rotation options could be built for this field", " Check your answers and try again, or try a demo field.");
 
   const cards = strategies.map((s) => {
     const current = s.id === "current";
     const title = current ? "Your current rotation" : s.name || "Rotation option";
     const list = (items, empty) => (Array.isArray(items) && items.length ? `<ul>${items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="muted">${esc(empty)}</p>`);
-    return `<article class="card" aria-labelledby="c-${esc(s.id)}">
-      <h3 id="c-${esc(s.id)}">${esc(title)}</h3>
+    return `<article class="card${s.id === bestId ? " is-best" : ""}" aria-labelledby="c-${esc(s.id)}">
+      ${s.id === bestId ? bestTag : ""}<h3 id="c-${esc(s.id)}">${esc(title)}</h3>
       <p class="small muted" style="margin-top:4px">${current ? "What you grow today. The other options are compared with it." : "A suggestion to discuss with your adviser, not an order."}</p>
       ${strip(s.years || [], `Crop sequence: ${title}`)}
       ${s.cover_crop ? `<p class="cover-note">🌿 Plus a cover crop, <strong>${esc(cropName(s.cover_crop.crop, state.names))}</strong>, after year ${fmt(s.cover_crop.after_year)}.</p>` : ""}
       <p style="margin-top:12px">${esc(s.why || "")}</p>
-      <dl class="scores">${SCORE_ROWS.map(([k, icon, l]) => `<div><dt>${icon} ${l}</dt><dd>${fmt(s.scores?.[k])}/100 · ${levelText(s.labels?.[k], s.scores?.[k])}</dd>${scoreBar(s.scores?.[k])}</div>`).join("")}</dl>
+      <dl class="scores">${SCORE_ROWS.map(([k, icon, l]) => `<div><dt>${icon} ${l}</dt><dd>${fmt(s.scores?.[k])}/100 · ${levelText(s.labels?.[k], s.scores?.[k])}</dd>${scoreBar(s.scores?.[k], s.labels?.[k])}</div>`).join("")}</dl>
       <h4>⚠️ Check locally before deciding</h4>${list(s.risks_to_review, "No specific risks found. Still check with a local adviser.")}
       <details><summary>Why we suggest it (evidence)</summary>${list(s.evidence, "No evidence listed.")}</details>
       <details><summary>Benefits</summary>${list(s.benefits, current ? "This is the baseline, so no benefits are compared." : "No extra benefits found.")}</details>
@@ -535,11 +548,13 @@ function climateChart(profile) {
 function calendar(profile, noNdvi) {
   const months = (profile.months || []).slice().sort((a, b) => a.month - b.month);
   if (!months.length) return "";
-  const field = (m) => (m.likely_bare === true ? "🟫 Bare" : m.likely_bare === false ? "🌿 Green" : "❔ Unknown");
+  // Each line: pictogram in its own column, so wrapped text lines up under the text, not under the icon.
+  const line = (icon, text) => `<span><i aria-hidden="true">${icon}</i>${text}</span>`;
+  const field = (m) => (m.likely_bare === true ? line("🟫", "Bare") : m.likely_bare === false ? line("🌿", "Green") : line("❔", "Unknown"));
   // Non-breaking space keeps a number with its unit when the cell wraps.
   const days = (v, word) => `${fmt(v, 0)}&nbsp;${word}${Math.round(v) === 1 ? "" : "s"}`;
-  const cells = months.map((m) => `<div><b>${MONTH_ABBR[m.month - 1]}</b><span>🌧️&nbsp;${fmt(m.rain_mm, 0)}&nbsp;mm</span><span>${field(m)}</span>${
-    num(m.frost_days) >= 0.5 ? `<span>❄️ ${days(m.frost_days, "frost day")}</span>` : ""}${num(m.heat_days) >= 0.5 ? `<span>🔥 ${days(m.heat_days, "hot day")}</span>` : ""}</div>`).join("");
+  const cells = months.map((m) => `<div><b>${MONTH_ABBR[m.month - 1]}</b>${line("🌧️", `${fmt(m.rain_mm, 0)}&nbsp;mm`)}${field(m)}${
+    num(m.frost_days) >= 0.5 ? line("❄️", days(m.frost_days, "frost day")) : ""}${num(m.heat_days) >= 0.5 ? line("🔥", days(m.heat_days, "hot day")) : ""}</div>`).join("");
   const rows = months.map((m) => `<tr><td>${MONTH_ABBR[m.month - 1]}</td><td>${fmt(m.rain_mm, 0)}</td><td>${fmt(m.et0_mm, 0)}</td><td>${fmt(m.water_balance_mm, 0)}</td><td>${fmt(m.soil_wetness, 2)}</td><td>${fmt(m.frost_days, 1)}</td><td>${fmt(m.heat_days, 1)}</td><td>${fmt(m.heavy_rain_days, 1)}</td><td>${noNdvi ? "—" : fmt(m.ndvi, 2)}</td></tr>`).join("");
   return `<h3 style="margin-top:24px">Month by month</h3>
     <p class="small muted">Rain, field cover (satellite greenness 2024–2025), and frost or very hot days (over 35 °C) per month.</p>
