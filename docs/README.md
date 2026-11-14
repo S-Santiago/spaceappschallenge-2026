@@ -18,5 +18,8 @@ Everything a judge, mentor or teammate needs to understand, run and verify this 
 | 11 | [submission-checklist.md](submission-checklist.md) — final checklist | Team owner | 🟢 Done |
 | 12 | [pitch/](pitch/) — Project Demo & local pitch | Presenter | 🔴 TODO |
 | 13 | [team.md](team.md) — roles | Team owner | 🟡 Draft |
+| 14 | [team-setup.md](team-setup.md) — onboarding for teammates (Claude Code, skills) | Team owner | 🟢 Done |
+| 15 | [indicators.md](indicators.md) — catalog of derived indicators | Data | 🔴 Empty |
+| 16 | [crop-traits.md](crop-traits.md) — crop table columns & references | Agronomy | 🔴 Empty |
 
 Legend: 🟢 done · 🟡 in progress · 🔴 not started / blocked

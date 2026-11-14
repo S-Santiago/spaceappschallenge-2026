@@ -49,6 +49,13 @@ Reusable procedures. Invoke them with `/<skill-name>` or let Claude trigger them
 | `/ux-review` | Checks a screen against the 7 UX minimums |
 | `/submission-check` | Produces a pass/fail report against `docs/submission-checklist.md` |
 | `/demo-builder` | Drafts the Project Demo (7 slides or 30 s script) from the docs |
+| `/nasa-power-fetch` | Downloads daily NASA POWER climate data for a point/period, caches it in `data/samples/` (offline demo) and registers the source |
+| `/agro-indicator` | Computes a documented agroclimatic indicator (frost days, heat stress, GDD, ET₀, water balance, anomalies, bare-field periods…) defined in `docs/indicators.md` |
+| `/crop-traits` | Adds/updates crops in `data/crops.csv` with a cited source for every value (`docs/crop-traits.md`) |
+| `/rotation-card` | Builds the ≥3 rotation strategies (incl. current) with why / evidence / benefits / gaps / risks and fit to farmer priorities |
+| `/security-review` | **Built into Claude Code** (not a project file). Security review of the pending changes on the current branch: secrets, injection, unsafe input handling. Run it before merging a branch and before making the demo public |
+
+> Team onboarding: see [team-setup.md](team-setup.md).
 
 ### Adding a new agent or skill
 - Agent: create `.claude/agents/<name>.md` with YAML frontmatter `name`, `description`, optional `tools`, then the system prompt.

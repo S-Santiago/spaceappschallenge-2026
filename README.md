@@ -80,6 +80,9 @@ cd spaceappschallenge-2026
 | [docs/submission-checklist.md](docs/submission-checklist.md) | Final 30-minute checklist |
 | [docs/pitch/](docs/pitch/) | Project Demo (≤7 slides or ≤30 s video) & local pitch |
 | [docs/team.md](docs/team.md) | Team roles |
+| [docs/team-setup.md](docs/team-setup.md) | **Teammates start here**: Claude Code setup, shared skills & agents |
+| [docs/indicators.md](docs/indicators.md) | Catalog of agroclimatic indicators |
+| [docs/crop-traits.md](docs/crop-traits.md) | Crop characteristics table & references |
 
 ## 8. Use of AI
 

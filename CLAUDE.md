@@ -37,4 +37,6 @@
 | `pitch-coach` | Build the ≤7-slide / ≤30 s demo and rehearse the Q&A |
 
 ## Skills (`.claude/skills/`)
-`nasa-dataset-check`, `log-ai-usage`, `add-dependency`, `record-decision`, `ux-review`, `submission-check`, `demo-builder`.
+- Compliance: `nasa-dataset-check`, `log-ai-usage`, `add-dependency`, `record-decision`, `ux-review`, `submission-check`, `demo-builder`.
+- Core product: `nasa-power-fetch` → `agro-indicator` → `crop-traits` → `rotation-card`. Any derived number must be defined in `docs/indicators.md`; any crop value must have a source in `data/crops.csv`.
+- Security: run the built-in `/security-review` before merging a branch into `main` and before the demo goes public.

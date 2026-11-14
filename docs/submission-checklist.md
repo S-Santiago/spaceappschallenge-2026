@@ -23,6 +23,9 @@ Run `/submission-check` or ask the `submission-auditor` agent. Official NASA dea
 - [ ] `docs/third-party.md` — every dependency and asset listed with license.
 - [ ] License decided and `LICENSE` file present.
 - [ ] No secrets: `.env` not committed; search history for keys.
+- [ ] `/security-review` run on the last changes; findings fixed or justified.
+- [ ] Every number shown in the tool is defined in `docs/indicators.md`; every crop value in `data/crops.csv` has a source.
+- [ ] At least 3 rotation strategies (incl. current) with why / evidence / benefits / gaps / risks.
 - [ ] No organizer event material or NASA logos committed.
 - [ ] Built / simulated / future clearly separated in README and demo.
 - [ ] Repo is public.

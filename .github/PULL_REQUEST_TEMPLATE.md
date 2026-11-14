@@ -17,6 +17,7 @@
 - [ ] README updated (how to run, limitations)
 
 ## Safety
+- [ ] `/security-review` run on this branch
 - [ ] No secrets, credentials or personal data
 - [ ] No NASA logos / insignia in assets
 - [ ] Text in English
