@@ -1,9 +1,10 @@
 // Heavy-rain warnings on this phone (issue #42). Loaded on demand: with "What to expect" when it shows alert
 // months, and at start-up only if warnings are already on. Local notifications only — no push server, no
 // subscription; the fields with warnings on and the months already shown are kept in this phone's localStorage
-// (docs/architecture.md → Privacy). Permission is asked only after a tap on the button.
+// (docs/architecture.md -> Privacy). Permission is asked only after a tap on the button.
 
 import { esc } from "./format.js";
+import { icon, withIcon } from "./icons.js";
 import { fromMonth } from "./expect-format.js";
 import {
   STORE, dedupeKey, emptyStore, keepAlerts, markSent, pendingWarnings, warnState, warningHash, warningText,
@@ -74,19 +75,25 @@ function refresh(key, field) {
 function render(st, field) {
   const why = `<p>We'll remind you on this phone when heavy-rain days often fall while your field is bare. Nothing is sent to us.</p>`;
   if (st === "unsupported") {
-    return `<p>🔕 <strong>Warnings can't be shown on this phone or browser.</strong> On Android, open FarmLens in Chrome. On an iPhone, add FarmLens to the Home Screen first (needs iOS 16.4 or later). The months above stay here to check any time.</p>`;
+    return `<p><strong>${withIcon("bell-off", "Warnings can't be shown on this phone or browser.")}</strong> On Android, open FarmLens in Chrome. On an iPhone, first add FarmLens to the Home Screen (iOS 16.4 or later). The months above stay here to check any time.</p>`;
   }
   if (st === "denied") {
-    return `${why}<p style="margin-top:8px">🔕 <strong>Warnings are blocked for FarmLens on this phone.</strong> To allow them: in Chrome, tap the icon next to the address (or ⋮) → <strong>Site settings</strong> → <strong>Notifications</strong> → <strong>Allow</strong>. In the installed app: hold the FarmLens icon → <strong>App info</strong> → <strong>Notifications</strong>. Then open this page again.</p>`;
+    // Settings steps: a drawn chevron between them, with "then" for screen readers.
+    const then = `${icon("chevron-right")}<span class="sr-only">then</span>`;
+    const steps = (...names) => names.map((n) => `<strong>${n}</strong>`).join(` ${then} `);
+    return `${why}<p style="margin-top:8px"><strong>${withIcon("bell-off", "Warnings are blocked for FarmLens on this phone.")}</strong></p>` +
+      `<p style="margin-top:8px">To allow them in Chrome, tap the icon next to the address, or the menu ${icon("more")}<span class="sr-only">(three dots)</span>. ` +
+      `Then tap ${steps("Site settings", "Notifications", "Allow")}.</p>` +
+      `<p style="margin-top:8px">In the installed app, hold the FarmLens icon. Then tap ${steps("App info", "Notifications")}. Then open this page again.</p>`;
   }
   if (st === "on") {
-    return `<p><strong>🔔 Warnings on ✓</strong> for ${esc(field.name)}. You'll get one reminder for each month above, in the month before or in the month itself. FarmLens checks when you open it.</p>
+    return `<p><strong>${withIcon("check", "Warnings on")}</strong> for ${esc(field.name)}. You'll get one reminder for each month above. It comes in the month before, or in that month. FarmLens checks when you open it.</p>
       <div class="actions">
         <button type="button" class="btn btn--block" data-warn="example">Show an example notification</button>
         <button type="button" class="btn btn--block" data-warn="off">Turn off</button>
       </div>`;
   }
-  return `${why}<div class="actions"><button type="button" class="btn btn--block" data-warn="on">🔔 Warn me when this risk is near</button></div>`;
+  return `${why}<div class="actions"><button type="button" class="btn btn--block" data-warn="on">${withIcon("bell", "Warn me when this risk is near")}</button></div>`;
 }
 
 /**
@@ -104,7 +111,7 @@ export function mountWarn(slot, field, today = new Date()) {
   const status = (text) => `<p class="small warn-status" role="status">${esc(text)}</p>`;
   const draw = (note = "") => {
     const st = warnState({ supported: supported(), permission: permission(), watched: Boolean(watched(field.key)) });
-    slot.innerHTML = `<h4 class="sub">🔔 Warnings on this phone</h4>${render(st, field)}${note ? status(note) : ""}`;
+    slot.innerHTML = `<h4 class="sub">${withIcon("bell", "Warnings on this phone")}</h4>${render(st, field)}${note ? status(note) : ""}`;
     slot.hidden = false;
   };
   slot.addEventListener("click", async (e) => {

@@ -54,8 +54,8 @@ test("year summary names wet and dry months", () => {
 test("frost sentences: Antequera, frost-free valley and missing data", () => {
   const f = frostSentences(PRED.frost);
   assert.equal(f.spring, "In 19 of the last 21 years the last frost came on or before 14 March.");
-  assert.equal(f.autumn, "In 19 of the last 21 years the first frost came on or after 3 December (or not at all before the new year).");
-  assert.equal(f.safe, "That leaves about 264 days without frost in most years, between 14 March and 3 December.");
+  assert.equal(f.autumn, "In 19 of the last 21 years, the first frost came on 3 December or later, or not at all.");
+  assert.equal(f.safe, "Most years you get about 264 days with no frost, from 14 March to 3 December.");
 
   const none = frostSentences({
     spring: { years: 21, years_with_frost: 0, last_frost_p90: null, years_by_p90: 21 },
@@ -95,9 +95,10 @@ test("heavy rain sentences (P-02) match docs/indicators.md", () => {
 test("alert cards (P-07): upcoming first, icon + word, source, no 'erosion measured'", () => {
   const cards = alertCards(PRED.alerts, 20, TODAY);
   assert.deepEqual(cards.map((c) => [c.month, c.level]), [[11, "high"], [12, "medium"], [2, "medium"], [10, "medium"]]);
-  assert.equal(cards[0].text, "Your field is usually bare and heavy rain is common (11 of 21 years). Bare soil can wash away — a cover crop or leaving stubble helps.");
+  assert.equal(cards[0].text, "Your field is often bare when heavy rain comes (11 of 21 years). Bare soil can wash away. A cover crop or stubble helps.");
   assert.equal(cards[0].levelWord, "High");
-  assert.equal(cards[0].icon, "⚠️");
+  assert.equal(cards[0].title, "November · high risk");
+  assert.equal(cards[0].icon, "warning"); // an icon name (icons.js), drawn as SVG next to the word
   assert.equal(cards[0].source, "crop calendar");
   assert.equal(alertCards([{ month: 3, prob: 0.3, years: 21, sources: ["satellite", "crop_calendar"], level: "medium" }], 20, TODAY)[0].source,
     "satellite and crop calendar");
@@ -113,7 +114,8 @@ test("the alert section is absent unless the payload has alerts", () => {
   const html = alertsSection(PRED, TODAY);
   assert.match(html, /Heavy rain on bare soil/);
   assert.match(html, /heavy-rain days often fall when the field is bare/i);
-  assert.match(html, /<span class="level">High<\/span>/);
+  assert.match(html, /<span class="level">High<\/span> risk: heavy rain in 11 of 21 years/);
+  assert.ok(html.includes('<span class="ico" aria-hidden="true"><svg class="icon"'));
   assert.equal((html.match(/class="card exp-card alert/g) || []).length, 1); // one card, one row per month
   assert.equal((html.match(/<li>/g) || []).length, 4);
 });
@@ -123,7 +125,9 @@ test("the full tab: basis once at the top (not in every card), frost caveat alwa
   const cards = html.match(/<article class="card exp-card[^]*?<\/article>/g);
   assert.equal(cards.length, 5, `cards: ${cards.length}`); // alerts, rain weeks, frost, heat, heavy
   for (const c of cards) assert.ok(!c.includes("not a weather forecast"), c.slice(0, 80));
-  assert.ok(html.startsWith(`<p class="basis basis--lead">ℹ️ ${BASIS}`));
+  assert.ok(html.startsWith(`<p class="basis basis--lead"><span class="with-icon"><svg class="icon"`));
+  assert.ok(html.includes(`</svg><span>${BASIS}</span></span></p>`));
+  assert.doesNotMatch(html, /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{25A0}-\u{25FF}\u{FE0F}\u{2139}]/u); // no emoji
   assert.equal(BASIS, "Based on 21 years of NASA data (2005–2025) — not a weather forecast.");
   assert.ok(html.includes(FROST_CAVEAT));
   assert.ok(html.includes("<strong>This week (from 12 Nov)</strong>"));
@@ -150,7 +154,7 @@ test("empty payload gives a helpful empty state, never placeholders", () => {
 test("52-week strip: one bar per week, today marked, accessible summary", () => {
   const svg = rainStrip(PRED.rain_weeks, TODAY);
   assert.equal((svg.match(/<rect /g) || []).length, 52);
-  assert.match(svg, /▼ Today/);
+  assert.match(svg, /<path class="today-mark" d="M[^"]+z" fill="var\(--ink\)"\/><text [^>]*class="today">Today<\/text>/);
   assert.match(svg, /role="img" aria-label="Chance of rain in each week of the year[^"]*week of 12 November/);
   assert.equal(rainStrip(PRED.rain_weeks.slice(1), TODAY), "");
   assert.equal(mmdd("11-26", true), "26 November");

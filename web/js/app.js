@@ -1,13 +1,14 @@
 // FarmLens PWA (decision 0005: vanilla JS, no build). Screens with a tiny hash router:
-//   #/          the 4-step form (field → current rotation → priorities → farm)
+//   #/          the 4-step form (field -> current rotation -> priorities -> farm)
 //   #/results   tab "Rotation options": the answer from POST /api/analyze (real engine; no mock data anywhere)
 //   #/expect    tab "What to expect": GET /api/predictions (statistics over NASA history), view loaded on demand
 
 import * as api from "./api.js";
 import {
-  FIELD_LIMIT_ROWS, MONTH_ABBR, MONTHS, cropName, cropOption, errorMessage, esc, matchCrops, fmt, formatDate, keyFacts, levelText,
-  limitsDetails, ndviMissing, num, trendFacts,
+  FIELD_LIMIT_ROWS, MONTH_ABBR, MONTHS, cropName, errorMessage, esc, fmt, fmtCoords, formatDate, keyFacts,
+  levelText, limitsDetails, ndviMissing, num, plainEvidence, trendFacts,
 } from "./format.js";
+import { icon, withIcon } from "./icons.js";
 import { findPlace, inMalaga, mountMap, roundPoint } from "./map.js";
 
 const app = document.getElementById("app");
@@ -22,37 +23,38 @@ const DEFAULT_PRESET = { rotation: ["durum_wheat", "durum_wheat", "sunflower"], 
 const DEMO_ORDER = ["antequera", "guadalhorce", "campillos"];
 
 const PRIORITIES = [
-  ["water", "💧", "Save water"],
-  ["soil", "🌱", "Soil health"],
-  ["income", "💶", "Income"],
-  ["risk", "🛡️", "Low climate risk"],
+  ["water", "drop", "Save water"],
+  ["soil", "sprout", "Soil health"],
+  ["income", "coins", "Income"],
+  ["risk", "shield", "Less weather risk"],
 ];
 const PRIORITY_WORDS = ["Not important", "A little", "Important", "Very important"];
+const STEP_TITLES = ["Where is your field?", "What do you grow now?", "What matters most to you?", "Your farm"];
 const IRRIGATION = [
   ["none", "No irrigation", "Rain only"],
   ["supplementary", "A little", "A few waterings in dry spells"],
   ["full", "Full", "Irrigated all season"],
 ];
 const SLOPE = [
-  ["flat", "Flat", "Water does not run off"],
-  ["moderate", "Gentle slope", "Some runoff after heavy rain"],
-  ["steep", "Steep", "Soil washes away after storms"],
+  ["flat", "Flat", "Rain soaks in"],
+  ["moderate", "Gentle slope", "Some water runs off in heavy rain"],
+  ["steep", "Steep", "Soil washes away in storms"],
 ];
 const SCORE_ROWS = [
-  ["water", "💧", "Water"],
-  ["soil", "🌱", "Soil health"],
-  ["income", "💶", "Income (illustrative)"],
-  ["risk", "🛡️", "Climate safety"],
+  ["water", "drop", "Water"],
+  ["soil", "sprout", "Soil health"],
+  ["income", "coins", "Income (rough guide only)"],
+  ["risk", "shield", "Weather risk (higher = safer)"],
 ];
 const FAMILY_LABEL = { cereal: "Cereal", legume: "Legume", oilseed: "Oilseed", forage: "Forage", cover: "Cover crop", fallow: "Fallow", other: "Other" };
-const STAGES = ["Fetching NASA climate data…", "Checking field greenness…", "Comparing rotations…"];
+const STAGES = ["Getting NASA data…", "Checking satellite photos of your field…", "Comparing rotations…"];
 const LITTLE_COVER_NDVI = 0.35; // calendar word "Little cover" between Bare (<0.25) and Green (docs/indicators.md I-09)
 
 const state = {
   fields: [], crops: [], names: {}, types: {},
   field: null, point: null, mapApi: null,
   rotation: [], priorities: { water: 1, soil: 1, income: 1, risk: 1 }, irrigation: "none", slope: "flat",
-  edited: false, busy: false, result: null,
+  edited: false, busy: false, result: null, step: 1,
   predictions: null, // {key, data} for the current analysis inputs
 };
 const TABS = [["results", "Rotation options"], ["expect", "What to expect"]];
@@ -86,19 +88,51 @@ function strip(years, label) {
     `<div class="key" aria-hidden="true">${key}</div>`;
 }
 
+/** Crop names in order with a drawn arrow between them ("then" for screen readers). */
+function sequence(ids) {
+  const sep = ` ${icon("next")}<span class="sr-only">then</span> `;
+  return ids.map((id) => esc(cropName(id, state.names))).join(sep);
+}
+
 function radioCards(name, options, current) {
   return `<div class="choices">${options.map(([value, title, hint]) => `
     <label class="choice"><input type="radio" name="${name}" value="${esc(value)}"${value === current ? " checked" : ""}>
       <span><strong>${esc(title)}</strong><span class="small muted">${esc(hint)}</span></span></label>`).join("")}</div>`;
 }
 
-function stepHead(n, title) {
-  return `<div class="step-head"><span class="step-num" aria-hidden="true">${n}</span>
-    <h2>${esc(title)}<span class="step-of">Step ${n} of 4</span></h2></div>`;
+// One step on screen at a time (UX launch route 02): "Step N of 4" in large type, then Next / Back.
+const STEP_COUNT = 4;
+
+function stepTitle(n, title) {
+  return `<h2 class="step-title" id="s${n}" tabindex="-1">${esc(title)}</h2>`;
 }
 
+function stepper(n) {
+  return `<p class="step-count">Step ${n} of ${STEP_COUNT}</p>
+    <ol class="dots" aria-hidden="true">${Array.from({ length: STEP_COUNT }, (_, i) =>
+    `<li class="${i + 1 < n ? "done" : i + 1 === n ? "now" : ""}"></li>`).join("")}</ol>`;
+}
+
+// One primary action per step: Next, and on the last step "Analyze my field". The example answers are filled in,
+// so "Analyze now" on steps 1-3 is a quiet shortcut for a farmer who doesn't want to change anything.
+function stepMain(n) {
+  return n < STEP_COUNT
+    ? `<button type="button" class="btn btn--primary" data-next>${withIcon("next", "Next")}</button>`
+    : `<button type="submit" class="btn btn--primary js-analyze" id="go" data-label="Analyze my field">Analyze my field</button>`;
+}
+
+function stepNav(n) {
+  const back = n > 1 ? `<button type="button" class="btn btn--secondary" data-back>${withIcon("back", "Back")}</button>` : "";
+  const quick = n < STEP_COUNT
+    ? `<button type="submit" class="btn btn--quiet js-analyze" data-label="Analyze now with these answers">Analyze now with these answers</button>` : "";
+  return back + quick;
+}
+
+const BANNER_ICON = { error: "warning", warn: "warning", ok: "info" };
+
 function banner(kind, title, text, actions = "") {
-  return `<div class="banner banner--${kind}" role="${kind === "error" ? "alert" : "status"}"><strong>${esc(title)}</strong>${esc(text)}${actions}</div>`;
+  return `<div class="banner banner--${kind}" role="${kind === "error" ? "alert" : "status"}">${icon(BANNER_ICON[kind] || "info")}` +
+    `<div><strong>${esc(title)}</strong>${esc(text)}${actions}</div></div>`;
 }
 
 // ------------------------------------------------------------------ boot
@@ -123,7 +157,7 @@ async function boot() {
     return;
   }
   if (!state.crops.length) {
-    app.innerHTML = masthead() + banner("error", "The crop list is empty", " FarmLens can't compare rotations without it. Try again in a minute.",
+    app.innerHTML = masthead() + banner("error", "We couldn't load the crop list.", " Try again in 1 minute.",
       `<div class="actions"><button class="btn btn--primary" id="retry-boot">Try again</button></div>`);
     $("#retry-boot").addEventListener("click", boot);
     return;
@@ -133,11 +167,12 @@ async function boot() {
   route();
 }
 
+// The logo is the app icon (icons/icon.svg): one cached file, colours from the palette there.
 function masthead() {
   return `<header class="masthead">
-    <div class="brand"><svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#2E5B44"/><path d="M14 46h36M14 38h36M14 30h36" stroke="#E3C26A" stroke-width="4" stroke-linecap="round"/><circle cx="44" cy="18" r="7" fill="#9CC27A"/></svg>
+    <div class="brand"><img src="icons/icon.svg" width="32" height="32" alt="">
     <h1>FarmLens</h1></div>
-    <p class="lead">Compare crop rotations for <strong>your field</strong> with NASA climate and satellite data. Answer 4 short steps, then tap <strong>Analyze my field</strong>.</p>
+    <p class="lead">Compare crop rotations for <strong>your field</strong>. We use 21 years of NASA weather and satellite data. Example answers are filled in. Answer 4 short steps, then tap <strong>Analyze my field</strong>.</p>
   </header>`;
 }
 
@@ -145,64 +180,55 @@ function masthead() {
 
 function renderForm() {
   const fieldOptions = state.fields.map((f) => [f.slug, f.name, f.description]);
-  fieldOptions.push(["map", "Another point on the map", "Search your town or tap the map · Málaga province only · Needs a connection"]);
+  fieldOptions.push(["map", "Another point on the map", "Search your town or tap the map. Málaga only. Needs internet."]);
+  const step = (n, body) => `<section class="step" data-step="${n}" aria-labelledby="s${n}"${n === state.step ? "" : " hidden"}>
+      ${stepTitle(n, STEP_TITLES[n - 1])}${body}</section>`;
   app.innerHTML = `${masthead()}
   <form id="form" novalidate>
-    <section class="step" aria-labelledby="s1">
-      ${stepHead(1, "Your field").replace("<h2>", '<h2 id="s1">')}
-      <fieldset><legend>Where is your field?</legend>${radioCards("field", fieldOptions, state.field)}</fieldset>
+    <div class="stepper" id="stepper">${stepper(state.step)}</div>
+    ${step(1, `
+      <fieldset><legend>Pick an example field or a point on the map</legend>${radioCards("field", fieldOptions, state.field)}</fieldset>
       <div id="map-box" ${isFreePoint() ? "" : "hidden"}>
-        <p class="small" style="margin-top:12px">Only fields in Málaga province. Type the name of your town or area, tap your field on the map, or use your phone's location.</p>
+        <p class="small" style="margin-top:12px">Only fields in Málaga province. Type your town, tap your field on the map, or use your location.</p>
         <div class="place-search" role="search">
           <label for="place" class="sr-only">Town or area in Málaga province</label>
           <input id="place" type="search" autocomplete="off" enterkeyhint="search" placeholder="Town or area, e.g. Antequera" aria-describedby="where">
           <button type="button" class="btn" id="find">Find</button>
         </div>
         <div class="map" id="map" aria-label="Map of Málaga province. Tap inside the border to choose your field."></div>
-        <div class="actions"><button type="button" class="btn btn--block" id="locate">📍 Use my location</button></div>
+        <div class="actions"><button type="button" class="btn btn--block" id="locate">${withIcon("pin", "Use my location")}</button></div>
       </div>
-      <div class="location" id="where" aria-live="polite"></div>
-    </section>
-
-    <section class="step" aria-labelledby="s2">
-      ${stepHead(2, "Your current rotation").replace("<h2>", '<h2 id="s2">')}
-      <p class="small muted" id="preset-note"></p>
-      <fieldset style="margin-top:12px"><legend>How many years before it repeats?</legend>
+      <div class="location" id="where" aria-live="polite"></div>`)}
+    ${step(2, `
+      <p class="small" id="preset-note"></p>
+      <fieldset class="gap-top"><legend>After how many years do you grow the same crop again?</legend>
         <div class="segmented">${[1, 2, 3, 4].map((n) => `<label><input type="radio" name="years" value="${n}"${n === state.rotation.length ? " checked" : ""}><span>${n} ${n === 1 ? "year" : "years"}</span></label>`).join("")}</div>
       </fieldset>
-      <datalist id="crop-list">${state.crops.map((c) => `<option value="${esc(cropOption(c))}"></option>`).join("")}</datalist>
-      <div id="years" style="margin-top:16px">${yearRows()}</div>
-      <div id="strip" style="margin-top:16px">${strip(state.rotation, "Your current rotation")}</div>
-    </section>
-
-    <section class="step" aria-labelledby="s3">
-      ${stepHead(3, "Your priorities").replace("<h2>", '<h2 id="s3">')}
-      <p class="small muted">How much does each one matter to you? 0 = not important, 3 = very important.</p>
-      <div style="margin-top:12px">${PRIORITIES.map(([k, icon, label]) => `
-        <fieldset class="prio"><div class="prio-head"><legend style="margin:0">${icon} ${esc(label)}</legend><span class="small muted" id="pw-${k}">${PRIORITY_WORDS[state.priorities[k]]}</span></div>
-          <div class="segmented">${[0, 1, 2, 3].map((v) => `<label><input type="radio" name="p-${k}" value="${v}"${v === state.priorities[k] ? " checked" : ""} aria-label="${esc(label)}: ${v}, ${PRIORITY_WORDS[v]}"><span>${v}</span></label>`).join("")}</div>
-        </fieldset>`).join("")}</div>
-    </section>
-
-    <section class="step" aria-labelledby="s4">
-      ${stepHead(4, "Your farm").replace("<h2>", '<h2 id="s4">')}
-      <fieldset><legend>Irrigation: how much water can you add besides rain?</legend>${radioCards("irrigation", IRRIGATION, state.irrigation)}</fieldset>
-      <fieldset style="margin-top:16px"><legend>Slope of the field</legend>${radioCards("slope", SLOPE, state.slope)}</fieldset>
-    </section>
-
-    <div class="step">
-      <button type="submit" class="btn btn--primary" id="go">Analyze my field</button>
-      <div id="feedback" aria-live="polite"></div>
-    </div>
+      <div id="years" class="gap-top">${yearRows()}</div>
+      <div id="strip" class="gap-top">${strip(state.rotation, "Your current rotation")}</div>`)}
+    ${step(3, `
+      <p class="small">Tap one answer for each.</p>
+      <div class="gap-top">${PRIORITIES.map(([k, name, label]) => `
+        <fieldset class="prio"><legend>${withIcon(name, esc(label))}</legend>
+          <div class="segmented segmented--grid">${PRIORITY_WORDS.map((word, v) => `<label><input type="radio" name="p-${k}" value="${v}"${v === state.priorities[k] ? " checked" : ""}><span>${word}</span></label>`).join("")}</div>
+        </fieldset>`).join("")}</div>`)}
+    ${step(4, `
+      <fieldset><legend>Can you water the field, apart from rain?</legend>${radioCards("irrigation", IRRIGATION, state.irrigation)}</fieldset>
+      <fieldset class="gap-top"><legend>Slope of the field</legend>${radioCards("slope", SLOPE, state.slope)}</fieldset>`)}
+    <div id="feedback" aria-live="polite"></div>
+    <div class="step-main" id="step-main">${stepMain(state.step)}</div>
+    <div class="step-nav" id="step-nav">${stepNav(state.step)}</div>
   </form>`;
 
+  $(".masthead .lead").hidden = state.step !== 1;
   updateWhere();
   const form = $("#form");
   form.addEventListener("change", onChange);
-  form.addEventListener("input", onCropInput);
-  form.addEventListener("focusin", onCropFocus);
-  form.addEventListener("focusout", onCropBlur);
   form.addEventListener("submit", (e) => { e.preventDefault(); runAnalysis(); });
+  form.addEventListener("click", (e) => {
+    if (e.target.closest("[data-next]")) nextStep();
+    else if (e.target.closest("[data-back]")) goStep(state.step - 1);
+  });
   $("#locate").addEventListener("click", locate);
   $("#find").addEventListener("click", searchPlace);
   // Enter in the search box searches instead of submitting the whole form.
@@ -210,7 +236,7 @@ function renderForm() {
   if (isFreePoint()) openMap();
 }
 
-/** Type a town or area → the point moves there, only if it is in Málaga province (map.findPlace checks it). */
+/** Type a town or area -> the point moves there, only if it is in Málaga province (map.findPlace checks it). */
 async function searchPlace() {
   const input = $("#place");
   const where = $("#where");
@@ -244,70 +270,69 @@ function updateWhere() {
       where.innerHTML = `<span class="muted">No point chosen yet. Search your town or tap the map to choose your field.</span>`;
     } else {
       const name = state.point.name ? `<strong>${esc(state.point.name)}</strong> · ` : "";
-      where.innerHTML = `📍 Your point: ${name}<strong>${fmt(state.point.lat, 2)}, ${fmt(state.point.lon, 2)}</strong>
-        <br><span class="small muted">${state.point.name ? "Tap the map to move the point onto your field. " : ""}The first analysis of a new point fetches NASA data live and can take up to a minute.</span>`;
+      where.innerHTML = `${withIcon("pin", `Your point: ${name}<strong>${fmtCoords(state.point.lat, state.point.lon)}</strong>`)}
+        <br><span class="small muted">${state.point.name ? "Tap the map to move the point onto your field. " : ""}A new place takes up to 1 minute the first time.</span>`;
     }
     note.textContent = "Example rotation filled in. Change it to match your field.";
   } else {
     const f = fieldInfo();
-    where.innerHTML = f ? `📍 <strong>${esc(f.name)}</strong> · ${fmt(f.lat, 2)}, ${fmt(f.lon, 2)} · ${fmt(f.elevation_m, 0, "m")} above sea level` : "";
+    where.innerHTML = f ? withIcon("pin", `<strong>${esc(f.name)}</strong> · ${fmtCoords(f.lat, f.lon)} · ${fmt(f.elevation_m, 0, "m")} above sea level`) : "";
     note.textContent = state.edited ? "" : "Example rotation for this area filled in. Change it to match your field.";
   }
 }
 
-// One text field per year with the crop names as suggestions (<datalist>): type part of a name, pick it.
+// One native list per year (no typing: the phone's own picker), crops grouped by family in A-Z order.
+function cropSelectOptions(current) {
+  const groups = Object.entries(FAMILY_LABEL).map(([fam, label]) => {
+    const crops = state.crops.filter((c) => familyOf(c.id) === fam).sort((a, b) => a.name.localeCompare(b.name));
+    return crops.length ? `<optgroup label="${esc(label)}">${crops.map((c) =>
+      `<option value="${esc(c.id)}"${c.id === current ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</optgroup>` : "";
+  });
+  return groups.join("");
+}
+
 function yearRows() {
   return state.rotation.map((id, i) => `
     <div class="year-row"><label for="y${i}">Year ${i + 1}</label>
-      <input id="y${i}" class="crop-input" data-year="${i}" list="crop-list" value="${esc(cropName(id, state.names))}"
-        autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done"
-        placeholder="Type a crop or Latin name, e.g. wheat" aria-describedby="y${i}-hint">
-      <p class="field-hint" id="y${i}-hint" role="status"></p></div>`).join("");
+      <div class="select-wrap"><select id="y${i}" class="crop-select" data-year="${i}">${cropSelectOptions(id)}</select></div></div>`).join("");
 }
 
-function setYear(input, id) {
-  state.rotation[Number(input.dataset.year)] = id;
-  state.edited = true;
-  $("#strip").innerHTML = strip(state.rotation, "Your current rotation");
-  updateWhere();
+// ------------------------------------------------------------------ steps
+
+function goStep(n) {
+  const to = Math.max(1, Math.min(STEP_COUNT, n));
+  const hash = to === 1 ? "#/" : `#/step/${to}`;
+  if (location.hash === hash || (to === 1 && !location.hash)) showStep(to);
+  else location.hash = hash; // route() shows it, and the phone's Back button walks back through the steps
 }
 
-/** While typing: as soon as the text names exactly one crop (e.g. picked from the suggestions), use it. */
-function onCropInput(e) {
-  const t = e.target;
-  if (t.dataset.year === undefined) return;
-  // A suggestion picked from the list arrives as its full text ("Sunflower · Helianthus annuus").
-  const picked = state.crops.find((c) => cropOption(c) === t.value.trim() || c.name === t.value.trim());
-  if (picked) setYear(t, picked.id);
+/** Swap the visible step in place (the map and the answers stay as they are), then focus its title. */
+function showStep(n) {
+  state.step = n;
+  app.querySelectorAll(".step[data-step]").forEach((s) => { s.hidden = Number(s.dataset.step) !== n; });
+  $("#stepper").innerHTML = stepper(n);
+  $(".masthead .lead").hidden = n !== 1; // what FarmLens is: on the first screen only
+  $("#step-main").innerHTML = stepMain(n);
+  $("#step-main").hidden = false;
+  $("#step-nav").innerHTML = stepNav(n);
+  $("#feedback").innerHTML = "";
+  if (n === 1 && isFreePoint()) openMap();
+  window.scrollTo(0, 0);
+  $(`#s${n}`).focus({ preventScroll: true });
 }
 
-/** On focus the field is emptied so every suggestion shows; leaving it resolves or restores the crop. */
-function onCropFocus(e) {
-  const t = e.target;
-  if (t.dataset.year === undefined) return;
-  t.placeholder = t.value || "Type a crop or Latin name, e.g. wheat";
-  t.value = "";
-  $(`#${t.id}-hint`).textContent = "";
-  t.removeAttribute("aria-invalid");
+/** Feedback appears under the button that caused it; bring it into view above the sticky bar. */
+function reveal(el) {
+  el?.scrollIntoView({ block: "center", behavior: "auto" });
 }
 
-function onCropBlur(e) {
-  const t = e.target;
-  if (t.dataset.year === undefined) return;
-  const i = Number(t.dataset.year);
-  const typed = t.value.trim();
-  const hits = matchCrops(typed, state.crops);
-  const kept = cropName(state.rotation[i], state.names);
-  if (hits.length === 1) {
-    setYear(t, hits[0].id);
-  } else if (typed) {
-    $(`#${t.id}-hint`).textContent = hits.length
-      ? `"${typed}" matches ${hits.length} crops (${hits.slice(0, 4).map((c) => c.name).join(", ")}${hits.length > 4 ? "…" : ""}), so ${kept} was kept. Pick one of the suggestions.`
-      : `"${typed}" is not in the crop list, so ${kept} was kept. Type part of a common or Latin name and pick one of the suggestions.`;
-    t.setAttribute("aria-invalid", "true");
+function nextStep() {
+  if (state.step === 1 && isFreePoint() && !state.point) {
+    $("#feedback").innerHTML = banner("error", "Choose your field first.", " Search your town or tap the map. Or pick an example field.");
+    reveal($("#feedback"));
+    return;
   }
-  t.value = cropName(state.rotation[i], state.names);
-  t.placeholder = "Type a crop or Latin name, e.g. wheat";
+  goStep(state.step + 1);
 }
 
 function renderYears() {
@@ -319,6 +344,7 @@ function renderYears() {
 function onChange(e) {
   const t = e.target;
   $("#feedback").innerHTML = "";
+  $("#step-main").hidden = false;
   if (t.name === "field") {
     state.field = t.value;
     if (!state.edited) {
@@ -338,11 +364,12 @@ function onChange(e) {
     renderYears();
     updateWhere();
   } else if (t.dataset.year !== undefined) {
-    // crop text fields are handled on input / focus / blur (onCropInput, onCropFocus, onCropBlur)
+    state.rotation[Number(t.dataset.year)] = t.value;
+    state.edited = true;
+    $("#strip").innerHTML = strip(state.rotation, "Your current rotation");
+    updateWhere();
   } else if (t.name.startsWith("p-")) {
-    const k = t.name.slice(2);
-    state.priorities[k] = Number(t.value);
-    $(`#pw-${k}`).textContent = PRIORITY_WORDS[state.priorities[k]];
+    state.priorities[t.name.slice(2)] = Number(t.value);
   } else if (t.name === "irrigation" || t.name === "slope") {
     state[t.name] = t.value;
     state.edited = true;
@@ -390,20 +417,23 @@ async function runAnalysis(next = "#/results") {
   if (state.busy) return;
   const feedback = $("#feedback");
   if (isFreePoint() && !state.point) {
-    feedback.innerHTML = banner("error", "Choose your field first", " Tap the map in step 1, or pick a demo field.");
-    $("#where").scrollIntoView({ block: "center" });
+    goStep(1);
+    $("#feedback").innerHTML = banner("error", "Choose your field first.", " Search your town or tap the map. Or pick an example field.");
+    reveal($("#feedback"));
     return;
   }
   const free = isFreePoint();
-  const go = $("#go");
+  $("#step-main").hidden = false;
+  const buttons = [...app.querySelectorAll(".js-analyze, [data-next], [data-back]")];
   state.busy = true;
-  go.disabled = true;
-  go.textContent = "Analyzing…";
+  buttons.forEach((b) => { b.disabled = true; });
+  app.querySelectorAll(".js-analyze").forEach((b) => { b.textContent = "Analyzing…"; });
   feedback.innerHTML = `<div class="progress" role="status"><ol class="stages">${STAGES.map((s) => `<li><span class="mark" aria-hidden="true">·</span>${s}</li>`).join("")}</ol><p class="small muted" id="elapsed"></p></div>`;
+  reveal(feedback);
   const items = [...feedback.querySelectorAll(".stages li")];
   const setStage = (i) => items.forEach((li, j) => {
     li.className = j < i ? "done" : j === i ? "active" : "";
-    li.querySelector(".mark").innerHTML = j < i ? "✓" : j === i ? '<span class="spin"></span>' : "·";
+    li.querySelector(".mark").innerHTML = j < i ? icon("check") : j === i ? '<span class="spin"></span>' : "·";
   });
   // The API does the three stages in one request (POWER, then MODIS, then the rotation engine), so the list
   // follows the typical timing: POWER answers in ~2 s, MODIS is the slow one for a new point.
@@ -413,14 +443,14 @@ async function runAnalysis(next = "#/results") {
     const s = Math.round((Date.now() - started) / 1000);
     if (s >= 2) setStage(1);
     const el = $("#elapsed");
-    if (el && s >= 5) el.textContent = `${s} s · ${free ? "New points take longer the first time. Next time it is instant." : "Still working…"}`;
+    if (el && s >= 5) el.textContent = `${s} seconds · ${free ? "A new place takes up to 1 minute the first time." : "Still working…"}`;
   }, 500);
 
   const body = inputs();
   try {
     const { data, saved } = await api.analyze(body, { freePoint: free });
     setStage(2);
-    state.result = { data, inputs: body, at: saved || new Date().toISOString(), saved: saved !== null, label: free ? `your point (${fmt(body.lat, 2)}, ${fmt(body.lon, 2)})` : fieldInfo()?.name || "your field" };
+    state.result = { data, inputs: body, at: saved || new Date().toISOString(), saved: saved !== null, label: free ? `your point (${fmtCoords(body.lat, body.lon)})` : fieldInfo()?.name || "your field" };
     watchPending(state.result);
     setStage(3);
     location.hash = next;
@@ -428,20 +458,25 @@ async function runAnalysis(next = "#/results") {
     const msg = errorMessage(err.kind || "server", { freePoint: free });
     feedback.innerHTML = banner("error", msg.title, ` ${msg.text}`,
       `<div class="actions"><button type="button" class="btn btn--primary" id="retry">Try again</button>${
-        free && state.fields.length ? `<button type="button" class="btn btn--block" id="use-demo">Use a demo field</button>` : ""}</div>`);
+        free && state.fields.length ? `<button type="button" class="btn btn--block" id="use-demo">Use an example field</button>` : ""}</div>`);
+    $("#step-main").hidden = true; // "Try again" is the one primary action while the error shows
+    reveal(feedback);
+    $("#retry").focus({ preventScroll: true });
     $("#retry").addEventListener("click", () => runAnalysis(next));
     $("#use-demo")?.addEventListener("click", () => {
       const first = app.querySelector(`input[name="field"][value="${state.fields[0].slug}"]`);
       first.checked = true;
       first.dispatchEvent(new Event("change", { bubbles: true }));
-      first.focus();
-      first.scrollIntoView({ block: "center" });
+      goStep(1);
     });
   } finally {
     clearInterval(tick);
     state.busy = false;
-    const btn = $("#go");
-    if (btn) { btn.disabled = false; btn.textContent = "Analyze my field"; }
+    buttons.forEach((b) => {
+      if (!b.isConnected) return;
+      b.disabled = false;
+      if (b.dataset.label) b.textContent = b.dataset.label;
+    });
   }
 }
 
@@ -480,9 +515,11 @@ function levelKey(label, value) {
   return n === null ? "fair" : n >= 67 ? "good" : n >= 34 ? "fair" : "poor";
 }
 
-function scoreBar(value, label) {
+/** A level everywhere a score shows: word + bar + number (DESIGN.md "Level meter"; colour is never the only cue). */
+function meter(value, label) {
   const n = Math.max(0, Math.min(100, num(value) ?? 0));
-  return `<div class="bar bar--${levelKey(label, value)}" aria-hidden="true"><i style="width:${n}%"></i></div>`;
+  return `<div class="meter meter--${levelKey(label, value)}"><span class="meter-word">${levelText(label, value)}</span>` +
+    `<span class="bar" aria-hidden="true"><i style="width:${n}%"></i></span><span class="meter-num">${fmt(value)}/100</span></div>`;
 }
 
 function renderResults(tab = "results") {
@@ -491,36 +528,61 @@ function renderResults(tab = "results") {
   const strategies = Array.isArray(data?.strategies) ? data.strategies : [];
   const weights = PRIORITIES.every(([k]) => !used.priorities[k])
     ? "all your priorities are 0, so they count the same" // rotations.overall() falls back to equal weights
-    : PRIORITIES.map(([k, icon, l]) => `${icon} ${l} ${used.priorities[k]}`).join(" · ");
+    : PRIORITIES.map(([k, , l]) => `${l} ${used.priorities[k]}`).join(" · ");
   const loadingNdvi = isPending(state.result);
   const noNdvi = ndviMissing(profile);
 
-  // DESIGN.md "Tags": only the alternative with the highest overall score gets "Best fit for your priorities".
+  // DESIGN.md "Tags": only the alternative with the highest overall score gets "Best match for your priorities".
   const alternatives = strategies.filter((s) => s.id !== "current" && num(s.scores?.overall) !== null);
   const bestId = alternatives.length ? alternatives.reduce((a, b) => (num(b.scores.overall) > num(a.scores.overall) ? b : a)).id : null;
-  const bestTag = `<span class="tag">Best fit for your priorities</span>`;
+  const bestTag = `<span class="tag">Best match for your priorities</span>`;
 
+  const nameOf = (s) => (s.id === "current" ? "Your current rotation" : s.name || "Rotation option");
+  const seqOf = (s) => `${sequence(s.years || [])}${s.cover_crop ? ` + ${esc(cropName(s.cover_crop.crop, state.names))}` : ""}`;
   const compare = strategies.length ? `<ul class="compare">${strategies.map((s) => `
-      <li${s.id === bestId ? ' class="is-best"' : ""}>${s.id === bestId ? bestTag : ""}<div class="row"><span>${esc(s.id === "current" ? "Your current rotation" : s.name || "Rotation option")}</span><span class="score">${fmt(s.scores?.overall)}/100 · ${levelText(s.labels?.overall, s.scores?.overall)}</span></div>
-        <div class="small muted">${esc((s.years || []).map((id) => cropName(id, state.names)).join(" → "))}${s.cover_crop ? ` + ${esc(cropName(s.cover_crop.crop, state.names))}` : ""}</div>
-        ${scoreBar(s.scores?.overall, s.labels?.overall)}</li>`).join("")}</ul>`
-    : banner("warn", "No rotation options could be built for this field", " Check your answers and try again, or try a demo field.");
+      <li${s.id === bestId ? ' class="is-best"' : ""}>${s.id === bestId ? bestTag : ""}<p class="row">${esc(nameOf(s))}</p>
+        <p class="small seq">${seqOf(s)}</p>
+        ${meter(s.scores?.overall, s.labels?.overall)}</li>`).join("")}</ul>`
+    : banner("warn", "We couldn't build rotation options for this field.", " Check your answers and try again, or try an example field.");
+
+  // The answer first (UX: results headline), then the comparison, then each option's evidence under "More detail".
+  const best = strategies.find((s) => s.id === bestId);
+  const current = strategies.find((s) => s.id === "current");
+  const answer = best ? `<section class="answer" aria-labelledby="h-answer">
+      <h2 id="h-answer">Best match for your priorities: ${esc(best.name || "Rotation option")}</h2>
+      <p class="seq">${seqOf(best)}</p>
+      ${meter(best.scores?.overall, best.labels?.overall)}
+      <p>${esc(plainEvidence(best.why || "").text)}</p>
+      ${current ? `<p class="small">Your current rotation: ${levelText(current.labels?.overall, current.scores?.overall)}, ${fmt(current.scores?.overall)}/100.</p>` : ""}
+      <p class="small">An idea to talk over with your adviser. You decide.</p>
+      <div class="actions"><button type="button" class="btn btn--primary" data-goto="c-${esc(best.id)}">See why and the risks</button></div>
+    </section>`
+    : strategies.length ? banner("ok", "Your current rotation is shown below.", " We found no other option that fits your answers better. Try other priorities.") : "";
 
   const cards = strategies.map((s) => {
     const current = s.id === "current";
     const title = current ? "Your current rotation" : s.name || "Rotation option";
-    const list = (items, empty) => (Array.isArray(items) && items.length ? `<ul>${items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="muted">${esc(empty)}</p>`);
+    // API sentences in plain words (plainEvidence drops codes like I-01); confidence and sources as a small line.
+    const item = (x) => {
+      const e = plainEvidence(x);
+      const meta = [e.confidence ? `Confidence: ${e.confidence}` : "", e.sources.length ? `Sources: ${e.sources.join(", ")}` : ""].filter(Boolean).join(" · ");
+      return `<li>${esc(e.text)}${meta ? `<br><span class="small">${esc(meta)}</span>` : ""}</li>`;
+    };
+    const list = (items, empty) => (Array.isArray(items) && items.length ? `<ul>${items.map(item).join("")}</ul>` : `<p class="muted">${esc(empty)}</p>`);
     return `<article class="card${s.id === bestId ? " is-best" : ""}" aria-labelledby="c-${esc(s.id)}">
-      ${s.id === bestId ? bestTag : ""}<h3 id="c-${esc(s.id)}">${esc(title)}</h3>
-      <p class="small muted" style="margin-top:4px">${current ? "What you grow today. The other options are compared with it." : "A suggestion to discuss with your adviser, not an order."}</p>
+      ${s.id === bestId ? bestTag : ""}<h3 id="c-${esc(s.id)}" tabindex="-1">${esc(title)}</h3>
+      <p class="small muted" style="margin-top:4px">${current ? "What you grow today. The other options are compared with it." : "An idea to talk over with your adviser. You decide."}</p>
       ${strip(s.years || [], `Crop sequence: ${title}`)}
-      ${s.cover_crop ? `<p class="cover-note">🌿 Plus a cover crop, <strong>${esc(cropName(s.cover_crop.crop, state.names))}</strong>, after year ${fmt(s.cover_crop.after_year)}.</p>` : ""}
-      <p style="margin-top:12px">${esc(s.why || "")}</p>
-      <dl class="scores">${SCORE_ROWS.map(([k, icon, l]) => `<div><dt>${icon} ${l}</dt><dd>${fmt(s.scores?.[k])}/100 · ${levelText(s.labels?.[k], s.scores?.[k])}</dd>${scoreBar(s.scores?.[k], s.labels?.[k])}</div>`).join("")}</dl>
-      <h4>⚠️ Check locally before deciding</h4>${list(s.risks_to_review, "No specific risks found. Still check with a local adviser.")}
-      <details><summary>Why we suggest it (evidence)</summary>${list(s.evidence, "No evidence listed.")}</details>
-      <details><summary>Benefits</summary>${list(s.benefits, current ? "This is the baseline, so no benefits are compared." : "No extra benefits found.")}</details>
-      <details><summary>What we don't know yet</summary>${list(s.gaps, "No information gaps listed.")}</details>
+      ${s.cover_crop ? `<p class="cover-note">${withIcon("leaf", `Plus a cover crop, <strong>${esc(cropName(s.cover_crop.crop, state.names))}</strong>, after year ${fmt(s.cover_crop.after_year)}.`)}</p>` : ""}
+      <p class="gap-top">${esc(plainEvidence(s.why || "").text)}</p>
+      <div class="gap-top">${meter(s.scores?.overall, s.labels?.overall)}</div>
+      <h4>${withIcon("warning", "Check on your farm before deciding")}</h4>${list(s.risks_to_review, "No specific risks found. Still check with a local adviser.")}
+      <details class="more"><summary>More detail</summary>
+        <dl class="scores">${SCORE_ROWS.map(([k, name, l]) => `<div><dt>${withIcon(name, esc(l))}</dt><dd>${meter(s.scores?.[k], s.labels?.[k])}</dd></div>`).join("")}</dl>
+        <h4>Why we suggest it</h4>${list(s.evidence, "No evidence listed.")}
+        <h4>Benefits</h4>${list(s.benefits, current ? "This is the baseline, so no benefits are compared." : "No extra benefits found.")}
+        <h4>What we don't know yet</h4>${list(s.gaps, "No information gaps listed.")}
+      </details>
     </article>`;
   }).join("");
 
@@ -529,19 +591,19 @@ function renderResults(tab = "results") {
   const loc = profile.location || {};
   const limits = [...(profile.limits?.en || [])];
   if (noNdvi) limits.unshift(loadingNdvi
-    ? "Greenness data (MODIS) was still loading for this point, so the months when the field is bare are not known yet."
-    : "Greenness data (MODIS) was not available for this point, so the months when the field is bare are unknown.");
+    ? "Satellite photos (MODIS) were still loading for this point, so we can't tell the bare months yet."
+    : "No satellite photos (MODIS) for this point, so we can't tell the bare months.");
 
   const head = `
   <div class="results-head">
-    <a class="btn" href="#/" id="back">← Change answers</a>
+    <a class="btn btn--secondary" href="#/" id="back">${withIcon("back", "Change answers")}</a>
     <h1 tabindex="-1" id="r-title">Results for ${esc(label)}</h1>
-    <p class="small muted">Based on NASA data for 2005–2025 · analysed ${esc(formatDate(at))}</p>
+    <p class="small muted">Based on 21 years of NASA data (2005–2025). Not a forecast. Checked ${esc(formatDate(at))}.</p>
   </div>
   ${state.result.saved ? savedBanner(at) : ""}
   ${loadingNdvi
-    ? banner("warn", "Satellite greenness is still loading", " Rain, heat and frost results are ready. The months when the field is bare will be added here automatically in a minute or two. Keep this page open.")
-    : noNdvi ? banner("warn", "Greenness data unavailable for this point", " Bare months are unknown. Rain, heat and frost still come from NASA POWER.") : ""}
+    ? banner("warn", "Satellite photos are still loading.", " Rain, heat and frost are ready. Bare months appear in 1–2 minutes. Keep this page open.")
+    : noNdvi ? banner("warn", "No satellite photos for this point.", " We can't tell when the field is bare. Rain, heat and frost still work.") : ""}
   <div class="tabs" role="tablist" aria-label="Results">${TABS.map(([id, text]) => `
     <button type="button" class="tab" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="panel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${text}</button>`).join("")}
   </div>`;
@@ -555,17 +617,18 @@ function renderResults(tab = "results") {
 
   app.innerHTML = `${head}
   <div id="panel" role="tabpanel" aria-labelledby="tab-results" tabindex="-1">
+  ${answer}
   <section class="section" aria-labelledby="h-opt">
-    <h2 id="h-opt">Rotation options</h2>
-    <p class="small muted">Your current rotation first, then other options by overall score. Scores out of 100 (Good 67 or more · Fair 34–66 · Poor under 34), weighted by your priorities: ${esc(weights)}.</p>
-    <div style="margin-top:12px">${compare}</div>
+    <h2 id="h-opt">All options side by side</h2>
+    <p class="small">Your current rotation first, then the others by score. Scores are out of 100. Good: 67 or more. Fair: 34–66. Poor: under 34. What matters to you counts more. Your answers: ${esc(weights)}.</p>
+    <div class="gap-top">${compare}</div>
     ${limitsDetails("What the scores can't tell", [...SCORE_ROWS.map(([k, , l]) => [l, data?.score_limits?.[k]]), ["Overall", data?.score_limits?.overall]])}
     ${cards}
   </section>
 
   <section class="section" aria-labelledby="h-year">
     <h2 id="h-year">Your field through the year</h2>
-    ${facts.length ? `<ul class="facts">${facts.map((f) => `<li><span class="ico" aria-hidden="true">${f.icon}</span><span>${esc(f.text)}</span></li>`).join("")}</ul>` : `<p class="muted">The climate summary for this field is not available. Try again later.</p>`}
+    ${facts.length ? `<ul class="facts">${facts.map((f) => `<li><span class="ico" aria-hidden="true">${icon(f.icon)}</span><span>${esc(f.text)}</span></li>`).join("")}</ul>` : `<p class="muted">The climate summary for this field is not available. Try again later.</p>`}
     ${climateChart(profile)}
     ${calendar(profile, noNdvi)}
     ${limitsDetails("What these numbers can't tell", FIELD_LIMIT_ROWS.map(([k, l]) => [l, profile.field_limits?.[k]?.en]))}
@@ -573,28 +636,33 @@ function renderResults(tab = "results") {
 
   <section class="section" aria-labelledby="h-trend">
     <h2 id="h-trend">Then and now</h2>
-    <p class="small muted">${esc(profile.field_limits?.rain_change_pct?.en || "2016–2025 compared with 2005–2014.")}</p>
-    ${trends.length ? `<ul class="facts" style="margin-top:8px">${trends.map((f) => `<li><span class="ico" aria-hidden="true">${f.icon}</span><span>${esc(f.text)}</span></li>`).join("")}</ul>` : `<p class="muted">The comparison with earlier years is not available for this field.</p>`}
+    <p class="small muted">${esc(profile.field_limits?.rain_change_pct?.en || "2016–2025 compared with 2005–2014 (10 years each). Not a forecast.")}</p>
+    ${trends.length ? `<ul class="facts" style="margin-top:8px">${trends.map((f) => `<li><span class="ico" aria-hidden="true">${icon(f.icon)}</span><span>${esc(f.text)}</span></li>`).join("")}</ul>` : `<p class="muted">The comparison with earlier years is not available for this field.</p>`}
   </section>
 
   <section class="section foot" aria-labelledby="h-src">
     <h2 id="h-src">Where the data comes from</h2>
-    <ul class="limits sources">${(profile.sources || []).map((s) => `<li>${esc(s)}</li>`).join("") || "<li>NASA POWER</li>"}</ul>
-    <p class="small muted" style="margin-top:8px">Field location used: ${fmt(loc.lat, 2)}, ${fmt(loc.lon, 2)}${num(loc.elevation_m) !== null ? ` · ${fmt(loc.elevation_m, 0, "m")}` : ""}. Crop traits: FarmLens crop catalogue (sources in each card's evidence).</p>
+    <ul class="limits sources">${(profile.sources || []).map((s) => `<li>${esc(plainEvidence(s).text)}</li>`).join("") || "<li>NASA POWER</li>"}</ul>
+    <p class="small muted" style="margin-top:8px">Field location used: ${fmtCoords(loc.lat, loc.lon)}${num(loc.elevation_m) !== null ? ` · ${fmt(loc.elevation_m, 0, "m")} above sea level` : ""}. Crop facts: FarmLens crop list. Sources are under each option.</p>
     <h3 style="margin-top:16px">Limits of these results</h3>
-    <ul class="limits" style="margin-top:8px">${limits.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>
+    <ul class="limits" style="margin-top:8px">${limits.map((l) => `<li>${esc(plainEvidence(l).text)}</li>`).join("")}</ul>
     <p style="margin-top:16px"><strong>${esc(data?.disclaimer || "This tool supports, and does not replace, your judgment and local agricultural advice.")}</strong></p>
-    <div class="actions"><a class="btn btn--block" href="#/">← Change answers</a></div>
+    <div class="actions"><a class="btn btn--secondary" href="#/">${withIcon("back", "Change answers")}</a></div>
   </section>
   </div>`;
   bindTabs();
+  $("[data-goto]")?.addEventListener("click", (e) => {
+    const card = document.getElementById(e.currentTarget.dataset.goto);
+    card.scrollIntoView({ block: "start" });
+    card.focus({ preventScroll: true });
+  });
 }
 
 /** Shown when an answer came from the phone's cache because there is no connection (sw.js). */
 function savedBanner(iso) {
   const when = formatDate(iso);
   return banner("ok", `Saved result from ${when || "an earlier visit"} — you're offline`,
-    " This is the answer FarmLens saved on this phone last time. Connect to the internet to refresh it.");
+    " FarmLens saved this answer on this phone last time. Connect to the internet to refresh it.");
 }
 
 // ------------------------------------------------------------------ tabs & "What to expect"
@@ -664,7 +732,7 @@ async function mountWarnings(data, result) {
   } catch { /* the module failed to load: the card stays as it is, without the control */ }
 }
 
-/** A tap on a warning opens #/warning/<field key>: analyse that field again (saved answer offline) → What to expect. */
+/** A tap on a warning opens #/warning/<field key>: analyse that field again (saved answer offline) -> What to expect. */
 async function openWarning(key) {
   history.replaceState(null, "", "#/");
   let entry = null;
@@ -703,38 +771,38 @@ function climateChart(profile) {
   const line = `<polyline points="${pts.map((p) => p.join(",")).join(" ")}" fill="none" stroke="var(--need)" stroke-width="2.5" stroke-dasharray="6 4"/>` +
     pts.map(([px, py]) => `<path d="M${px} ${py - 5}l5 5-5 5-5-5z" fill="var(--need)"/>`).join("");
   const labels = months.map((m, i) => `<text x="${L + i * cw + cw / 2}" y="${H - 6}" text-anchor="middle">${MONTH_ABBR[m.month - 1][0]}</text>`).join("");
-  const summary = months.map((m) => `${MONTHS[m.month - 1]}: rain ${fmt(m.rain_mm, 0)} mm, water need ${fmt(m.et0_mm, 0)} mm`).join("; ");
-  return `<h3 style="margin-top:24px">Rain and water need (mm per month)</h3>
+  const summary = months.map((m) => `${MONTHS[m.month - 1]}: rain ${fmt(m.rain_mm, 0)} mm, water lost ${fmt(m.et0_mm, 0)} mm`).join("; ");
+  return `<h3 style="margin-top:24px">Rain and water a grass field loses (mm per month)</h3>
     <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(summary)}">${grid}${bars}${line}${labels}</svg>
-    <div class="legend"><span><span style="color:var(--rain)">■</span> Bars = rain</span><span><span style="color:var(--need)">◆ - -</span> Line = water the air takes from a crop (ET0)</span></div>
-    <p class="small muted" style="margin-top:4px">Where the line is above the bars, the field is short of water. Average month, 2005–2025.</p>`;
+    <div class="legend"><span class="with-icon"><span style="color:var(--rain)">${icon("legend-bar")}</span><span>Bars: rain</span></span><span class="with-icon"><span style="color:var(--need)">${icon("legend-line")}</span><span>Dashed line: water lost by a short grass field (mm). Real crops differ.</span></span></div>
+    <p class="small muted" style="margin-top:4px">Where the line is above the bars, rain alone does not cover it. Average month, 2005–2025.</p>`;
 }
 
 function calendar(profile, noNdvi) {
   const months = (profile.months || []).slice().sort((a, b) => a.month - b.month);
   if (!months.length) return "";
-  // Each line: pictogram in its own column, so wrapped text lines up under the text, not under the icon.
-  const line = (icon, text) => `<span><i aria-hidden="true">${icon}</i>${text}</span>`;
+  // Each line: icon in its own column, so wrapped text lines up under the text, not under the icon.
+  const line = (name, text) => `<span><i aria-hidden="true">${icon(name)}</i>${text}</span>`;
   // Field cover in three words (docs/indicators.md I-09): Bare below 0.25 (engine's likely_bare), Little cover
   // 0.25–0.35 (stubble, weeds, young crop), Green from 0.35. 0.35 is a display-only team assumption.
   const field = (m) => {
-    if (m.likely_bare === true) return line("🟫", "Bare");
-    if (m.likely_bare !== false || num(m.ndvi) === null) return line("❔", "Unknown");
-    return num(m.ndvi) < LITTLE_COVER_NDVI ? line("🌾", "Little cover") : line("🌿", "Green");
+    if (m.likely_bare === true) return line("bare", "Bare");
+    if (m.likely_bare !== false || num(m.ndvi) === null) return line("unknown", "Unknown");
+    return num(m.ndvi) < LITTLE_COVER_NDVI ? line("stubble", "Little cover") : line("leaf", "Green");
   };
   // Non-breaking space keeps a number with its unit when the cell wraps.
   const days = (v, word) => `${fmt(v, 0)}&nbsp;${word}${Math.round(v) === 1 ? "" : "s"}`;
-  const cells = months.map((m) => `<div><b>${MONTH_ABBR[m.month - 1]}</b>${line("🌧️", `${fmt(m.rain_mm, 0)}&nbsp;mm`)}${field(m)}${
-    num(m.frost_days) >= 0.5 ? line("❄️", days(m.frost_days, "frost day")) : ""}${num(m.heat_days) >= 0.5 ? line("🔥", days(m.heat_days, "hot day")) : ""}</div>`).join("");
+  const cells = months.map((m) => `<div><b>${MONTH_ABBR[m.month - 1]}</b>${line("rain", `${fmt(m.rain_mm, 0)}&nbsp;mm`)}${field(m)}${
+    num(m.frost_days) >= 0.5 ? line("frost", days(m.frost_days, "frost day")) : ""}${num(m.heat_days) >= 0.5 ? line("sun", days(m.heat_days, "hot day")) : ""}</div>`).join("");
   const rows = months.map((m) => `<tr><td>${MONTH_ABBR[m.month - 1]}</td><td>${fmt(m.rain_mm, 0)}</td><td>${fmt(m.et0_mm, 0)}</td><td>${fmt(m.water_balance_mm, 0)}</td><td>${fmt(m.soil_wetness, 2)}</td><td>${fmt(m.frost_days, 1)}</td><td>${fmt(m.heat_days, 1)}</td><td>${fmt(m.heavy_rain_days, 1)}</td><td>${noNdvi ? "—" : fmt(m.ndvi, 2)}</td></tr>`).join("");
   return `<h3 style="margin-top:24px">Month by month</h3>
-    <p class="small muted">Rain, field cover (satellite greenness 2024–2025: bare, little cover such as stubble or a young crop, or green), and frost or very hot days (over 35 °C) per month.</p>
+    <p class="small muted">Rain, field cover, and frost or very hot days (over 35 °C) per month. Field cover comes from satellite photos (2024–2025). "Little cover" means stubble or a young crop.</p>
     <div class="cal">${cells}</div>
     <details><summary>All numbers, month by month</summary>
       <div class="table-wrap" tabindex="0" role="region" aria-label="Monthly climate table"><table>
-        <thead><tr><th>Month</th><th>Rain mm</th><th>Need mm</th><th>Balance mm</th><th>Soil wet 0–1</th><th>Frost d</th><th>Hot d</th><th>Storm d (≥30 mm)</th><th>Green 0–1</th></tr></thead>
+        <thead><tr><th>Month</th><th>Rain (mm)</th><th>Water lost (mm)</th><th>Balance (mm)</th><th>Soil moisture (0 dry–1 wet)</th><th>Frost days</th><th>Hot days (over 35 °C)</th><th>Very heavy rain days (30 mm+)</th><th>Plant cover (0 bare–1 green)</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
-      <p class="small muted" style="margin-top:8px">"Need" is reference evapotranspiration (ET0, FAO-56). "Soil wet" is a model estimate. Definitions in docs/indicators.md.</p>
+      <p class="small muted" style="margin-top:8px">"Water lost" is what a short grass field loses to sun and wind. Real crops differ. Soil moisture is a model estimate.</p>
     </details>`;
 }
 
@@ -761,10 +829,14 @@ function route() {
       $("#r-title").focus({ preventScroll: true });
     }
   } else {
+    const n = Number(/^#\/step\/([1-4])$/.exec(location.hash)?.[1] || 1);
+    if (lastScreen === "form" && $("#form")) { showStep(n); return; } // Next / Back / phone Back: same form
     lastScreen = "form";
     if (tab) history.replaceState(null, "", "#/");
+    state.step = tab ? 1 : n;
     state.mapApi = null;
     renderForm();
+    if (state.step > 1) $(`#s${state.step}`).focus({ preventScroll: true });
   }
 }
 

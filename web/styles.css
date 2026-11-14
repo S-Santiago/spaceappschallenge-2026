@@ -185,6 +185,12 @@ a { color: var(--accent); text-underline-offset: 3px; }
 }
 .step-of { display: block; font-size: var(--t-small); color: var(--ink); font-weight: 400; }
 .step-nav { display: grid; gap: var(--s2); margin-top: var(--s5); }
+/* The step's primary action stays in reach on a small phone: it sticks to the bottom of the screen. */
+.step-main {
+  position: sticky; bottom: 0; z-index: 2; margin: var(--s5) calc(-1 * var(--s4)) 0;
+  padding: var(--s3) var(--s4); background: var(--ground); border-top: var(--bw) solid var(--line);
+}
+.step-main + .step-nav { margin-top: var(--s2); }
 fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 legend { font-weight: 600; padding: 0; margin-bottom: var(--s2); }
 label { font-weight: 600; }
@@ -486,3 +492,16 @@ h4.sub { font-size: var(--t-h3); margin: var(--s5) 0 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
   .btn:active { transform: none; }
 }
+/* ---- flow and results additions (one step at a time, answer first) */
+.gap-top { margin-top: var(--s4); }
+.segmented--grid { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+.prio legend { margin-bottom: var(--s2); }
+.seq { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s1); }
+.seq .icon { width: var(--icon-sm); height: var(--icon-sm); }
+.answer h2 { font-size: var(--t-h2); }
+.scores div { grid-template-columns: 1fr; row-gap: var(--s1); }
+.scores dd { text-align: left; white-space: normal; }
+.more h4:first-of-type { margin-top: var(--s4); }
+.card h3:focus { outline: none; }
+.card h3:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: var(--focus-off); }
+.legend .icon { width: var(--icon-sm); height: var(--icon-sm); }

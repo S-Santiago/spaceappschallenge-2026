@@ -82,3 +82,30 @@ def test_warnings_are_local_notifications_only():
         assert not re.search(r"pushManager|\.subscribe\(|applicationServerKey|addEventListener\(\"push\"", text), path.name
     notify = (WEB / "js" / "notify.js").read_text(encoding="utf-8")
     assert "requestPermission" in notify and "requestPermission" not in (WEB / "js" / "app.js").read_text(encoding="utf-8")
+
+
+# Emoji and Unicode pictograms render differently (or as boxes) on low-end phones and read badly in sunlight:
+# the PWA draws its icons as inline SVG in web/js/icons.js, always next to a word (DESIGN.md §5 "Icons").
+PICTOGRAMS = re.compile(
+    "[\U0001F000-\U0001FAFF←-⇿⌀-⏿■-◿☀-➿⬀-⯿"
+    "ℹ⋮™〰〽️‍]"
+)
+
+
+def test_no_emoji_or_pictograms_in_the_pwa():
+    files = [p for p in WEB.rglob("*") if p.is_file() and "vendor" not in p.parts
+             and p.suffix in {".js", ".css", ".html", ".webmanifest", ".svg", ".json"}]
+    assert files
+    hits = []
+    for path in files:
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for ch in PICTOGRAMS.findall(line):
+                hits.append(f"{path.relative_to(WEB)}:{n} U+{ord(ch):04X}")
+    assert not hits, "emoji/pictograms found (use icons.js): " + ", ".join(hits[:20])
+
+
+def test_icons_are_inline_svg_next_to_a_word():
+    icons = (WEB / "js" / "icons.js").read_text(encoding="utf-8")
+    for attr in ('viewBox="0 0 24 24"', 'stroke="currentColor"', 'aria-hidden="true"'):
+        assert attr in icons
+    assert "@font-face" not in (WEB / "styles.css").read_text(encoding="utf-8")

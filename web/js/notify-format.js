@@ -6,7 +6,7 @@
 import { MONTHS, num } from "./format.js";
 import { count } from "./expect-format.js";
 
-export const STORE = "farmlens-warnings-v1"; // localStorage key (see docs/architecture.md → Privacy)
+export const STORE = "farmlens-warnings-v1"; // localStorage key (see docs/architecture.md -> Privacy)
 export const HASH_PREFIX = "#/warning/";
 const LEVEL_WORD = { high: "High", medium: "Medium" };
 const KEEP_SENT_MONTHS = 13; // older dedupe keys can never match again
@@ -66,12 +66,12 @@ export function markSent(store, keys, today = new Date()) {
 export function warningText(name, alert, { example = false } = {}) {
   if (!alert || !LEVEL_WORD[alert.level] || !(alert.month >= 1 && alert.month <= 12)) return null;
   const n = count(alert.prob, alert.years);
-  const freq = n === null ? "" : ` (in ${n} of the last ${alert.years} years)`;
+  const freq = n === null ? "" : ` (${n} of ${alert.years} years)`;
   const field = String(name || "").trim() || "your field";
   return {
     title: `${example ? "Example: " : ""}Heavy-rain risk on bare soil — ${field}`,
-    body: `${LEVEL_WORD[alert.level]} risk. In ${MONTHS[alert.month - 1]}, heavy-rain days often fall while your field is bare${freq}. ` +
-      "Consider cover or residue. Based on NASA history, not a forecast.",
+    body: `${LEVEL_WORD[alert.level]} risk in ${MONTHS[alert.month - 1]}: heavy rain often falls on bare soil${freq}. ` +
+      "Keep stubble or a cover crop. Past NASA data, not a forecast.",
   };
 }
 
