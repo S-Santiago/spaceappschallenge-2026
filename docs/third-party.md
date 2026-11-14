@@ -9,12 +9,16 @@ Everything in (or used by) this project that the team did not create: libraries,
 | Name | Version | Purpose | License | Link | Notes (attribution required?) |
 |---|---|---|---|---|---|
 | httpx | 0.28.1 | HTTP client for NASA POWER and ORNL MODIS APIs | BSD-3-Clause | https://www.python-httpx.org/ | No |
+| streamlit | 1.67.0 | Web UI framework for the app (`src/app.py`) | Apache-2.0 | https://github.com/streamlit/streamlit | No (keep license notice if redistributed) |
+| folium | 0.20.0 | Builds the Leaflet map for "Point on a map" (step 1) | MIT | https://github.com/python-visualization/folium | No |
+| streamlit-folium | 0.27.4 | Embeds the folium map in Streamlit and returns the clicked point | MIT (from GitHub repo; PyPI metadata has no license field) | https://github.com/randyzwitch/streamlit-folium | No |
+| Leaflet (JS, loaded by folium from a CDN) | 1.9.3 | Interactive map in the browser | BSD-2-Clause | https://github.com/Leaflet/Leaflet | "Leaflet" link shown in the map corner (kept by default) |
 
 ## 2. Assets (images, icons, fonts, audio, map tiles)
 
 | Asset | Source / author | License | Where used | Attribution text |
 |---|---|---|---|---|
-| _none yet_ | | | | |
+| OpenStreetMap standard map tiles | OpenStreetMap contributors (tile.openstreetmap.org) | Data: ODbL 1.0; tiles: OSM Tile Usage Policy (light use, valid User-Agent, attribution, no bulk download) | Step 1 map (`src/app.py`, only when "Point on a map" is chosen) | "© OpenStreetMap contributors" — shown automatically in the map corner by folium |
 
 > Map tiles: OpenStreetMap data requires "© OpenStreetMap contributors" attribution (ODbL). Many tile providers have their own usage policies — check them.
 
