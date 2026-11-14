@@ -231,11 +231,11 @@ th:first-child, td:first-child { text-align: left; }
 .section > h3 { font-size: var(--t-h2); margin-bottom: var(--s1); }
 .exp-card h4 { margin: 0 0 var(--s2); font-size: var(--t-title); }
 h4.sub { font-size: var(--t-h3); margin: var(--s5) 0 0; }
-.caveat { margin-top: var(--s3); padding: var(--s2) var(--s3); border-left: 4px solid var(--warn-line); background: var(--warn-bg); border-radius: var(--r-sm); }
+.caveat { margin-top: var(--s3); padding: var(--s2) var(--s3); border: 1px solid var(--warn-strong); background: var(--warn-bg); border-radius: var(--r-sm); }
 .plain { list-style: none; padding: 0; margin: var(--s2) 0 0; display: grid; gap: var(--s1); }
 .strip-chart .today { fill: var(--ink); font-weight: 700; }
 tr.now td { font-weight: 700; }
-.alert { border-left-width: 6px; }
+.alert { border-width: 2px; }
 .alert--high { border-color: var(--error-line); background: var(--error-bg); }
 .alert--medium { border-color: var(--warn-strong); background: var(--warn-bg); }
 .alert .level { display: inline-block; margin-left: var(--s1); padding: 0 var(--s2); border: 2px solid currentColor; border-radius: 999px; font-size: var(--t-small); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: 2px; }

@@ -136,7 +136,7 @@ export function fromMonth(items, from, key = "month") {
   return [...(items || [])].sort((a, b) => ((a[key] - from + 12) % 12) - ((b[key] - from + 12) % 12));
 }
 
-const LEVELS = { high: { icon: "⚠️", word: "High" }, medium: { icon: "❕", word: "Medium" } };
+const LEVELS = { high: { icon: "⚠️", word: "High" }, medium: { icon: "🔶", word: "Medium" } };
 const SOURCES = { crop_calendar: "crop calendar", satellite: "satellite" };
 
 /**
