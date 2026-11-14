@@ -18,6 +18,7 @@ Loaded into the `crops` table of the SQLite database on start-up (`src/fieldshif
 | `cycle_days_min`, `cycle_days_max` | Sowing to harvest | days |
 | `water_need_mm_min`, `water_need_mm_max` | Seasonal crop water requirement **without water stress** (FAO irrigation-planning value). Not what a rain-fed crop actually uses, and not a suitability threshold | mm per cycle |
 | `drought_tolerance` | | low / medium / high |
+| `irrigation_required` | The crop only makes sense with irrigation in Andalusia; the engine never proposes it for a rain-fed field. Indicative (R-IND) | yes / no |
 | `frost_tolerance`, `heat_tolerance` | Tolerance to frost days (Tmin < 0 °C) / heat days (Tmax > 35 °C) **during this crop's season in Andalusia**, used by the rotation engine's climate penalties. Indicative (R-IND), set with the `agro-domain-advisor` agent so no winter crop is excluded by the usual frosts of the demo fields | low / medium / high |
 | `t_base_c` | Base temperature for growing degree days | °C |
 | `frost_damage_c` | Temperature below which frost damage is likely (sensitive stage) | °C |

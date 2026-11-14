@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import os
+import unicodedata
 from pathlib import Path
 from typing import Literal
 
@@ -74,11 +75,12 @@ def fields() -> list[dict]:
 
 @app.get("/api/crops")
 def crops(lang: Lang = "en") -> list[dict]:
-    """Crops the farmer can pick for the current rotation."""
+    """Crops the farmer can pick for the current rotation, sorted by name in `lang` (accents ignored)."""
     return [{"id": c["crop_id"], "name": rotations.crop_name(c, lang), "type": c["type"], "family": c["family"],
              "n_fixing": c["n_fixing"] == "yes", "sow_month": c["sow_month"], "harvest_month": c["harvest_month"],
              "confidence": c["confidence"]}
-            for c in db.get_engine_crops().values()]
+            for c in sorted(db.get_engine_crops().values(),
+                            key=lambda c: unicodedata.normalize("NFKD", rotations.crop_name(c, lang)).casefold())]
 
 
 def _fetch(source: str, lat: float, lon: float) -> asyncio.Task:

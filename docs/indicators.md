@@ -64,7 +64,7 @@ Implemented in `src/fieldshift/rotations.py` (issue #10). All sub-scores are 0�
 
 | Score | Formula | Notes |
 |---|---|---|
-| `water` | 100 × mean rain coverage of the main crops; a cover crop counts with weight 0.5 | Rain-fed: how much of the crop's need rain provides. Irrigated: the rest must be irrigated, so a low score = more irrigation water |
+| `water` | 100 × mean rain coverage of the main crops; a cover crop counts with weight 0.5. Crops with no sourced water need in `data/crops.csv` are left out of the mean (never counted as fully covered); if no crop has one, 50 (unknown). Only crops with a known need can be proposed as `water_saving` | Rain-fed: how much of the crop's need rain provides. Irrigated: the rest must be irrigated, so a low score = more irrigation water |
 | `soil` | nitrogen (25) + organic matter (25) + erosion (30) + pest break (20) | see below |
 | ↳ nitrogen | 25 if a forage or cover legume is a main crop (biomass stays on the farm); 15 if the only legumes are grain legumes (seed exports most of the fixed N) or a legume cover crop; else 0 | |
 | ↳ organic matter | 25 × mean `residue_organic_matter` (low 0, medium 0.5, high 1); +5 with a cover crop (max 25) | |

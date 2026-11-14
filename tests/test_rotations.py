@@ -168,3 +168,26 @@ def test_score_limits_cover_every_score_in_both_languages():
     assert set(r.SCORE_LIMITS) == set(r.PRIORITIES) | {"overall"}
     for text in r.SCORE_LIMITS.values():
         assert text["en"] and text["es"]
+
+
+def test_unknown_water_need_gets_no_water_bonus(crops, profile):
+    unknown = dict(crops["chickpea"], crop_id="mystery_legume", water_need_mm_min=None, water_need_mm_max=None)
+    only_unknown = r.score([unknown], None, profile, irrigated=False, slope="flat")
+    assert only_unknown["water"] == 50  # neutral, not "fully covered by rain"
+    known = r.score([crops["durum_wheat"]], None, profile, irrigated=False, slope="flat")
+    mixed = r.score([crops["durum_wheat"], unknown], None, profile, irrigated=False, slope="flat")
+    assert mixed["water"] == known["water"]  # the unknown crop is left out of the average
+
+
+def test_unknown_water_need_is_never_a_water_saver(crops, profile):
+    crops = dict(crops, mystery=dict(crops["chickpea"], crop_id="mystery", drought_tolerance="high",
+                                     water_need_mm_min=None, water_need_mm_max=None))
+    savers = {tuple(o["years"]) for o in r.candidates(["maize"], crops, profile, irrigated=True)["water_saving"]}
+    assert ("mystery",) not in savers
+
+
+def test_irrigation_required_crops_only_on_irrigated_fields(crops, profile):
+    tomato = dict(crops["maize"], crop_id="tomato_like", irrigation_required="yes", drought_tolerance="high",
+                  frost_tolerance="high", heat_tolerance="high")
+    assert not r.suitable(tomato, profile, irrigated=False)
+    assert r.suitable(tomato, profile, irrigated=True)
