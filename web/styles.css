@@ -237,3 +237,7 @@ tr.now td { font-weight: 700; }
 .alert--high { border-color: var(--error-line); background: var(--error-bg); }
 .alert--medium { border-color: var(--warn-strong); background: var(--warn-bg); }
 .alert .level { display: inline-block; margin: 0 var(--s1); padding: 0 var(--s2); border: 1px solid currentColor; border-radius: 999px; font-size: var(--t-small); font-weight: 600; line-height: 1.6; } /* sentence case (DESIGN.md §3) */
+/* Heavy-rain warnings on this phone (#42), inside the alert card */
+.warn { margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); }
+.warn .sub { margin: 0 0 var(--s2); }
+.warn-status { margin-top: var(--s2); font-weight: 600; }

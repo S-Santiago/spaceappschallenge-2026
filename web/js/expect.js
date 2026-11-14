@@ -122,6 +122,7 @@ export function alertsSection(pred, today = new Date()) {
       <p>Heavy-rain days often fall when the field is bare in these months. Bare soil can wash away — a cover crop or leaving stubble helps.</p>
       <ul class="facts" style="margin-top:12px">${rows}</ul>
       <p class="small muted" style="margin-top:12px">${sources ? `Bare months from the ${esc(sources)}. ` : ""}${esc(cards[0].threshold)} Upcoming months first.</p>
+      <div class="warn" id="warn-slot" hidden></div>
     </article></section>`;
 }
 

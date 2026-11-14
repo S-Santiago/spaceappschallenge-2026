@@ -7,6 +7,8 @@
 //   and sends it in the X-FarmLens-Key header. Offline, the saved answer is returned with X-FarmLens-Offline: 1.
 // - Every cached API response carries X-FarmLens-Saved-At (when it was saved), shown as "Saved result from <date>".
 // - Map tiles, the map library and place search (Nominatim): network only.
+// - Heavy-rain warnings (#42) are local notifications shown by the page with registration.showNotification();
+//   there is no push event and no subscription. A tap opens or focuses FarmLens on that field's What to expect.
 
 const VERSION = "v12";
 const SHELL = `farmlens-shell-${VERSION}`;
@@ -17,6 +19,7 @@ const MAX_ANALYSES = 30;
 const SHELL_FILES = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
   "js/app.js", "js/api.js", "js/format.js", "js/map.js", "js/malaga-area.js", "js/expect.js", "js/expect-format.js",
+  "js/notify.js", "js/notify-format.js",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
 const DATA_PATHS = ["/api/fields", "/api/crops", "/api/predictions"];
@@ -112,4 +115,20 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   event.respondWith(staleWhileRevalidate(event, SHELL));
+});
+
+// A tap on a heavy-rain warning (#42): focus an open FarmLens window and send it the link, or open a new one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const hash = String(event.notification.data?.hash || "");
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const win = wins.find((c) => new URL(c.url).origin === self.location.origin);
+    if (win) {
+      await win.focus();
+      win.postMessage({ type: "farmlens-open", hash });
+      return;
+    }
+    await self.clients.openWindow(new URL(`./${hash}`, self.registration.scope).href);
+  })());
 });
