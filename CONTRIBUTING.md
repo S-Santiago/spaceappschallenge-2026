@@ -3,7 +3,14 @@
 ## Branches
 - `main` must always be demo-able. Freeze risky changes on `main` after **Sunday 15:00**.
 - Use short-lived branches: `feat/<topic>`, `data/<dataset>`, `docs/<topic>`, `fix/<topic>`.
-- Open a Pull Request (template in `.github/`) and get a quick review from a teammate.
+- Open a Pull Request (template in `.github/`). Reviewers are requested automatically via `.github/CODEOWNERS`:
+
+  | Area | Reviewer |
+  |---|---|
+  | Code (`src/`), data pipeline, tests, dependencies | @S-Santiago |
+  | Visual/UX of the app, docs, README, pitch | @sebasbarrabaja-cmyk |
+
+  A PR that touches both areas needs both reviews. When @S-Santiago authors code, any other teammate can review it so he is not blocked. Target: review within ~30 min.
 
 ## Commits
 Conventional Commits: `feat:`, `fix:`, `docs:`, `data:`, `chore:`, `refactor:`.

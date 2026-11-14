@@ -1,0 +1,17 @@
+# Review split (see CONTRIBUTING.md):
+# - Code, data pipeline, tests, dependencies → @S-Santiago
+# - Docs, README, UI wording/visuals, pitch → @sebasbarrabaja-cmyk
+# Later rules override earlier ones.
+
+*                       @S-Santiago
+/src/                   @S-Santiago
+/data/                  @S-Santiago
+/requirements.txt       @S-Santiago
+
+/README.md              @sebasbarrabaja-cmyk
+/docs/                  @sebasbarrabaja-cmyk
+/.github/               @sebasbarrabaja-cmyk
+/CLAUDE.md              @sebasbarrabaja-cmyk
+/CONTRIBUTING.md        @sebasbarrabaja-cmyk
+/.claude/               @sebasbarrabaja-cmyk
+/assets/                @sebasbarrabaja-cmyk
