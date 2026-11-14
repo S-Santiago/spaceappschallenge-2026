@@ -9,7 +9,8 @@ Every tool that took part in building the project: what for, how, and under whic
 | Git | Version control | Source history | GPL-2.0 (tool only; does not affect our code) | 2026-11-14 |
 | GitHub | Hosting / collaboration | Public repo = *Final Project* link; issues, PRs | GitHub Terms of Service (proprietary service) | 2026-11-14 |
 | Claude Code (Anthropic) | AI coding agent (CLI) | Repo scaffolding, documentation, agents & skills, code assistance — see [ai-usage.md](ai-usage.md) | Anthropic Commercial/Consumer Terms (proprietary). Outputs owned by the user per Anthropic terms | 2026-11-14 |
-| _TBD_ | Language / framework | _after stack decision_ | | |
+| Python 3.11+ · FastAPI · SQLite | Language / backend | NASA data clients, indicator and rotation engine, JSON API — decisions [0002](decisions/0002-tech-stack.md), [0004](decisions/0004-mobile-pwa.md) | PSF / MIT / public domain (details in [third-party.md](third-party.md)) | 2026-11-14 |
+| HTML, CSS, vanilla JavaScript (no framework, no build step) | Frontend (PWA) | Mobile app, offline cache via a hand-written service worker — decision [0005](decisions/0005-pwa-vanilla-js.md) | Web standards; no third-party code | 2026-11-14 |
 | _TBD_ | Hosting of demo | | | |
 | _TBD_ | Slides / video editor for Project Demo | | | |
 

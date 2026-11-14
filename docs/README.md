@@ -9,7 +9,7 @@ Everything a judge, mentor or teammate needs to understand, run and verify this 
 | 1c | [sprint-plan.md](sprint-plan.md) — Scrum roles, ceremonies, sprints, checkpoints, work split | Scrum Master | 🟢 Active |
 | 2 | [hackathon-rules.md](hackathon-rules.md) — rules, deadlines, deliverables, criteria | Team owner | 🟢 Done |
 | 3 | [nasa-data.md](nasa-data.md) — data registry & traceability | Data | 🟢 POWER + MODIS registered |
-| 4 | [architecture.md](architecture.md) — design & stack | Tech lead | 🟢 Stack decided (Streamlit + SQLite) |
+| 4 | [architecture.md](architecture.md) — design & stack | Tech lead | 🟢 Stack decided (PWA vanilla JS + FastAPI + SQLite) |
 | 5 | [decisions/](decisions/) — decision records | Everyone | 🟡 Started |
 | 6 | [tools.md](tools.md) — tools used and how | Everyone | 🟡 Living doc |
 | 7 | [ai-usage.md](ai-usage.md) — AI declaration | Everyone | 🟡 Living doc |
