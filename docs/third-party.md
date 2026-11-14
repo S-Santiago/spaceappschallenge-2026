@@ -19,6 +19,10 @@ Everything in (or used by) this project that the team did not create: libraries,
 | Frontend Design skill (`frontend-design`) — dev tooling, not shipped in the app | plugin 1.1.1 | Claude Code skill: UI implementation (`.claude/skills/frontend-design/`) | Apache-2.0 | https://github.com/anthropics/claude-plugins-official | Keep `LICENSE.txt` in the folder |
 | Impeccable skill (`impeccable`) — dev tooling, not shipped in the app | 4.9.1 (commit 1995764), engine 0.1.24 | Claude Code skill: UI audit & refinement (`.claude/skills/impeccable/`) | Apache-2.0 | https://github.com/pbakaus/impeccable | Keep `LICENSE` and `NOTICE.md` in the folder. Engine binary downloaded at first run to `~/.impeccable/bin/` (not in the repo) |
 | Leaflet (JS, loaded by folium from a CDN) | 1.9.3 | Interactive map in the browser | BSD-2-Clause | https://github.com/Leaflet/Leaflet | "Leaflet" link shown in the map corner (kept by default) |
+| fastapi | 0.162.7 | HTTP JSON API for the PWA (`src/fieldshift/api.py`) | MIT | https://github.com/fastapi/fastapi | No |
+| uvicorn | 0.54.0 | ASGI server that runs the API | BSD-3-Clause | https://github.com/encode/uvicorn | No |
+| starlette (via fastapi) | 1.10.0 | Web toolkit under FastAPI; also serves the PWA static files | BSD-3-Clause | https://github.com/encode/starlette | No |
+| pydantic (via fastapi) | 2.14.3 | Validates API request bodies | MIT | https://github.com/pydantic/pydantic | No |
 
 ## 2. Assets (images, icons, fonts, audio, map tiles)
 

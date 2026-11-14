@@ -49,6 +49,8 @@ The DB file is **generated** and git-ignored (`FIELDSHIFT_DB`, default `data/pro
 | `climate_profiles` | `lat, lon` | Monthly profile, shape 1 in `docs/work-plan.md`, plus the `version` of the code that computed it | — | `climate.py` |
 | `analyses` | `id` | Inputs (rotation, priorities, irrigation, slope) + resulting strategies (shape 2). No personal data | — | app |
 
+Migration 2 adds `name`, `name_es`, `frost_tolerance`, `heat_tolerance` to `crops`. `get_engine_crops()` returns the catalogue in the format `rotations.py` expects (`crop_id`, `root_depth_m`, `market_value_illustrative`; perennials get a 12-month window). The HTTP API on top of these modules is documented in `docs/work-plan.md` ("API").
+
 Coordinates are rounded to 2 decimals (~1 km) everywhere. Main functions: `get_crops()`, `get_crop()`, `get_locations()`, `get_location()`, `get_raw()`/`save_raw()`, `get_profile(lat, lon, version=None)`/`save_profile()`, `save_analysis()`/`get_analysis()`/`list_analyses()`.
 
 ## Known limitations

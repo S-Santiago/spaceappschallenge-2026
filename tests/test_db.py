@@ -63,3 +63,15 @@ def test_samples_are_loaded_offline():
     for file in files:
         source, lat, lon = file.stem.split("_")
         assert db.get_raw(source, float(lat), float(lon)) is not None
+
+
+def test_migrates_a_version_1_database():
+    path = db.db_path()
+    conn = db._open(path)
+    with conn:
+        conn.executescript(db.MIGRATIONS[0])
+        conn.execute("PRAGMA user_version = 1")
+    conn.close()
+    db.init_db(path)
+    crop = db.get_crop("durum_wheat")
+    assert crop["name_es"] == "Trigo duro" and crop["frost_tolerance"] == "high"
