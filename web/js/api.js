@@ -45,3 +45,18 @@ export const getCrops = () => request("/api/crops?lang=en");
 export function analyze(inputs, { freePoint = false } = {}) {
   return request("/api/analyze", { method: "POST", body: inputs, timeoutMs: freePoint ? 75000 : 20000 });
 }
+
+/** Query string for GET /api/predictions from the analysis inputs (field or point, current rotation, slope). */
+export function predictionsQuery(inputs) {
+  const q = new URLSearchParams();
+  if (inputs.field) q.set("field", inputs.field);
+  else { q.set("lat", String(inputs.lat)); q.set("lon", String(inputs.lon)); }
+  for (const id of inputs.rotation || []) q.append("rotation", id);
+  if (inputs.slope) q.set("slope", inputs.slope);
+  return q.toString();
+}
+
+/** Statistics over NASA history (P-01, P-02, P-03, P-07). A new point may wait for NASA POWER. */
+export function getPredictions(inputs, { freePoint = false } = {}) {
+  return request(`/api/predictions?${predictionsQuery(inputs)}`, { timeoutMs: freePoint ? 75000 : 20000 });
+}
