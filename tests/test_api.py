@@ -61,6 +61,8 @@ def test_analyze_demo_field(client, field):
             assert s[key]
         assert s["benefits"] or s["id"] == "current"  # the baseline has nothing to gain over itself
     assert body["disclaimer"]
+    assert set(body["score_limits"]) == {"water", "soil", "income", "risk", "overall"}
+    assert "orientativo" in body["score_limits"]["income"]  # Spanish, income is illustrative
     stored = client.get(f"/api/analyses/{body['analysis_id']}").json()
     assert stored["strategies"] == strategies
 

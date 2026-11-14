@@ -107,7 +107,8 @@ async def analyze(req: AnalyzeRequest) -> dict:
         s["labels"] = {k: rotations.label(v, req.lang) for k, v in s["scores"].items()}
     analysis_id = db.save_analysis(lat, lon, req.model_dump(), strategies)
     return {"analysis_id": analysis_id, "profile": profile, "strategies": strategies,
-            "disclaimer": rotations.DISCLAIMER[req.lang]}
+            "disclaimer": rotations.DISCLAIMER[req.lang],
+            "score_limits": {k: v[req.lang] for k, v in rotations.SCORE_LIMITS.items()}}
 
 
 @app.get("/api/analyses/{analysis_id}")

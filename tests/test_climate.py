@@ -129,3 +129,8 @@ def test_build_profile_shape_1_without_modis():
     assert len(p["sources"]) == 1
     assert p["limits"] == climate.LIMITS
     assert len(climate.LIMITS["en"]) == len(climate.LIMITS["es"])
+    # every value shown to the farmer has its own limits sentence, in both languages (#44)
+    fields = (set(p["months"][0]) - {"month"}) | (set(p["trends"]) - {"baseline", "recent"})
+    assert set(p["field_limits"]) == fields
+    for text in p["field_limits"].values():
+        assert text["en"] and text["es"]

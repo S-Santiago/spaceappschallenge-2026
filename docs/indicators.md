@@ -27,7 +27,7 @@ Common to all POWER-based indicators: source NASA POWER daily point API (`commun
 - If MODIS fails, the profile is still built with `ndvi` and `likely_bare` set to `null`.
 
 ## Limits to show in the UI
-Farmer-friendly versions in English and Spanish are returned in the profile as `limits` = `{"en": [...], "es": [...]}` (`climate.LIMITS`).
+Farmer-friendly versions in English and Spanish are returned in the profile as `limits` = `{"en": [...], "es": [...]}` (`climate.LIMITS`). One sentence per indicator is returned as `field_limits` = `{"rain_mm": {"en": ..., "es": ...}, ...}` (`climate.FIELD_LIMITS`) and one per score as `score_limits` in `/api/analyze` (`rotations.SCORE_LIMITS`); full table in [architecture.md](architecture.md#limits-per-value-shown-to-the-farmer-44).
 - ET0 uses POWER radiation, humidity and wind for a ~50 km cell; local wind and sea breeze are not captured.
 - POWER: modelled/derived data for a ~50 km cell; local microclimate (valleys, slopes) is not captured.
 - `soil_wetness`: model estimate (MERRA-2), not satellite-measured soil moisture.
