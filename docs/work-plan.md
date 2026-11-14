@@ -75,7 +75,7 @@ Tables: `crops`, `locations`, `climate_profiles`, `analyses`. Functions: `get_cr
 | `GET /api/health` | `{"status": "ok"}` (use it to wake the free host before the pitch) |
 | `GET /api/fields` | Demo fields: `[{"slug", "name", "lat", "lon", "elevation_m", "description"}]` |
 | `GET /api/crops?lang=en\|es` | `[{"id", "name", "type", "family", "n_fixing", "sow_month", "harvest_month", "confidence"}]` |
-| `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "disclaimer", "score_limits"}` (`score_limits`: one sentence per score, in the request language) |
+| `POST /api/analyze` | Body below → `{"analysis_id", "profile": Shape 1, "strategies": Shape 2 + "labels", "pending", "disclaimer", "score_limits"}` (`score_limits`: one sentence per score, in the request language) |
 | `GET /api/analyses/{id}` | A stored analysis: `{"id", "lat", "lon", "inputs", "strategies", "created_at"}` |
 
 ```json
@@ -88,6 +88,8 @@ POST /api/analyze
  "lang": "es"}                               // en | es: language of the card texts
 ```
 Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`rotations.label`). Errors: `422` invalid input or unknown crop, `404` unknown field/analysis, `503` NASA unreachable for a non-demo point. Demo fields never call NASA (data pre-loaded); the climate profile is computed once and stored in `climate_profiles` (recomputed when `climate.py` changes). Every analysis is stored in `analyses` (no personal data).
+
+**Points that are not demo fields.** NASA POWER answers in ~3 s, but the MODIS service (ORNL) can take minutes for a new point. The API waits for POWER (up to 60 s) and for MODIS only 3 s (`FIELDSHIFT_MODIS_WAIT_S`); if MODIS is not ready it answers anyway with `"pending": ["ndvi"]` and `likely_bare: null` in every month (bare-soil months unknown), while the MODIS download continues in the background. A retry joins that download instead of starting a new one; once it lands, the full profile is stored and `"pending": []`. **PWA:** show the results, say "satellite greenness still loading" when `pending` contains `ndvi`, and ask again after ~1 minute. Measured: new point ~6 s, same point afterwards < 0.3 s.
 
 ## Suggested timeline (Europe/Madrid)
 | When | Milestone |
