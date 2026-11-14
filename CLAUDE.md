@@ -3,12 +3,12 @@
 ## Context
 - Team project **FarmLens** for **NASA Space Apps Challenge 2026 · Málaga**, **Challenge 06: Adapting farms with NASA data** — a decision-support tool combining NASA Earth observations with local soil info, crop traits and farmer priorities to compare **crop-rotation strategies** (≥3, including the current one; each with why / evidence / benefits / information gaps / risks needing local review). Full statement: `docs/challenge.md`. The tool supports, never replaces, farmers' judgment.
 - Development window: Sat 14 Nov 2026 09:00 → **Sun 15 Nov 2026 23:59 (Europe/Madrid)**, the official NASA deadline. Local pitches Sun 17:30–19:00. Time is the scarcest resource: prefer the simplest thing that can be demoed.
-- Tech stack: **mobile app as a PWA + Python API + SQLite** (`docs/decisions/0004-mobile-pwa.md`, which supersedes the Streamlit UI of `0002`). The Python engine (`src/fieldshift/`) stays; the Streamlit UI is being retired. Do not introduce another framework without a new decision record.
+- Tech stack: **mobile app as a PWA + Python API + SQLite** (`docs/decisions/0004-mobile-pwa.md`, which supersedes the Streamlit UI of `0002`). Backend: FastAPI in `src/fieldshift/api.py` over the Python engine (`src/fieldshift/`). Frontend: plain HTML/CSS/JS ES modules in `web/` with a hand-written service worker, no build step, served by the API on the same origin (`docs/decisions/0005-pwa-vanilla-js.md`). The Streamlit UI (`src/app.py`) is only an internal test harness, not the product or the demo. Do not introduce another framework without a new decision record.
 - **Predictions are statistics over NASA historical data, not AI/ML** (frequencies, percentiles, return periods, trends with confidence intervals). Define each one in `docs/indicators.md` before coding and label it "based on the last 20 years", never as a forecast.
 - Work is organised in sprints: `docs/sprint-plan.md` (Scrum Master: @sebasbarrabaja-cmyk). Check the current milestone before picking a task.
 - **Target users: farmers with at most a low/mid-range phone, slow or unstable mobile data and little tech experience.** Everything user-facing must be **mobile-first and lightweight** (see `docs/ux-guidelines.md` → "Mobile-first, low-end phones"). Desktop is secondary.
-- **Local dev server is always `localhost:8501`** (a Cloudflare tunnel exposes it to the team). Never start Streamlit on another port (8502…): if 8501 is busy, stop that instance and restart it on 8501. Changes reload live (`runOnSave = true` in `.streamlit/config.toml`), so a restart is rarely needed.
-- Project license: **pending** (`docs/licensing.md`). Do not add a LICENSE file unless the team asks.
+- **Local servers.** API + PWA: `PYTHONPATH=src uvicorn fieldshift.api:app --reload` from the repo root (port 8000, API docs at `/docs`). Streamlit test harness: always `localhost:8501` (a Cloudflare tunnel exposes it to the team); never start it on another port (8502…): if 8501 is busy, stop that instance and restart it on 8501.
+- Project license: **MIT** (`LICENSE`, `docs/decisions/0003-project-license.md`). Every dependency and asset must stay compatible with it.
 
 ## Language
 - **Everything committed to the repo is in English** (NASA rule: page, slides and written materials in English).
@@ -53,5 +53,5 @@
 ## Skills (`.claude/skills/`)
 - Compliance: `nasa-dataset-check`, `log-ai-usage`, `add-dependency`, `record-decision`, `ux-review`, `submission-check`, `demo-builder`.
 - Core product: `nasa-power-fetch` → `agro-indicator` → `crop-traits` → `rotation-card`. Any derived number must be defined in `docs/indicators.md`; any crop value must have a source in `data/crops.csv`.
-- UI/UX (vendored third-party, do not edit their files): `design-taste-frontend` (art direction) → `frontend-design` (implementation) → `impeccable` (audit & refinement). Follow the hierarchy and conflict rules in `docs/ui-skills.md`; project rules (`docs/ux-guidelines.md`, Streamlit) override all three.
+- UI/UX (vendored third-party, do not edit their files): `design-taste-frontend` (art direction) → `frontend-design` (implementation) → `impeccable` (audit & refinement). Follow the hierarchy and conflict rules in `docs/ui-skills.md`; project rules (`docs/ux-guidelines.md`, decisions 0004/0005: mobile-first, < 200 KB of JS, no build step) override all three.
 - Security: run the built-in `/security-review` before merging a branch into `main` and before the demo goes public.
