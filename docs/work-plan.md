@@ -91,6 +91,23 @@ Each strategy gets `"labels": {"water": "good", ..., "overall": "neutral"}` (`ro
 
 **Points that are not demo fields.** NASA POWER answers in ~3 s, but the MODIS service (ORNL) can take minutes for a new point. The API waits for POWER (up to 60 s) and for MODIS only 3 s (`FIELDSHIFT_MODIS_WAIT_S`); if MODIS is not ready it answers anyway with `"pending": ["ndvi"]` and `likely_bare: null` in every month (bare-soil months unknown), while the MODIS download continues in the background. A retry joins that download instead of starting a new one; once it lands, the full profile is stored and `"pending": []`. **PWA:** show the results, say "satellite greenness still loading" when `pending` contains `ndvi`, and ask again after ~1 minute. Measured: new point ~6 s, same point afterwards < 0.3 s.
 
+### Predictions shape (P-01, P-03 — #37; P-02, P-07 in #38)
+`predictions.build_predictions(power_payload)` in `src/fieldshift/predictions.py` (pure function over the same POWER payload `climate.py` uses; no network). Proposed endpoint for #39: `GET /api/predictions?field=<slug>` (or `lat`, `lon`).
+
+```json
+{"period": "2005-2025",
+ "basis": "Statistics of NASA POWER daily data for the field's ~50 km cell. Not a weather forecast.",
+ "rain_weeks": [  // P-01: 52 weeks; week 1 = 1-7 Jan, week 52 includes 31 Dec
+   {"week": 48, "start": "11-26", "prob_rain": 0.76, "prob_useful_rain": 0.43, "mean_rain_mm": 20.1, "years": 21}],
+ "frost": {       // P-03: null dates = no frost in most years / never
+   "spring": {"years": 21, "years_with_frost": 17, "probability": 0.81,
+              "last_frost_median": "02-06", "last_frost_p90": "03-14"},
+   "autumn": {"years": 21, "years_with_frost": 5, "probability": 0.24,
+              "first_frost_median": null, "first_frost_p10": "12-03"},
+   "safe_days": 264}}
+```
+Values above are the real output for Vega de Antequera. UI wording (farmer sentences) in `docs/indicators.md` → Predictions.
+
 ## Suggested timeline (Europe/Madrid)
 | When | Milestone |
 |---|---|
