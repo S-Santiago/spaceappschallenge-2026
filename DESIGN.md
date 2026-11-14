@@ -5,14 +5,14 @@ The visual direction of the app and the rules that keep it consistent. Read with
 
 - **Surface mode:** Operate (Impeccable). The farmer comes to finish one task: compare rotations for their field.
   Familiar controls, plain words, precision over decoration.
-- **Use scene:** a farmer outdoors, on a low/mid-range Android phone, slow data, bright sun. Light theme is the
-  reference; the dark theme follows the phone setting and passes the same contrast checks.
+- **Use scene:** a farmer outdoors, on a low/mid-range Android phone, slow data, bright sun. The app has a
+  single light theme (soft green-white page) whatever the phone setting; there is no dark theme.
 
 ## 1. Where things live
 
 | What | File |
 |---|---|
-| Tokens (colours for light and dark, type scale, spacing, radius) and every component style | `web/styles.css` |
+| Tokens (colours, type scale, spacing, radius) and every component style | `web/styles.css` |
 | Page flow (masthead, four steps, button, feedback) and results view | `web/js/app.js` |
 | What to expect (predictions and alert cards) | `web/js/expect.js`, `web/js/expect-format.js` |
 | Plain-English sentences and number formatting | `web/js/format.js` |
@@ -26,17 +26,22 @@ component; add a token in `:root` instead. Every data string placed in HTML goes
 Derived from the Taste skill's palette deal for the closest trade it knows ("workshop" → *clay and pine*). Its cream
 ground was replaced by a near-white one: more contrast in sunlight, and cream is a common generated-UI default.
 
-| Token | Light | Dark | Use | Contrast |
-|---|---|---|---|---|
-| ground | `#FAFAF7` | `#121510` | page | — |
-| panel | `#EFEEE7` | `#1D211B` | quiet surfaces (location, trend rows) | — |
-| ink | `#1E231C` | `#ECEDE6` | text | 15.3 / 15.6 : 1 |
-| muted | `#545B50` | `#B1B7AA` | captions, labels | 6.7 / 9.0 : 1 |
-| line | `#CFCDC2` | `#3C4238` | hairlines | decorative |
-| accent (pine) | `#2E5B44` | `#3F8160` | primary button, selection, focus ring, score bars | white text 7.8 / 4.65 : 1 |
-| accent-ink | `#2E5B44` | `#8FCDA8` | accent used as text | 7.5 / 10 : 1 |
+Single light theme (no dark mode): a very soft green-white page (`#E8FFE8`, asked for by the team), lighter cards
+and white form controls so fields stand out from the page. Contrast measured against the page colour.
 
-Crop families (rotation strip fills, same in both themes, dark ink text ≥ 7.5 : 1, name always printed):
+| Token | Colour | Use | Contrast on ground |
+|---|---|---|---|
+| ground | `#E8FFE8` | page | — |
+| panel | `#F6FFF6` | quiet surfaces (location, trend rows, cards) | — |
+| surface | `#FFFFFF` | form controls, choice cards, buttons | — |
+| ink | `#1E231C` | text | 15.2 : 1 |
+| muted | `#545B50` | captions, labels | 6.7 : 1 |
+| line | `#BFD9C1` | hairlines | decorative |
+| accent (pine) | `#2E5B44` | primary button, selection, focus ring, score bars | 7.4 : 1 (white text on it 7.8 : 1) |
+| accent-ink | `#2E5B44` | accent used as text | 7.4 : 1 |
+| accent-soft | `#D2EED5` | selected option, best-fit card | ink 12.9 : 1 |
+
+Crop families (rotation strip fills, dark ink text ≥ 7.5 : 1, name always printed):
 cereal `#E3C26A` · legume `#9CC27A` · oilseed `#EFA445` · cover crop `#7FBFA6` · fallow `#C8B597` · other `#C9CCC2`.
 Chart: rain `#1F6FB2` (bars), water need `#B3541E` (dashed line with ◆), so the chart also reads in grayscale.
 
@@ -50,7 +55,7 @@ font. One family; fixed rem scale, ratio ≈ 1.2: h1 28 px, step h2 22 px, secti
 
 - Spacing scale 4 · 8 · 12 · 16 · 24 · 32 · 48 px (`--fl-s1` … `--fl-s7`). Page gutter 16 px (12 px ≤ 340 px).
 - Radius 6 / 8 / 12 px; buttons and inputs 8 px; tags fully round.
-- Touch targets ≥ 48 px (primary button 56 px); focus ring = 3 px accent + 5 px halo, visible on both themes.
+- Touch targets ≥ 48 px (primary button 56 px); focus ring = 3 px accent + 5 px halo, visible on the green page and on white controls.
 - Motion only as feedback: 140 ms press on buttons. `prefers-reduced-motion` removes the movement, keeps the states.
 
 ## 5. Components

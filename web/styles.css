@@ -1,10 +1,11 @@
 /* FarmLens PWA — design tokens and components from DESIGN.md (first built for the retired Streamlit harness).
-   Rules: body 16 px, secondary ≥ 14 px, targets ≥ 48 px, text contrast ≥ 4.5:1 in both themes,
+   Rules: body 16 px, secondary ≥ 14 px, targets ≥ 48 px, text contrast ≥ 4.5:1,
    no meaning by colour alone, system fonts only. */
 
 :root {
-  --ground: #FAFAF7; --panel: #EFEEE7; --ink: #1E231C; --muted: #545B50; --line: #CFCDC2;
-  --accent: #2E5B44; --accent-ink: #2E5B44; --accent-soft: #E1EBE4; --on-accent: #FFFFFF;
+  /* Light theme only: soft green-white page, lighter cards, white form controls. */
+  --ground: #E8FFE8; --panel: #F6FFF6; --surface: #FFFFFF; --ink: #1E231C; --muted: #545B50; --line: #BFD9C1;
+  --accent: #2E5B44; --accent-ink: #2E5B44; --accent-soft: #D2EED5; --on-accent: #FFFFFF;
   --warn-bg: #FBF1DC; --warn-line: #B7832A; --warn-strong: #8A5F14; --error-bg: #F8E4DE; --error-line: #A4432A;
   --rain: #1F6FB2; --need: #B3541E; --strip-ink: #1E231C;
   --good: #2E5B44; --fair: #B7832A; --poor: #A4432A;
@@ -12,16 +13,7 @@
   --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --target: 48px;
   --t-small: 0.875rem; --t-body: 1rem; --t-lead: 1.125rem; --t-h3: 1.125rem; --t-title: 1.25rem; --t-h2: 1.375rem; --t-h1: 1.75rem;
   --fast: 140ms;
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ground: #121510; --panel: #1D211B; --ink: #ECEDE6; --muted: #B1B7AA; --line: #3C4238;
-    --accent: #3F8160; --accent-ink: #8FCDA8; --accent-soft: #20342A;
-    --warn-bg: #2E2614; --warn-line: #D9A54A; --warn-strong: #D9A54A; --error-bg: #33201A; --error-line: #E08A6E;
-    --rain: #5DA3E0; --need: #E08A55;
-    --good: #3F8160; --fair: #D9A54A; --poor: #E08A6E;
-  }
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -76,7 +68,7 @@ label { font-weight: 600; }
 .choice {
   position: relative; display: flex; gap: var(--s3); align-items: flex-start; min-height: var(--target);
   padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--r-md);
-  background: var(--ground); cursor: pointer; font-weight: 400;
+  background: var(--surface); cursor: pointer; font-weight: 400;
 }
 .choice input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
 .choice:has(input:checked) { border: 2px solid var(--accent); padding: calc(var(--s3) - 1px) calc(var(--s4) - 1px); background: var(--accent-soft); }
@@ -91,7 +83,7 @@ label { font-weight: 600; }
 .segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; }
 .segmented span {
   display: grid; place-items: center; min-height: var(--target); border: 1px solid var(--line);
-  border-radius: var(--r-md); background: var(--ground); cursor: pointer; text-align: center; padding: 0 var(--s1);
+  border-radius: var(--r-md); background: var(--surface); cursor: pointer; text-align: center; padding: 0 var(--s1);
 }
 .segmented input:checked + span { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .segmented input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -99,7 +91,7 @@ label { font-weight: 600; }
 .prio-head { display: flex; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s1); }
 
 select, .crop-input, .place-search input {
-  width: 100%; min-height: var(--target); font: inherit; color: var(--ink); background: var(--ground);
+  width: 100%; min-height: var(--target); font: inherit; color: var(--ink); background: var(--surface);
   border: 1px solid var(--line); border-radius: var(--r-md); padding: 0 var(--s3);
 }
 .crop-input, .place-search input { font-size: max(16px, 1rem); } /* 16px+ stops iOS from zooming into the field */
@@ -114,7 +106,7 @@ select, .crop-input, .place-search input {
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
   min-height: var(--target); padding: 0 var(--s4); border-radius: var(--r-md); font: 600 var(--t-body)/1.2 inherit;
-  font-family: inherit; border: 1px solid var(--line); background: var(--ground); color: var(--ink); cursor: pointer;
+  font-family: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
   text-decoration: none; transition: transform var(--fast);
 }
 .btn:active { transform: scale(0.98); }
