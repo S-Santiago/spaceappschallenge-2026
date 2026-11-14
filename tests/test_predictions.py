@@ -39,10 +39,16 @@ def test_leap_years_use_non_leap_day_of_year():
     assert p._doy(date(2008, 3, 1)) == p._doy(date(2005, 3, 1)) == 60
 
 
-def test_percentile_matches_linear_interpolation():
-    assert p.percentile([0, 32, 64], 50) == 32
-    assert p.percentile([0, 32, 64], 90) == pytest.approx(57.6)
-    assert p.percentile([], 50) is None
+def test_rank_value_returns_observed_values_on_the_safe_side():
+    assert p.rank_value([0, 32, 64], 50, upper=True) == 32
+    assert p.rank_value([0, 32, 64], 90, upper=True) == 64  # rank 1.8 -> 2, never a blended 57.6
+    assert p.rank_value([324, 335, 366], 10, upper=False) == 324  # rank 0.2 -> 0
+    assert p.rank_value([], 50, upper=True) is None
+
+
+def test_no_invented_date_next_to_frost_free_years():
+    # 9 frost-free springs + 1 with last frost on day 100: linear interpolation would invent day ~90
+    assert p.rank_value([0] * 9 + [100], 90, upper=True) == 100
 
 
 # ------------------------------------------------------------------ P-01
@@ -85,10 +91,12 @@ def test_frost_dates_percentiles():
     assert f["spring"]["years_with_frost"] == 2
     assert f["spring"]["probability"] == 0.67
     assert f["spring"]["last_frost_median"] == "02-01"  # day 32
-    assert f["spring"]["last_frost_p90"] == "02-27"  # day 57.6 -> 58
+    assert f["spring"]["last_frost_p90"] == "03-05"  # rank 1.8 -> 2 -> day 64 (observed, safe side)
+    assert f["spring"]["years_by_p90"] == 3
     assert f["autumn"]["first_frost_median"] == "12-01"  # day 335
-    assert f["autumn"]["first_frost_p10"] == "11-22"  # day 326.2 -> 326
-    assert f["safe_days"] == 269  # 326.2 - 57.6
+    assert f["autumn"]["first_frost_p10"] == "11-20"  # rank 0.2 -> 0 -> day 324
+    assert f["autumn"]["years_from_p10"] == 3
+    assert f["safe_days"] == 260  # 324 - 64
 
 
 def test_frost_dates_without_any_frost():

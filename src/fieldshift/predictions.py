@@ -12,6 +12,7 @@ come in issue #38.
 from __future__ import annotations
 
 import calendar
+import math
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -52,15 +53,19 @@ def _doy(d: date) -> int:
     return date(REF_YEAR, d.month, min(d.day, 28) if d.month == 2 else d.day).timetuple().tm_yday
 
 
-def percentile(values: list[float], q: float) -> float | None:
-    """Linear-interpolation percentile (same as numpy's default), q in 0..100."""
+def rank_value(values: list[int], q: float, upper: bool) -> int | None:
+    """Nearest-rank percentile (q in 0..100) that always returns an observed value.
+
+    No interpolation, so a real frost date is never blended with the 0 / 366 "no frost" markers
+    into a date that never happened. `upper=True` rounds the rank up (later date: the safe side
+    for the last spring frost); `upper=False` rounds it down (earlier date: safe side for the
+    first autumn frost).
+    """
     if not values:
         return None
     s = sorted(values)
-    pos = (len(s) - 1) * q / 100
-    lo = int(pos)
-    hi = min(lo + 1, len(s) - 1)
-    return s[lo] + (s[hi] - s[lo]) * (pos - lo)
+    k = (len(s) - 1) * q / 100
+    return s[math.ceil(k)] if upper else s[math.floor(k)]
 
 
 # ------------------------------------------------------------------ P-01 weekly rain probability
@@ -116,13 +121,15 @@ def frost_dates(days: dict) -> dict:
     """P-03. Last spring frost (Jan-Jun) and first autumn frost (Jul-Dec), Tmin < FROST_C.
 
     Years without a frost in a half count as "no frost" (earliest possible for spring, latest for
-    autumn), so percentiles stay meaningful when frost is rare. Returns:
-    - spring: probability of any frost, median and 90th-percentile date of the last frost
-      ("9 years out of 10 the last frost came before ...")
-    - autumn: probability of any frost, median and 10th-percentile date of the first frost
-      ("9 years out of 10 the first frost came after ...")
-    - safe_days: days between the spring 90th percentile and the autumn 10th percentile
-    Dates are 'MM-DD'; None when no year had frost.
+    autumn), so percentiles stay meaningful when frost is rare. Percentiles are nearest-rank
+    observed dates, rounded to the safe side (see rank_value). Returns:
+    - spring: probability of any frost, median and ~90th-percentile date of the last frost, and
+      `years_by_p90` = how many years had their last frost on or before that date
+    - autumn ("first frost before 31 Dec"): probability, median and ~10th-percentile date of the
+      first frost, and `years_from_p10` = how many years had their first frost on or after it
+    - safe_days: days between the spring and autumn dates above
+    Dates are 'MM-DD'; None when no year had frost. Air Tmin at 2 m for a ~50 km cell: ground
+    frost and frost in valley bottoms can be later and harder than shown.
     """
     spring_doys, autumn_doys = [], []
     spring_with = autumn_with = 0
@@ -137,14 +144,14 @@ def frost_dates(days: dict) -> dict:
             autumn_doys.append(_doy(autumn[0]) if autumn else 366)
             autumn_with += bool(autumn)
 
-    def _date(doy: float | None, none_value: int) -> str | None:
-        return None if doy is None or round(doy) == none_value else _doy_to_mmdd(doy)
+    def _date(doy: int | None, none_value: int) -> str | None:
+        return None if doy is None or doy == none_value else _doy_to_mmdd(doy)
 
-    last_p50, last_p90 = percentile(spring_doys, 50), percentile(spring_doys, 90)
-    first_p50, first_p10 = percentile(autumn_doys, 50), percentile(autumn_doys, 10)
+    last_p50, last_p90 = rank_value(spring_doys, 50, upper=True), rank_value(spring_doys, 90, upper=True)
+    first_p50, first_p10 = rank_value(autumn_doys, 50, upper=False), rank_value(autumn_doys, 10, upper=False)
     safe = None
     if last_p90 is not None and first_p10 is not None:
-        safe = round(min(first_p10, 365) - max(last_p90, 0))
+        safe = min(first_p10, 365) - max(last_p90, 0)
     return {
         "spring": {
             "years": len(spring_doys),
@@ -152,6 +159,8 @@ def frost_dates(days: dict) -> dict:
             "probability": round(spring_with / len(spring_doys), 2) if spring_doys else None,
             "last_frost_median": _date(last_p50, 0),
             "last_frost_p90": _date(last_p90, 0),
+            # "In N of the last Y years the last frost came on or before last_frost_p90" (UI counts, not %)
+            "years_by_p90": sum(d <= last_p90 for d in spring_doys) if last_p90 is not None else None,
         },
         "autumn": {
             "years": len(autumn_doys),
@@ -159,6 +168,8 @@ def frost_dates(days: dict) -> dict:
             "probability": round(autumn_with / len(autumn_doys), 2) if autumn_doys else None,
             "first_frost_median": _date(first_p50, 366),
             "first_frost_p10": _date(first_p10, 366),
+            # "In N of the last Y years the first frost came on or after first_frost_p10"
+            "years_from_p10": sum(d >= first_p10 for d in autumn_doys) if first_p10 is not None else None,
         },
         "safe_days": safe,
     }
