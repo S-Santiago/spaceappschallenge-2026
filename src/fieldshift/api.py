@@ -2,7 +2,7 @@
 
 Run from the repo root:  PYTHONPATH=src uvicorn fieldshift.api:app --reload
 Endpoints and JSON are documented in docs/work-plan.md ("API"). No logic lives here: data comes from db.py,
-the climate profile from climate.py and the strategies from rotations.py.
+the climate profile from climate.py, the strategies from rotations.py and the predictions from predictions.py.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
-from . import climate, db, modis, power, rotations
+from . import climate, db, modis, power, predictions, rotations
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = Path(os.environ.get("FIELDSHIFT_WEB_DIR") or ROOT / "web")
@@ -145,6 +145,42 @@ async def analyze(req: AnalyzeRequest) -> dict:
             "pending": pending,  # ["ndvi"]: bare-soil months unknown yet, ask again in a few minutes
             "disclaimer": rotations.DISCLAIMER[req.lang],
             "score_limits": {k: v[req.lang] for k, v in rotations.SCORE_LIMITS.items()}}
+
+
+@app.get("/api/predictions")
+async def get_predictions(
+    field: str | None = Query(None, description="Demo field slug from GET /api/fields"),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lon: float | None = Query(None, ge=-180, le=180),
+    rotation: list[str] | None = Query(None, max_length=4,
+                                       description="Current rotation (crop ids, repeat the parameter); enables P-07 alerts"),
+    slope: Literal["flat", "moderate", "steep"] = "flat",
+) -> dict:
+    """Statistics over NASA history (P-01, P-02, P-03, P-07): predictions.build_predictions. Not a forecast."""
+    if field is not None:
+        location = db.get_location(field)
+        if location is None:
+            raise HTTPException(404, f"unknown field: {field}")
+        lat, lon = location["lat"], location["lon"]
+    elif lat is None or lon is None:
+        raise HTTPException(422, "give a demo `field` or both `lat` and `lon`")
+
+    crops = db.get_engine_crops()
+    unknown = [c for c in rotation or [] if c not in crops]
+    if unknown:
+        raise HTTPException(422, f"unknown crop: {', '.join(unknown)}")
+
+    try:  # same POWER path and cache as /api/analyze (demo fields are pre-loaded, never call NASA)
+        power_data = await asyncio.wait_for(asyncio.shield(_fetch("power", lat, lon)), POWER_TIMEOUT_S)
+    except Exception as exc:
+        raise HTTPException(503, "NASA climate data is not available for this point right now. "
+                                 "Try again in a few minutes or use a demo field.") from exc
+    modis_data = db.get_raw("modis", lat, lon)  # only if already downloaded: never wait for MODIS here
+
+    result = predictions.build_predictions(power_data, modis_data, [crops[c] for c in rotation] if rotation else None)
+    for alert in result["alerts"] or []:
+        alert["level"] = predictions.raise_for_slope(alert["level"], slope)
+    return result
 
 
 @app.get("/api/analyses/{analysis_id}")
