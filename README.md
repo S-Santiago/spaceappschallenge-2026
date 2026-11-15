@@ -9,7 +9,7 @@
 | **Event** | NASA Space Apps Challenge 2026 · Local event: Málaga (42 Málaga Fundación Telefónica) |
 | **Dates** | 14–15 November 2026 · Development started Sat 14, 09:00 local time |
 | **Official deadline** | Sun 15 November 2026, **before 23:59** local time (Submit for Judging) |
-| **Status** | 🚧 In development |
+| **Status** | ✅ MVP ready for judging · public demo live (see [§5](#5-how-to-run-it)) |
 | **License** | [MIT](LICENSE) (code & docs). NASA data and third-party components keep their own terms — see [`docs/licensing.md`](docs/licensing.md) |
 
 ---
@@ -29,10 +29,10 @@ They face a hard, recurring decision: **which crops to rotate next season**. The
 - **Heat:** in the inland plains, the average July maximum is already about **40 °C** (NASA POWER, Antequera area).
 - **Water:** rain-fed fields get only around **470–510 mm of rain a year**, and irrigated farms in the Guadalhorce valley face **drought restrictions**.
 - **Soil:** fields left bare after harvest are exposed to heavy autumn storms that wash soil away.
+- **It is getting worse:** comparing 2016–2025 with 2005–2014 (NASA POWER), the Antequera plain gets **15 % less rain** and **13 more days a year above 35 °C**; around Campillos rain is down 9 % with 14 more very hot days, and in the Guadalhorce valley rain is down 14 %.
 
 Choosing a new crop is risky: a crop that improves the soil may need too much water, not fit the season or not sell locally. Satellite and climate data that could help exist, but they are not available in a form a farmer can use on a cheap phone.
 
-<!-- TODO (#9): add 1–2 trend numbers from climate.py (2005–2014 vs 2016–2025: rain change %, extra heat days) for F1 and F2. -->
 
 **Who we design for (fictional personas):** *Antonio*, 58, 40 ha of rain-fed durum wheat and sunflower near Antequera; *Carmen*, 45, 8 ha of irrigated maize, alfalfa and faba bean in the Guadalhorce valley. Details in [`docs/challenge.md`](docs/challenge.md#demo-personas-fictional).
 
@@ -53,7 +53,13 @@ Choosing a new crop is risky: a crop that improves the soil may need too much wa
 | 📈 **What is changing**: last 10 years vs previous 10 (rain, hot days) | NASA POWER |
 | 🔄 **Current rotation + 3 alternatives**, each with a score and an explanation | Climate profile + crop catalogue (sourced) + farmer inputs |
 
-<!-- TODO (#13): add a phone screenshot of the results here (assets/), no personal data. -->
+<p align="center">
+  <img src="docs/pitch/screenshots/01-start-form-antequera.png" alt="FarmLens start form on a phone: pick a demo field, current rotation, priorities and farm" width="240">
+  <img src="docs/pitch/screenshots/03-rotation-options-antequera.png" alt="FarmLens results on a phone: current rotation and three alternatives with scores" width="240">
+  <img src="docs/pitch/screenshots/04-what-to-expect-heavy-rain-alert-antequera.png" alt="FarmLens What to expect tab with a heavy-rain alert for bare-soil months" width="240">
+</p>
+
+*Real app screens (360 px phone, Antequera demo field). More in [`docs/pitch/screenshots/`](docs/pitch/screenshots/).*
 
 Required by the challenge — for **at least three rotation strategies (including the current one)** the tool explains: why it was suggested · supporting evidence · benefits · information gaps · risks needing local review. It supports, and does not replace, farmers' judgment.
 
@@ -178,8 +184,9 @@ Honest status — updated as the work lands (built · simulated · next).
 | Climate indicators (field calendar, trends) and predictions (statistics over 2005–2025, not forecasts) | ✅ Built |
 | Rotation engine (current + 3 alternatives) | ✅ Built |
 | Database, crop catalogue, offline demo fields | ✅ Built |
-| Tested on a real low-end Android phone | 🔧 In progress (#14) |
-| Public link | 🔧 Next (#15) |
+| Tested on a real low-end Android phone | 🔧 In progress (#74) — measured so far with Lighthouse mobile (simulated Slow 4G) and headless Chrome at 360 px |
+| Public link | ✅ Built — Google Cloud Run, Madrid (decision 0008) |
+| Landing page for the jury (`/pitch/`) | ✅ Built — real engine results for the 3 demo fields (#95) |
 | Streamlit UI (early test harness) | Retired — replaced by the PWA (decision 0004) |
 
 **Known limits:** NASA POWER describes a ~55 km area, not the plot; root-zone soil wetness is a model estimate; MODIS covers only 2024–2025 at 250 m; crop market values are illustrative. Details: [`docs/architecture.md`](docs/architecture.md#known-limitations).
