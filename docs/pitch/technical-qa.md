@@ -1,6 +1,6 @@
 # Technical Q&A notes (jury)
 
-Short answers for the Málaga pitch Q&A (#44). Numbers are for the demo fields and come from our own runs on the committed NASA samples (`data/samples/`, 2026-11-14). **Status words:** *built* = in `main` and tested · *planned* = issue open, not built yet.
+Short answers for the Málaga pitch Q&A (#44). Numbers are for the demo fields and come from our own runs on the committed NASA samples (`data/samples/`, rechecked 2026-11-15). **Status words:** *built* = in `main` and tested · *planned* = issue open, not built yet.
 
 ## Methods — "How does it work?"
 - **Data in (built):** NASA POWER daily point API, 2005–2025: max/min temperature, corrected rain, root-zone soil wetness, solar radiation, dew point, wind. MODIS MOD13Q1 NDVI (250 m), 2024–2025, through the ORNL DAAC web service. Neither needs a login or an API key.
@@ -10,7 +10,7 @@ Short answers for the Málaga pitch Q&A (#44). Numbers are for the demo fields a
 - **Predictions (built, `predictions.py`):** statistics over 21 years of NASA data, **no AI or machine learning**, always labelled "not a weather forecast". P-01: chance of rain in each week. P-02: chance of a heavy-rain day (≥ 20 mm) in each month, and the rain expected once every 2, 5 and 10 years (Gumbel distribution fitted by L-moments). P-03: last spring and first autumn frost dates (percentiles). P-07: alerts when heavy rain usually comes while the field is bare.
 - **Example, Vega de Antequera:** last spring frost by 14 March in 19 of 21 years. Heavy rain expected once every 10 years: ~48 mm in a day; the largest day in 21 years was 52.7 mm (13 Nov 2024, the DANA storm), so the data catches real events. Wettest week for useful rain (≥ 10 mm): from 29 October, in 62 % of years.
 - **"Why 20 mm for predictions but 30 mm in the climate calendar?"** P-02 uses the international ETCCDI "very heavy rain" index (R20mm) so its probabilities are comparable; the calendar's 30 mm (I-07) is a stricter team rule for erosive storms. Both are documented in `docs/indicators.md`.
-- **Tests (built):** 128 pytest tests, including hand-checked values and the FAO-56 examples.
+- **Tests (built):** 112 pytest tests (engine, predictions, API, database) and 53 Node tests for the app, including hand-checked values and the FAO-56 examples.
 
 ## Why these thresholds?
 | Threshold | Why | Honest caveat |
@@ -48,8 +48,10 @@ SMAP soil moisture, GPM IMERG rain, ECOSTRESS and Landsat need an Earthdata logi
 - The NASA APIs we use need **no keys**, so there are no secrets in the repository. Anything secret would go in `.env`, which git ignores.
 - **No personal data.** An analysis stores only the field inputs (rotation, priorities, irrigation, slope) and coordinates rounded to 2 decimals (~1 km). No names, accounts or phone numbers.
 - The API checks every input (Pydantic models): unknown crops or fields are rejected with 422/404.
-- `/security-review` was run on the engine branch with no findings. It runs again before the demo goes public.
-- Demo fields work offline: their NASA data is pre-loaded, so the demo does not depend on NASA being reachable.
+- `/security-review` was run on the engine and the "limits" branches with no findings. Everything the app shows from the API is HTML-escaped.
+- **Notifications stay on the phone.** Heavy-rain warnings are local notifications: no push server, no subscription, nothing leaves the phone. The app asks for permission only after the farmer taps "Warn me". Tested on a real Android phone. iPhone support for web notifications is limited.
+- **Offline:** the app shell, the last analyses and the predictions are kept on the phone, so results open again without a connection. The demo fields' NASA data is pre-loaded on the server, so the demo does not depend on NASA being reachable.
+- **Hosting:** public demo on Hugging Face Spaces (Docker, free tier, HTTPS). It sleeps only after ~48 h without visits; we open it before the pitch. The disk is temporary, which is fine because the database is rebuilt from committed seeds (decision 0006).
 
 ## Science lens ("Is it sound? What is the resolution?")
 - POWER meteorology: ½° × ⅝° (≈ 55 km at Málaga), MERRA-2 reanalysis, API v2.10.3. MODIS: 250 m, 16-day composites (MOD13Q1 v061).
