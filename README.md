@@ -54,12 +54,13 @@ Choosing a new crop is risky: a crop that improves the soil may need too much wa
 | 🔄 **Current rotation + 3 alternatives**, each with a score and an explanation | Climate profile + crop catalogue (sourced) + farmer inputs |
 
 <p align="center">
-  <img src="docs/pitch/screenshots/01-start-form-antequera.png" alt="FarmLens start form on a phone: pick a demo field, current rotation, priorities and farm" width="240">
-  <img src="docs/pitch/screenshots/03-rotation-options-antequera.png" alt="FarmLens results on a phone: current rotation and three alternatives with scores" width="240">
-  <img src="docs/pitch/screenshots/04-what-to-expect-heavy-rain-alert-antequera.png" alt="FarmLens What to expect tab with a heavy-rain alert for bare-soil months" width="240">
+  <img src="docs/pitch/screenshots/01-start-form-antequera.png" width="180" alt="FarmLens start screen: pick an example field">
+  <img src="docs/pitch/screenshots/03-rotation-options-antequera.png" width="180" alt="Current rotation and three alternatives with scores">
+  <img src="docs/pitch/screenshots/02a-climate-calendar-antequera.png" width="180" alt="Field through the year: rain, water loss, bare soil, hot and frost days">
+  <img src="docs/pitch/screenshots/04-what-to-expect-heavy-rain-alert-antequera.png" width="180" alt="What to expect: heavy-rain risk on bare soil, based on 21 years of NASA data">
 </p>
 
-*Real app screens (360 px phone, Antequera demo field). More in [`docs/pitch/screenshots/`](docs/pitch/screenshots/).*
+*Real screenshots of the app (Vega de Antequera demo field, 360 px wide, 15 Nov 2026). Not AI-generated.*
 
 Required by the challenge — for **at least three rotation strategies (including the current one)** the tool explains: why it was suggested · supporting evidence · benefits · information gaps · risks needing local review. It supports, and does not replace, farmers' judgment.
 
