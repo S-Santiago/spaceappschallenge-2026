@@ -31,10 +31,25 @@ Backlog = GitHub issues · one **milestone per sprint** · epic #16.
 | **S1 · App + real data** | Sat 15:00–18:30 | API serving the real engine; installable PWA showing real results for the demo fields; prediction functions specified | **17:30** official mentoring review (show progress) · **18:30** sprint review: real results in the PWA on a phone |
 | **S2 · Predictions & alerts** | Sat 18:30–22:30 | Prediction functions implemented and tested; "What to expect" screen with alert cards; offline for demo fields; public URL | **22:30** review: keep or cut each feature |
 | *Rest* | Night | — | — |
-| **S3 · Polish & harden** | Sun 09:00–13:00 | UX launch route GO, no red alert, performance < 3 s, security review, README; Android notification (stretch) | **13:00** content freeze |
-| **S4 · Demo & submission** | Sun 13:00–16:00 | ≤ 7 slides or ≤ 30 s video, Project page, rehearsal | **15:00** `main` frozen · **16:00 Submit for Judging** · 16:30 tech test · 17:30 pitch |
+| **S3 · Polish & harden** | Sun 09:00–12:30 | Public demo link live, UX launch route GO, no red alert, performance < 3 s, README; real Android check | **11:00** stand-up at breakfast (public link? slide draft?) · **12:30** content freeze |
+| **S4 · Demo & submission** | Sun 14:00–16:15 | ≤ 7 slides or ≤ 30 s video, Project page, rehearsal | **15:00** `main` frozen · **16:15 Submit for Judging** · 16:45–17:15 local submission check · 17:30 pitch |
 
-Submitting at 16:00 (not 23:59) removes last-minute risk; after any later change: Save Progress + Submit again.
+Submitting by 16:15 (not 23:59) removes last-minute risk and means the organizers see a complete submission at the 16:45 local check; after any later change: Save Progress + Submit again.
+
+### Sunday agenda (organizers) and our working blocks
+| Time | Organizers | Team |
+|---|---|---|
+| 09:00–11:00 | — | **Block 1**: public demo link (#75/#76), real Android test (#74), slide draft (#5), README (#4), limits texts (#44) |
+| 11:00–11:30 | Breakfast | 10-min stand-up |
+| 11:30–12:30 | — | **Block 2**: `/submission-check`, final `/ux-review`, README TODOs, draft the NASA Project page (summary, NASA data, AI use); check the team is complete on the official platform |
+| 12:30 | Everyone on stage: what to submit, how and where | Note any rule change |
+| 13:00 | Pitch workshop | Whole team |
+| 14:00–15:00 | — | **Block 3**: fixes after the briefing, final slides |
+| 15:00 | — | `main` frozen (every merge redeploys the public demo) |
+| 15:00–16:15 | — | Pitch rehearsal with all 4 + jury Q&A; **Submit for Judging** and check the confirmation |
+| 16:30 | — | Open the public link to wake the Space |
+| 16:45–17:15 | **Local submission and review check** for the presentations | Everyone present, everything ready |
+| 17:30 | Presentations start | Pitch |
 
 ## Prediction functions (data analysis, no AI)
 Statistics over NASA POWER 2005–2025 and MODIS NDVI, defined in `docs/indicators.md` before coding:
@@ -61,4 +76,4 @@ Always labelled "based on the last 20 years of NASA data" — **not** a weather 
 | **S1** | #35 PWA shell: manifest, service worker, 4-step form wired to the API | #36 FastAPI exposing fields, crops, analysis; close #6–#8 | *(away)* | Ceremonies · **#37** specify P-01…P-07, implement P-01, P-03 |
 | **S2** | #40 Results + "What to expect" screens, offline cache | #39 Predictions/alerts endpoints, precomputed demo payloads, deploy public URL | *(away)* | Ceremonies · **#38** implement P-02, P-07 (+ stretch P-04…P-06) · #41 register methods, `/ux-review` |
 | **S3** | Performance, error/empty states; Android notification (stretch) | Offline & API tests, hosting warm-up | #44 Limits & uncertainty texts; CMIP6 (stretch) — fallback owner Sebastian | Pitch storyline + slide draft · `/security-review`, `/submission-check`, README final |
-| **S4** | Screenshots, tech test | Check public link on several phones | Technical Q&A answers | Slides/video, Project page, Submit for Judging, rehearsal |
+| **S4** | Screenshots, wake the public link before the 16:45 check | Check public link on several phones | Technical Q&A answers | Slides/video, Project page, Submit for Judging, rehearsal |
