@@ -61,7 +61,8 @@ secondary 16 px (nothing on screen below 16 px except chart axis labels). Senten
 - Spacing scale 4 · 8 · 12 · 16 · 24 · 32 · 48 px (`--s1` … `--s7`). Page gutter 16 px.
 - Radius 6 / 8 / 12 px; tags fully round.
 - Every target ≥ 48 px with ≥ 8 px between neighbours; primary button 56 px, full width. Focus ring 3 px accent.
-- Motion only as feedback (140 ms press, spinner). `prefers-reduced-motion` removes the movement, keeps the states.
+- Motion only as feedback (140 ms press, spinner, the loading scene, a ≤ 300 ms fade/slide-in of the results after an
+  analysis). Only `transform` and `opacity` move. `prefers-reduced-motion` removes the movement, keeps the states.
 
 ## 5. Components
 
@@ -75,11 +76,12 @@ secondary 16 px (nothing on screen below 16 px except chart axis labels). Senten
 | Level meter | Word + bar + number everywhere a score shows ("Good ▬▬▬ 76/100"). Bar fill: good = accent, fair = ochre, poor = tan, the last two with a dark outline (≥ 3 : 1). Bar hidden from screen readers. |
 | Option cards | Only for rotation options. Visible: title, strip, why, overall meter, "Check on your farm before deciding". Under **More detail** (`<details>`): the four sub-scores, evidence (codes turned into "Confidence: … · Sources: …"), benefits, information gaps. |
 | Banners | 1 px border in the state shade + tint + icon on the left. Feedback appears right under the button that caused it. |
+| Loading (signature) | "Field story" (`web/js/scene.js`): a small hand-drawn inline SVG above the stage list that follows the real request — a generic satellite passes (NASA data), its beam scans the field (satellite photos), the crop plots grow once the answer is in (comparing rotations, ≤ 300 ms, skipped when the answer is instant). The scene is `aria-hidden`; the stage list (check · spinner · dot) and one polite live region, filled once per stage, carry the meaning; elapsed seconds from 3 s. Lighter, still variants for app start (plots grow once), map and What to expect. No NASA logo or insignia. |
 | Disclosures | `<details>` with a drawn chevron, accent label, 48 px row. |
 | Icons | Hand-drawn inline SVG in `web/js/icons.js`: 24 px, 2 px stroke, `currentColor`, `aria-hidden="true"`, always next to a word. **No emoji or Unicode pictograms anywhere in `web/`** (they render differently or as boxes on cheap phones and wash out in sunlight); `tests/test_pwa.py` fails if one appears. No icon font, no icon library. |
 
 ## 6. Rejected on purpose
 
-Gradients, glass, decorative shadows, hero images, entrance animations, custom web fonts, eyebrow labels above
+Gradients, glass, decorative shadows, hero images, entrance animations (the loading scene and the results fade are feedback, not entrances), custom web fonts, eyebrow labels above
 headings, a modal for anything, emoji as icons, grey text. Taste's marketing-site rules (photographs, one section per
 screen, dealt moments) do not apply to the app (`docs/ui-skills.md` §4).

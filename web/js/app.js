@@ -9,6 +9,7 @@ import {
   levelText, limitsDetails, ndviMissing, num, plainEvidence, trendFacts,
 } from "./format.js";
 import { icon, withIcon } from "./icons.js";
+import { quietLoader, stageMark, stageStates, storyLoader } from "./scene.js";
 import { findPlace, inMalaga, mountMap, roundPoint } from "./map.js";
 
 const app = document.getElementById("app");
@@ -48,6 +49,11 @@ const SCORE_ROWS = [
 ];
 const FAMILY_LABEL = { cereal: "Cereal", legume: "Legume", oilseed: "Oilseed", forage: "Forage", cover: "Cover crop", fallow: "Fallow", other: "Other" };
 const STAGES = ["Getting NASA data…", "Checking satellite photos of your field…", "Comparing rotations…"];
+const FINALE_AFTER_MS = 800; // the loader was on screen long enough to be seen
+const FINALE_MS = 300;
+const LIVE_DELAY_MS = 100;
+const LOADER_DELAY_MS = 250; // instant answers (demo fields) never show the loader       // plots grow, then the results appear (styles.css .progress--story)
+const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const LITTLE_COVER_NDVI = 0.35; // calendar word "Little cover" between Bare (<0.25) and Green (docs/indicators.md I-09)
 
 const state = {
@@ -138,7 +144,7 @@ function banner(kind, title, text, actions = "") {
 // ------------------------------------------------------------------ boot
 
 async function boot() {
-  app.innerHTML = `<p class="muted" role="status">Loading FarmLens…</p>`;
+  app.innerHTML = quietLoader("Loading FarmLens…", "start");
   try {
     // One after the other: on a fresh server the first DB access builds the database (db.init_db),
     // and two parallel first requests can collide there.
@@ -379,10 +385,12 @@ function onChange(e) {
 async function openMap() {
   if (state.mapApi) return;
   const el = $("#map");
-  el.innerHTML = `<p class="small muted" style="padding:16px">Loading the map…</p>`;
+  el.innerHTML = quietLoader("Loading the map…", "map");
   try {
-    el.innerHTML = "";
+    // The loader stays while the map library downloads (it used to be cleared at once), then goes.
+    const loader = el.firstElementChild;
     state.mapApi = await mountMap(el, state.point, (p) => { state.point = p; updateWhere(); $("#feedback").innerHTML = ""; });
+    loader.remove();
   } catch {
     el.innerHTML = `<p class="small" style="padding:16px">The map could not load. Check your connection, or tap <strong>Use my location</strong>.</p>`;
   }
@@ -428,13 +436,24 @@ async function runAnalysis(next = "#/results") {
   state.busy = true;
   buttons.forEach((b) => { b.disabled = true; });
   app.querySelectorAll(".js-analyze").forEach((b) => { b.textContent = "Analyzing…"; });
-  feedback.innerHTML = `<div class="progress" role="status"><ol class="stages">${STAGES.map((s) => `<li><span class="mark" aria-hidden="true">·</span>${s}</li>`).join("")}</ol><p class="small muted" id="elapsed"></p></div>`;
+  feedback.innerHTML = storyLoader(STAGES);
   reveal(feedback);
-  const items = [...feedback.querySelectorAll(".stages li")];
-  const setStage = (i) => items.forEach((li, j) => {
-    li.className = j < i ? "done" : j === i ? "active" : "";
-    li.querySelector(".mark").innerHTML = j < i ? icon("check") : j === i ? '<span class="spin"></span>' : "·";
-  });
+  const panel = feedback.querySelector(".progress");
+  const showLoader = setTimeout(() => panel.classList.add("is-shown"), LOADER_DELAY_MS);
+  const items = [...panel.querySelectorAll(".stages li")];
+  let shown = -1;
+  // Each stage is announced once in the live region; the scene follows data-stage (DESIGN.md "Loading").
+  const setStage = (i) => {
+    if (i <= shown) return; // stages only go forward (the timer keeps ticking during the finale)
+    shown = i;
+    panel.dataset.stage = String(i);
+    stageStates(items.length, i).forEach((st, j) => {
+      items[j].className = st;
+      items[j].querySelector(".mark").innerHTML = stageMark(st);
+    });
+    // A live region added in the same task as its text is often not read: fill it on the next turn of the loop.
+    if (i < items.length) setTimeout(() => { const live = $("#stage-live"); if (live) live.textContent = STAGES[i]; }, LIVE_DELAY_MS);
+  };
   // The API does the three stages in one request (POWER, then MODIS, then the rotation engine), so the list
   // follows the typical timing: POWER answers in ~2 s, MODIS is the slow one for a new point.
   setStage(0);
@@ -443,13 +462,16 @@ async function runAnalysis(next = "#/results") {
     const s = Math.round((Date.now() - started) / 1000);
     if (s >= 2) setStage(1);
     const el = $("#elapsed");
-    if (el && s >= 5) el.textContent = `${s} seconds · ${free ? "A new place takes up to 1 minute the first time." : "Still working…"}`;
+    if (el && s >= 3) el.textContent = `${s} seconds · ${free ? "A new place takes up to 1 minute the first time." : "Still working…"}`;
   }, 500);
 
   const body = inputs();
   try {
     const { data, saved } = await api.analyze(body, { freePoint: free });
     setStage(2);
+    // The answer is here. After a visible wait, let the plots grow (<= 300 ms, CSS) before the results replace the
+    // loader; an instant answer (demo fields, saved results) goes straight on, with no added delay.
+    if (Date.now() - started > FINALE_AFTER_MS && !reducedMotion()) await new Promise((r) => setTimeout(r, FINALE_MS));
     state.result = { data, inputs: body, at: saved || new Date().toISOString(), saved: saved !== null, label: free ? `your point (${fmtCoords(body.lat, body.lon)})` : fieldInfo()?.name || "your field" };
     watchPending(state.result);
     setStage(3);
@@ -471,6 +493,7 @@ async function runAnalysis(next = "#/results") {
     });
   } finally {
     clearInterval(tick);
+    clearTimeout(showLoader);
     state.busy = false;
     buttons.forEach((b) => {
       if (!b.isConnected) return;
@@ -705,7 +728,7 @@ async function loadExpect() {
   if (state.predictions?.key === key) {
     try { await show(state.predictions.data); return; } catch { /* the view module failed to load: fall through */ }
   }
-  panel.innerHTML = `<div class="progress" role="status"><ol class="stages"><li class="active"><span class="mark" aria-hidden="true"><span class="spin"></span></span>Loading what to expect from NASA history…</li></ol></div>`;
+  panel.innerHTML = quietLoader("Loading what to expect from NASA history…", "expect");
   try {
     const [{ data, saved }] = await Promise.all([api.getPredictions(result.inputs, { freePoint: free }), import("./expect.js")]);
     state.predictions = { key, data, saved };
@@ -826,6 +849,7 @@ function route() {
       $(`#tab-${tab}`).focus({ preventScroll: true }); // switching tabs: keep the place, focus stays on the tab
     } else {
       window.scrollTo(0, 0);
+      enter(app);
       $("#r-title").focus({ preventScroll: true });
     }
   } else {
@@ -838,6 +862,13 @@ function route() {
     renderForm();
     if (state.step > 1) $(`#s${state.step}`).focus({ preventScroll: true });
   }
+}
+
+/** Results arriving from the form: one short fade/slide-in (styles.css .enter, <= 300 ms; none with reduced motion). */
+function enter(el) {
+  el.classList.remove("enter");
+  void el.offsetWidth; // restart the animation for a new analysis
+  el.classList.add("enter");
 }
 
 function decodeHashKey(hash) {
