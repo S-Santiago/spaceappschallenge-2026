@@ -203,6 +203,14 @@ def save_raw(source: str, lat: float, lon: float, payload: Any) -> None:
 # --- climate profiles (shape 1) ------------------------------------------------------------------
 
 
+def has_raw(source: str, lat: float, lon: float) -> bool:
+    """True when the raw payload is stored (cheap: does not read it)."""
+    with connect() as conn:
+        return conn.execute(
+            "SELECT 1 FROM nasa_raw WHERE source = ? AND lat = ? AND lon = ?", (source, *_key(lat, lon))
+        ).fetchone() is not None
+
+
 def get_profile(lat: float, lon: float, version: str | None = None) -> dict | None:
     """Stored profile for the point; if `version` is given, only a profile computed by that version."""
     with connect() as conn:

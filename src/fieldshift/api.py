@@ -17,11 +17,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
-from . import climate, db, modis, power, predictions, rotations
+from . import climate, db, modis, power, predictions, progress, rotations
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = Path(os.environ.get("FIELDSHIFT_WEB_DIR") or ROOT / "web")
@@ -107,11 +107,18 @@ def _fetch(source: str, lat: float, lon: float) -> asyncio.Task:
     task = _inflight.get(key)
     if task is None:
         fetch = power.fetch_daily if source == "power" else modis.fetch_ndvi
-        task = _inflight[key] = asyncio.create_task(fetch(lat, lon))
+        entry = progress.start(source, lat, lon)
+        token = progress.current.set(entry)  # the task copies this context: modis.py reports its batches
+        try:
+            task = _inflight[key] = asyncio.create_task(fetch(lat, lon))
+        finally:
+            progress.current.reset(token)
 
         def done(t: asyncio.Task) -> None:
             _inflight.pop(key, None)
-            if not t.cancelled() and t.exception() is not None and source == "modis":
+            failed = t.cancelled() or t.exception() is not None
+            progress.finish(entry, ok=not failed)
+            if failed and source == "modis":
                 _modis_failed[key[1:]] = time.monotonic()
 
         task.add_done_callback(done)
@@ -223,6 +230,18 @@ async def get_predictions(
     for alert in result["alerts"] or []:
         alert["level"] = predictions.raise_for_slope(alert["level"], slope)
     return result
+
+
+@app.get("/api/progress")
+def get_progress(
+    response: Response,
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+) -> dict:
+    """Live progress of the NASA downloads for a new map point (counters only, never cached). Poll every ~2 s."""
+    response.headers["Cache-Control"] = "no-store"
+    stored = {source: db.has_raw(source, lat, lon) for source in ("power", "modis")}  # demo fields, earlier points
+    return progress.snapshot(lat, lon, stored=stored, tries_max=modis.RETRIES)
 
 
 @app.get("/api/analyses/{analysis_id}")

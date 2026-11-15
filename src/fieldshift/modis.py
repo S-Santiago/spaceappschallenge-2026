@@ -10,7 +10,7 @@ import asyncio
 
 import httpx
 
-from . import cache
+from . import cache, progress
 
 ORNL_URL = "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset"
 BAND = "250m_16_days_NDVI"
@@ -26,7 +26,7 @@ def _chunks() -> list[tuple[str, str]]:
     return [(dates[i], dates[min(i + 9, len(dates) - 1)]) for i in range(0, len(dates), 10)]
 
 
-async def _fetch_chunk(client: httpx.AsyncClient, lat: float, lon: float, start: str, end: str) -> list:
+async def _fetch_chunk(client: httpx.AsyncClient, lat: float, lon: float, start: str, end: str, index: int = 0) -> list:
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -46,6 +46,7 @@ async def _fetch_chunk(client: httpx.AsyncClient, lat: float, lon: float, start:
             retryable = isinstance(exc, httpx.TransportError) or exc.response.status_code >= 500
             if not retryable or attempt == RETRIES - 1:
                 raise
+            progress.batch_try(index, attempt + 2)  # live progress only (GET /api/progress)
             await asyncio.sleep(2 * 2**attempt)
     return []
 
@@ -57,8 +58,16 @@ async def fetch_ndvi(lat: float, lon: float) -> dict:
     if cached:
         return cached
 
+    chunks = _chunks()
+    progress.batches(len(chunks))
+
+    async def batch(client: httpx.AsyncClient, index: int, start: str, end: str) -> list:
+        result = await _fetch_chunk(client, lat, lon, start, end, index)
+        progress.batch_done(index)
+        return result
+
     async with httpx.AsyncClient(timeout=120) as client:
-        results = await asyncio.gather(*(_fetch_chunk(client, lat, lon, s, e) for s, e in _chunks()))
+        results = await asyncio.gather(*(batch(client, i, s, e) for i, (s, e) in enumerate(chunks)))
 
     points = []
     for chunk in results:
