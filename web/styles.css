@@ -117,6 +117,7 @@
   --grow-once-step: 150ms;
   --enter-time: 240ms;  /* results fade/slide in after an analysis */
   --enter-shift: 8px;
+  --loader-delay: 250ms; /* show the analysis loader only when the answer is not instant */
   --sprout: 0.25;       /* plot height before the rotations are compared */
   --press: 0.98;
   --disabled: 0.6;
@@ -349,6 +350,9 @@ select, .crop-select, .crop-input, .place-search input {
 
 /* Field story scene (scene.js): decorative, aria-hidden; only transform and opacity move. Stage 0 NASA data:
    the satellite passes. Stage 1 satellite photos: its beam scans. Stage 2 comparing rotations: the plots grow. */
+/* No flash for instant answers (demo fields): the loader only shows if the request is still running after this. */
+.progress--story { animation: appear var(--fast) ease-out var(--loader-delay) both; }
+@keyframes appear { from { opacity: 0; } }
 .scene { display: block; width: 100%; height: auto; margin-bottom: var(--s3); border-radius: var(--r-md); background: var(--ground); }
 .scene .orbit { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 5; }
 .scene .sat rect { fill: var(--accent); }

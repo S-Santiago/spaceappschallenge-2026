@@ -50,7 +50,8 @@ const SCORE_ROWS = [
 const FAMILY_LABEL = { cereal: "Cereal", legume: "Legume", oilseed: "Oilseed", forage: "Forage", cover: "Cover crop", fallow: "Fallow", other: "Other" };
 const STAGES = ["Getting NASA data…", "Checking satellite photos of your field…", "Comparing rotations…"];
 const FINALE_AFTER_MS = 800; // the loader was on screen long enough to be seen
-const FINALE_MS = 300;       // plots grow, then the results appear (styles.css .progress--story)
+const FINALE_MS = 300;
+const LIVE_DELAY_MS = 100;       // plots grow, then the results appear (styles.css .progress--story)
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const LITTLE_COVER_NDVI = 0.35; // calendar word "Little cover" between Bare (<0.25) and Green (docs/indicators.md I-09)
 
@@ -448,8 +449,8 @@ async function runAnalysis(next = "#/results") {
       items[j].className = st;
       items[j].querySelector(".mark").innerHTML = stageMark(st);
     });
-    const live = $("#stage-live");
-    if (live && i < items.length) live.textContent = STAGES[i];
+    // A live region added in the same task as its text is often not read: fill it on the next turn of the loop.
+    if (i < items.length) setTimeout(() => { const live = $("#stage-live"); if (live) live.textContent = STAGES[i]; }, LIVE_DELAY_MS);
   };
   // The API does the three stages in one request (POWER, then MODIS, then the rotation engine), so the list
   // follows the typical timing: POWER answers in ~2 s, MODIS is the slow one for a new point.
