@@ -1,1 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#285943"/><path d="M14 46h36M14 38h36M14 30h36" stroke="#D9A441" stroke-width="4" stroke-linecap="round"/><circle cx="44" cy="18" r="7" fill="#8BAF70"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>FarmLens</title>
+  <defs>
+    <clipPath id="field"><path d="M118 432C200 372 300 354 424 352V400A32 32 0 0 1 392 432Z"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#285943"/>
+  <g fill="#F5F4ED">
+    <path d="M88 196A38 38 0 0 1 126 158H244A12 12 0 0 1 256 170V194A12 12 0 0 1 244 206H140V238H232A12 12 0 0 1 244 250V272A12 12 0 0 1 232 284H140V352C200 336 300 330 424 330V346C300 346 200 362 112 428C98 418 88 400 88 380Z"/>
+    <path d="M265 172A14 14 0 0 1 279 158H305A14 14 0 0 1 319 172V292H410A14 14 0 0 1 424 306V340H265Z"/>
+  </g>
+  <g clip-path="url(#field)">
+    <rect x="80" y="340" width="360" height="100" fill="#8BAF70"/>
+    <path d="M196 432C250 386 330 366 424 370V432Z" fill="#C69B62"/>
+    <path d="M300 432C340 402 380 392 424 392V432Z" fill="#D9A441"/>
+    <path d="M196 432C250 386 330 366 424 370M300 432C340 402 380 392 424 392" fill="none" stroke="#285943" stroke-width="8"/>
+  </g>
+  <path d="M152 156C138 104 182 70 262 66C266 128 226 162 166 160Z" fill="#8BAF70"/>
+  <path d="M164 156C176 126 200 104 232 92" fill="none" stroke="#285943" stroke-width="7" stroke-linecap="round"/>
+</svg>
