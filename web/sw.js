@@ -10,7 +10,7 @@
 // - Heavy-rain warnings (#42) are local notifications shown by the page with registration.showNotification();
 //   there is no push event and no subscription. A tap opens or focuses FarmLens on that field's What to expect.
 
-const VERSION = "v18";
+const VERSION = "v19";
 const SHELL = `farmlens-shell-${VERSION}`;
 // Data caches keep their names across app updates, so saved results survive a new version of the app.
 const DATA = "farmlens-data-v1";
@@ -20,7 +20,7 @@ const SHELL_FILES = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
   "js/app.js", "js/api.js", "js/ndvi-status.js", "js/progress-steps.js", "js/format.js", "js/map.js", "js/malaga-area.js", "js/expect.js", "js/expect-format.js",
   "js/notify.js", "js/notify-format.js", "js/icons.js", "js/scene.js",
-  "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
+  "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png",
 ];
 const DATA_PATHS = ["/api/fields", "/api/crops", "/api/predictions"];
 const SAVED = "X-FarmLens-Saved-At";
