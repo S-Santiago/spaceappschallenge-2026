@@ -441,7 +441,7 @@ async function runAnalysis(next = "#/results") {
   let shown = -1;
   // Each stage is announced once in the live region; the scene follows data-stage (DESIGN.md "Loading").
   const setStage = (i) => {
-    if (i === shown) return;
+    if (i <= shown) return; // stages only go forward (the timer keeps ticking during the finale)
     shown = i;
     panel.dataset.stage = String(i);
     stageStates(items.length, i).forEach((st, j) => {
