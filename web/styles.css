@@ -277,7 +277,10 @@ select, .crop-select, .crop-input, .place-search input {
 .actions { display: grid; gap: var(--s2); margin-top: var(--s3); }
 
 /* ---- map */
+/* Leaflet's panes and controls use z-index 400-1000; isolating the map keeps them inside it,
+   so the sticky action bar (.step-main) always stays on top. */
 .map {
+  position: relative; z-index: 0; isolation: isolate;
   height: var(--map-h); border-radius: var(--r-md); border: var(--bw) solid var(--line);
   margin-top: var(--s3); background: var(--panel);
 }
