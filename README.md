@@ -88,7 +88,7 @@ Then open http://localhost:8000 on a phone-sized window. One service runs the AP
 
 **Tests:** `pip install -r requirements-dev.txt`, then `PYTHONPATH=src pytest` (engine, API and PWA checks) and `node --test "tests/web/*.test.mjs"` (PWA helpers, Node 18+, no packages).
 
-**Deploying the public demo:** built from the [`Dockerfile`](Dockerfile) at the root and deployed **by hand** from an up-to-date `main` by a teammate with access to the Google Cloud project (`gcloud run deploy farmlens --source . --region europe-southwest1`, ~3 min; settings in [decision 0008](docs/decisions/0008-public-demo-cloud-run.md)). A merge to `main` does **not** redeploy by itself: after merging, ask for a redeploy in the deployment issue. **`main` freezes on Sun 15 Nov at 15:00**; the last redeploy happens right after. Same image locally: `docker build -t farmlens . && docker run --rm -p 8000:8080 farmlens`.
+**Deploying the public demo:** built from the [`Dockerfile`](Dockerfile) at the root and **redeployed automatically on every push to `main`** by the GitHub Actions workflow [`deploy-cloud-run.yml`](.github/workflows/deploy-cloud-run.yml) (`gcloud run deploy --source .`, ~3–5 min, keyless login through Workload Identity Federation; settings in [decision 0008](docs/decisions/0008-public-demo-cloud-run.md)). The run and its smoke test show in the repository's Actions tab; it can also be started by hand there (*Run workflow*). **`main` freezes on Sun 15 Nov at 15:00**. Same image locally: `docker build -t farmlens . && docker run --rm -p 8000:8080 farmlens`.
 
 **Backup link:** if Cloud Run is down, a teammate runs the app locally on port 8000 and the team's Cloudflare tunnel exposes it (works only while that laptop is awake).
 
