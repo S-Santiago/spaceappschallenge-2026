@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { readFileSync } from "node:fs";
+
 import { fieldScene, quietLoader, stageMark, stageStates, storyLoader } from "../../web/js/scene.js";
 
 const STAGES = ["Getting NASA data…", "Checking satellite photos of your field…", "Comparing rotations…"];
@@ -20,7 +22,7 @@ test("stage marks: check icon when done, spinner when active, plain dot otherwis
 });
 
 test("the scene is decorative and every variant draws the field", () => {
-  for (const v of ["story", "start", "map", "expect"]) {
+  for (const v of ["story", "splash", "map", "expect"]) {
     const svg = fieldScene(v);
     assert.match(svg, /aria-hidden="true"/);
     assert.equal((svg.match(/class="plot /g) || []).length, 4);
@@ -40,4 +42,10 @@ test("quiet loaders announce their text as a status", () => {
   const html = quietLoader("Loading the map…", "map");
   assert.match(html, /role="status"/);
   assert.match(html, /Loading the map…/);
+});
+
+test("the static start-up splash in index.html is exactly fieldScene(\"splash\") (one drawing to maintain)", () => {
+  const html = readFileSync(new URL("../../web/index.html", import.meta.url), "utf8");
+  assert.ok(html.includes(fieldScene("splash")), "update web/index.html with the output of fieldScene(\"splash\")");
+  assert.match(html, /id="splash-status" role="status">Starting FarmLens…</);
 });

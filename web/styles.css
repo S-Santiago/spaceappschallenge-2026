@@ -113,7 +113,7 @@
   --scan-time: 1.6s;    /* loader: satellite beam */
   --grow-time: 180ms;   /* loader: one plot grows; four with --grow-step stagger stay <= 300 ms */
   --grow-step: 40ms;
-  --grow-once: 600ms;   /* app start: the plots grow once */
+  --grow-once: 600ms;   /* start-up splash: the plots grow once (same values inline in index.html) */
   --grow-once-step: 150ms;
   --enter-time: 240ms;  /* results fade/slide in after an analysis */
   --enter-shift: 8px;
@@ -375,15 +375,19 @@ select, .crop-select, .crop-input, .place-search input {
 .progress--story .plot:nth-child(4) { transition-delay: calc(3 * var(--grow-step)); }
 @keyframes orbit { from { transform: translateX(-190px); } to { transform: translateX(190px); } }
 @keyframes scan { from { opacity: 0.25; } to { opacity: 1; } }
-/* Lighter variants: app start (plots grow once), map (field only), What to expect (sky and field, still). */
+/* Start-up splash (index.html): its first-paint rules are inline in <head>; these keep it the same once styles.css
+   is here. The satellite passes and the plots grow once. Lighter in-flow variants: map (field only), What to expect. */
+.splash .scene { margin: 0 0 var(--s3); background: none; }
+.scene--splash .sat { animation: orbit var(--orbit-time) linear infinite; }
+.scene--splash .plot { transform: scaleY(1); animation: grow-once var(--grow-once) ease-out both; }
+.scene--splash .plot:nth-child(2) { animation-delay: var(--grow-once-step); }
+.scene--splash .plot:nth-child(3) { animation-delay: calc(2 * var(--grow-once-step)); }
+.scene--splash .plot:nth-child(4) { animation-delay: calc(3 * var(--grow-once-step)); }
+.splash .banner { text-align: left; margin: 0; width: 100%; }
 .progress--quiet { display: grid; justify-items: center; gap: var(--s2); text-align: center; }
 .progress--quiet .scene { max-width: var(--scene-quiet); margin: 0; }
-.scene--start .plot { transform: scaleY(1); animation: grow-once var(--grow-once) ease-out both; }
-.scene--start .plot:nth-child(2) { animation-delay: var(--grow-once-step); }
-.scene--start .plot:nth-child(3) { animation-delay: calc(2 * var(--grow-once-step)); }
-.scene--start .plot:nth-child(4) { animation-delay: calc(3 * var(--grow-once-step)); }
 .scene--expect .plot, .scene--map .plot { transform: scaleY(1); }
-.scene--expect .sat, .scene--expect .orbit, .scene--start .sat { opacity: 0; }
+.scene--expect .sat, .scene--expect .orbit { opacity: 0; }
 @keyframes grow-once { from { transform: scaleY(var(--sprout)); } to { transform: scaleY(1); } }
 .map > .progress--quiet { margin: var(--s4); border: 0; }
 /* Results after an analysis (app.js enter()) */
@@ -560,6 +564,6 @@ h4.sub { font-size: var(--t-h3); margin: var(--s5) 0 0; }
 .scores div { grid-template-columns: 1fr; row-gap: var(--s1); }
 .scores dd { text-align: left; white-space: normal; }
 .more h4:first-of-type { margin-top: var(--s4); }
-.card h3:focus { outline: none; }
+.card h3:focus, .masthead h1:focus { outline: none; }
 .card h3:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: var(--focus-off); }
 .legend .icon { width: var(--icon-sm); height: var(--icon-sm); }

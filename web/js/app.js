@@ -151,8 +151,41 @@ function stepRow(s) {
 
 // ------------------------------------------------------------------ boot
 
+// The start-up splash is static markup in index.html (it paints before this module arrives), outside #app, so
+// these helpers query the whole document. boot() only changes
+// its status line, shows a start-up error inside it, and fades it out once the first screen is ready.
+const SPLASH_FADE_MS = 200; // matches the inline .splash transition; removal is a timer, never waits for frames
+
+function splashStatus(text) {
+  $("#splash-error", document)?.remove();
+  const status = $("#splash-status", document);
+  if (status) status.textContent = text;
+}
+
+function splashError(title, text) {
+  const inner = $("#splash .splash-in", document);
+  if (!inner) return;
+  splashStatus(""); // the live region stays in place; the error banner (role="alert") speaks instead
+  inner.insertAdjacentHTML("beforeend", `<div id="splash-error">${banner("error", title, ` ${text}`,
+    `<div class="actions"><button type="button" class="btn btn--primary" id="retry-boot">Try again</button></div>`)}</div>`);
+  $("#retry-boot", document).addEventListener("click", boot);
+  $("#retry-boot", document).focus({ preventScroll: true });
+}
+
+function hideSplash() {
+  const splash = $("#splash", document);
+  if (!splash) return;
+  splash.classList.add("splash--out");
+  setTimeout(() => splash.remove(), reducedMotion() ? 0 : SPLASH_FADE_MS);
+  // Focus the screen's heading for screen readers, unless route() already placed focus (a step, a result).
+  if (!document.activeElement || document.activeElement === document.body || document.activeElement === app) {
+    const h = app.querySelector("h1");
+    if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+  }
+}
+
 async function boot() {
-  app.innerHTML = quietLoader("Loading FarmLens…", "start");
+  splashStatus("Getting your fields…");
   try {
     // One after the other: on a fresh server the first DB access builds the database (db.init_db),
     // and two parallel first requests can collide there.
@@ -165,20 +198,17 @@ async function boot() {
     state.types = Object.fromEntries(crops.map((c) => [c.id, c.type]));
   } catch (err) {
     const msg = errorMessage(err.kind);
-    app.innerHTML = masthead() + banner("error", msg.title, ` ${msg.text}`,
-      `<div class="actions"><button class="btn btn--primary" id="retry-boot">Try again</button></div>`);
-    $("#retry-boot").addEventListener("click", boot);
+    splashError(msg.title, msg.text);
     return;
   }
   if (!state.crops.length) {
-    app.innerHTML = masthead() + banner("error", "We couldn't load the crop list.", " Try again in 1 minute.",
-      `<div class="actions"><button class="btn btn--primary" id="retry-boot">Try again</button></div>`);
-    $("#retry-boot").addEventListener("click", boot);
+    splashError("We couldn't load the crop list.", "Try again in 1 minute.");
     return;
   }
   state.field = state.fields[0]?.slug || "map";
   applyPreset(state.field);
   route();
+  hideSplash();
 }
 
 // The logo is the app icon (icons/icon.svg): one cached file, colours from the palette there.
@@ -1010,7 +1040,9 @@ if ("serviceWorker" in navigator) {
     box.id = "update";
     box.innerHTML = banner("ok", "FarmLens was updated", " Reload to use the new version.",
       `<div class="actions"><button type="button" class="btn btn--primary" id="reload">Reload now</button></div>`);
-    document.querySelector(".page").prepend(box);
+    // During start-up the splash covers the page, so the banner goes inside it (still readable, still tappable).
+    const host = document.querySelector("#splash .splash-in");
+    if (host) host.prepend(box); else document.querySelector(".page").prepend(box);
     box.querySelector("#reload").addEventListener("click", () => location.reload());
   });
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

@@ -9,17 +9,63 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    /* Start-up splash: critical CSS so it paints before styles.css arrives on slow data. Token values are copied
+       from styles.css :root (tests/test_pwa.py checks they match); the page colour equals the manifest background. */
+    :root{--ground:#F5F4ED;--ink:#242A26;--accent:#285943;--sage:#8BAF70;--tan:#C69B62;--ochre:#D9A441;--surface:#FFFFFF;
+      --line:color-mix(in srgb,var(--ink) 60%,var(--surface));--accent-tint-strong:color-mix(in srgb,var(--accent) 25%,var(--surface));
+      --ochre-dark:color-mix(in srgb,var(--ochre) 50%,var(--ink));--f-fallow:color-mix(in srgb,var(--tan) 40%,var(--surface))}
+    html,body{margin:0;background:var(--ground);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+    .splash{position:fixed;inset:0;z-index:10;display:grid;place-items:center;overflow:auto;min-height:100vh;min-height:100dvh;box-sizing:border-box;
+      padding:max(24px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+      background:var(--ground);text-align:center;transition:opacity 200ms ease-out}
+    .splash--out{opacity:0}
+    .splash-in{width:100%;max-width:400px;display:grid;gap:12px;justify-items:center}
+    .splash .scene{display:block;width:100%;max-width:320px;height:auto;margin-bottom:12px}
+    .splash-name{margin:0;font-size:2.25rem;font-weight:700;line-height:1.2}
+    .splash-lead,.splash-status{margin:0;font-size:1.125rem;line-height:1.5}
+    .splash-status{font-weight:700;color:var(--accent)}
+    .scene .orbit{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:3 5}
+    .scene .sat rect{fill:var(--accent)}.scene .beam{opacity:0}
+    .scene .cloud,.scene .sun{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .scene .cloud{stroke:var(--accent)}.scene .sun{stroke:var(--ochre-dark)}.scene .soil{fill:var(--f-fallow)}
+    .scene .plot{transform-box:fill-box;transform-origin:50% 100%;stroke:var(--ink);stroke-opacity:.35}
+    .scene .plot--cereal{fill:var(--ochre)}.scene .plot--legume{fill:var(--sage)}
+    .scene--splash .sat{animation:orbit 3.2s linear infinite}
+    .scene--splash .plot{animation:grow-once 600ms ease-out both}
+    .scene--splash .plot:nth-child(2){animation-delay:150ms}.scene--splash .plot:nth-child(3){animation-delay:300ms}.scene--splash .plot:nth-child(4){animation-delay:450ms}
+    @keyframes orbit{from{transform:translateX(-190px)}to{transform:translateX(190px)}}
+    @keyframes grow-once{from{transform:scaleY(.25)}}
+    @media (prefers-reduced-motion:reduce){.splash,.splash *{animation:none!important;transition:none!important}}
+  </style>
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+  <!-- Start-up splash: painted before any JS; app.js (boot) updates the status, shows errors here and fades it out.
+       The SVG is fieldScene("splash") from js/scene.js (tests/web/scene.test.mjs keeps them equal). -->
+  <div id="splash" class="splash">
+    <div class="splash-in">
+      <svg class="scene scene--splash" viewBox="0 0 328 136" aria-hidden="true" focusable="false">
+  <path class="orbit" d="M-10 40Q164-10 338 40"/>
+  <g class="sat"><g transform="translate(164 18)">
+    <path class="beam" d="M0 6L-22 92h44z"/>
+    <rect x="-6" y="-6" width="12" height="12" rx="2"/><rect x="-22" y="-3" width="13" height="6"/><rect x="9" y="-3" width="13" height="6"/>
+  </g></g>
+  <g class="cloud" transform="translate(58 46)"><path d="M-12 6h22a7 7 0 0 0 1-14 11 11 0 0 0-21 2 6 6 0 0 0-2 12z"/><path d="M-6 12l-2 6M2 12l-2 6M10 12l-2 6"/></g>
+  <g class="sun" transform="translate(268 46)"><circle r="9"/><path d="M0-16v4M0 12v4M-16 0h4M12 0h4M-11-11l3 3M8 8l3 3M-11 11l3-3M8-8l3-3"/></g>
+  <path class="soil" d="M0 112L328 100V136H0z"/><g class="plots"><rect class="plot plot--cereal" x="24" y="96" width="60" height="24" rx="4"/><rect class="plot plot--legume" x="98" y="94" width="60" height="26" rx="4"/><rect class="plot plot--cereal" x="172" y="92" width="60" height="28" rx="4"/><rect class="plot plot--legume" x="246" y="90" width="60" height="30" rx="4"/></g></svg>
+      <p class="splash-name">FarmLens</p>
+      <p class="splash-lead">Compare crop rotations for your field with 21 years of NASA data.</p>
+      <p class="splash-status" id="splash-status" role="status">Starting FarmLens…</p>
+      <noscript><p class="splash-lead">FarmLens needs JavaScript to run. Please turn it on in your browser settings.</p></noscript>
+    </div>
+  </div>
   <div class="page">
     <div id="net" class="banner banner--warn" role="status" hidden>
       <strong>You're offline</strong> Fields you opened before still work. A new map point needs internet.
     </div>
     <main id="app" tabindex="-1">
-      <noscript><p>FarmLens needs JavaScript to run. Please turn it on in your browser settings.</p></noscript>
-      <p class="muted" id="boot">Loading FarmLens…</p>
     </main>
   </div>
 </body>

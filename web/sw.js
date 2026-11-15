@@ -10,7 +10,7 @@
 // - Heavy-rain warnings (#42) are local notifications shown by the page with registration.showNotification();
 //   there is no push event and no subscription. A tap opens or focuses FarmLens on that field's What to expect.
 
-const VERSION = "v17";
+const VERSION = "v18";
 const SHELL = `farmlens-shell-${VERSION}`;
 // Data caches keep their names across app updates, so saved results survive a new version of the app.
 const DATA = "farmlens-data-v1";

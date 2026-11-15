@@ -109,3 +109,28 @@ def test_icons_are_inline_svg_next_to_a_word():
     for attr in ('viewBox="0 0 24 24"', 'stroke="currentColor"', 'aria-hidden="true"'):
         assert attr in icons
     assert "@font-face" not in (WEB / "styles.css").read_text(encoding="utf-8")
+
+
+def test_start_up_splash_paints_without_js_and_matches_the_tokens():
+    """The splash in index.html has inline critical CSS whose tokens equal styles.css and the manifest colours."""
+    html = (WEB / "index.html").read_text(encoding="utf-8")
+    css = (WEB / "styles.css").read_text(encoding="utf-8")
+    manifest = json.loads((WEB / "manifest.webmanifest").read_text(encoding="utf-8"))
+    inline = re.search(r"<style>(.*?)</style>", html, re.S).group(1)
+    root_inline = re.search(r":root\{(.*?)\}\s*html", inline, re.S).group(1)
+    tokens = dict(re.findall(r"(--[\w-]+):\s*([^;]+?)\s*(?:;|$)", root_inline))
+    assert tokens, "no tokens found in the inline :root"
+    norm = lambda v: re.sub(r"\s+", "", v).lower()
+    for name, value in tokens.items():
+        m = re.search(rf"{name}:\s*([^;]+);", css)
+        assert m, f"{name} not in styles.css"
+        assert norm(m.group(1)) == norm(value), f"{name}: inline {value} != styles.css {m.group(1)}"
+    assert norm(tokens["--ground"]) == manifest["background_color"].lower()
+    assert manifest["theme_color"].lower() in html.lower()
+    assert 'id="splash"' in html and 'role="status"' in html and "<noscript>" in html
+    assert len(inline.encode()) < 4096, "keep the critical CSS small"
+
+
+def test_no_old_boot_text_left():
+    for path in [*(WEB / "js").glob("*.js"), WEB / "index.html"]:
+        assert "Loading FarmLens" not in path.read_text(encoding="utf-8"), path
