@@ -30,8 +30,8 @@ Run `/submission-check` or ask the `submission-auditor` agent. Official NASA dea
 - [ ] UX launch route: all 7 stages **GO** (`/ux-review`).
 - [ ] Red alert clear: no placeholder text/data, no dead buttons, no technical errors on screen (`Error`, `undefined`, `NaN`, `None`, tracebacks), no color-only states.
 - [ ] Public demo link opened **5 minutes before judging and before the pitch** (Cloud Run keeps one instance warm, but check it answers).
-- [ ] Public demo redeployed from the final `main` after the 15:00 freeze (Cloud Run does not redeploy on merge).
-- [ ] `main` frozen from Sun 15 Nov 15:00 (the public demo is redeployed once from it).
+- [ ] Public demo runs the final `main` after the 15:00 freeze (the *Deploy to Cloud Run* workflow of the last merge is green).
+- [ ] `main` frozen from Sun 15 Nov 15:00 (the last merge redeploys the public demo automatically).
 - [ ] No organizer event material or NASA logos committed.
 - [ ] Built / simulated / future clearly separated in README and demo.
 - [ ] Repo is public.

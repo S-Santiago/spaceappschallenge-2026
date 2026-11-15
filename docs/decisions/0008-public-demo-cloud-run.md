@@ -37,17 +37,19 @@ background, #86). It needs no secrets at run time. The NASA Space Apps Global Of
 | Resources | 512 MiB · 1 CPU · timeout 300 s · port 8080 | Image ~233 MB; a new map point can be slow |
 | Budget | alert at €20 (50 / 90 / 100 %) | Safety on the trial credit |
 
-- **Deploy:** by hand from an up-to-date `main`: `gcloud run deploy farmlens --source . --region europe-southwest1`
-  (~3 min, Cloud Build builds the root `Dockerfile`). No automatic deploy on merge for now; the deployment issue
-  (#76) is where the team asks for a redeploy. The last redeploy happens right after the `main` freeze (Sun 15:00).
+- **Deploy:** automatic on every push to `main` (update 2026-11-15): `.github/workflows/deploy-cloud-run.yml` runs
+  `gcloud run deploy farmlens --source .` with the settings above (~3–5 min, Cloud Build builds the root `Dockerfile`)
+  and smoke-tests `/api/health`. Login is keyless: GitHub's OIDC token goes through a Workload Identity Federation
+  provider that only accepts this repository on `refs/heads/main`, mapped to the `github-deployer` service account
+  (Cloud Run, Cloud Build, Storage and Artifact Registry roles in this project only). No secret is stored in GitHub.
+  A manual `gcloud run deploy` with the same flags still works as a fallback.
 - The Hugging Face workflow (`.github/workflows/deploy-space.yml`) and `deploy/space-README.md` are removed;
   `huggingface_hub` and the CI-only GitHub Actions leave `docs/third-party.md`.
 - The Cloudflare tunnel to `localhost:8000` stays only as a documented backup (README §5).
 
 ## Consequences
 - Public URL in README §5, CLAUDE.md, `docs/tools.md`, `docs/architecture.md` and the technical Q&A.
-- A merge to `main` does not change the public demo until someone redeploys: the submission checklist has a
-  "redeploy from the final `main`" step.
+- A merge to `main` updates the public demo within ~5 min; check the run in the Actions tab.
 - Cost comes from the trial credit (always-on instance). **After judging**, set min instances to 0 or delete the
   service.
 - Optional later: connect Cloud Build to GitHub (admin approval) for automatic deploys on merge to `main`.

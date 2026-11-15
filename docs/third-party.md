@@ -9,6 +9,7 @@ Everything in (or used by) this project that the team did not create: libraries,
 | Name | Version | Purpose | License | Link | Notes (attribution required?) |
 |---|---|---|---|---|---|
 | httpx | 0.28.1 | HTTP client for NASA POWER and ORNL MODIS APIs | BSD-3-Clause | https://www.python-httpx.org/ | No |
+| GitHub Actions `actions/checkout`, `google-github-actions/auth`, `google-github-actions/setup-gcloud` — CI only, not shipped | v4 / v2 / v2 | Deploy workflow `.github/workflows/deploy-cloud-run.yml` (decision 0008) | MIT / Apache-2.0 / Apache-2.0 | https://github.com/actions/checkout · https://github.com/google-github-actions/auth · https://github.com/google-github-actions/setup-gcloud | No |
 | SQLite (Python `sqlite3`) | bundled with Python | Local database (`src/fieldshift/db.py`) | Public domain | https://www.sqlite.org/copyright.html | No |
 | pytest | 9.2.0 | Tests (dev only, `requirements-dev.txt`) | MIT | https://docs.pytest.org/ | No |
 | Taste skill (`design-taste-frontend`) — dev tooling, not shipped in the app | 2.5.1 (commit f6b7657) | Claude Code skill: art direction (`.claude/skills/design-taste-frontend/`, see [ui-skills.md](ui-skills.md)) | MIT | https://github.com/Leonxlnx/taste-skill | Keep `LICENSE` in the folder. Its bundled photos/icons carry their own licenses (Unsplash License, CC0, CC BY 2.0/4.0, CC BY-SA 3.0/4.0, ISC, MIT; brand logos are trademarks), listed in the folder's `credits.json` / `icons-credits.json` / `photos.json` — not used in the app; any reuse must be registered in §2 with its credit line |
