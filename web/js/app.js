@@ -151,28 +151,29 @@ function stepRow(s) {
 
 // ------------------------------------------------------------------ boot
 
-// The start-up splash is static markup in index.html (it paints before this module arrives). boot() only changes
+// The start-up splash is static markup in index.html (it paints before this module arrives), outside #app, so
+// these helpers query the whole document. boot() only changes
 // its status line, shows a start-up error inside it, and fades it out once the first screen is ready.
 const SPLASH_FADE_MS = 200; // matches the inline .splash transition; removal is a timer, never waits for frames
 
 function splashStatus(text) {
-  $("#splash-error")?.remove();
-  const status = $("#splash-status");
+  $("#splash-error", document)?.remove();
+  const status = $("#splash-status", document);
   if (status) status.textContent = text;
 }
 
 function splashError(title, text) {
-  const inner = $("#splash .splash-in");
+  const inner = $("#splash .splash-in", document);
   if (!inner) return;
   splashStatus(""); // the live region stays in place; the error banner (role="alert") speaks instead
   inner.insertAdjacentHTML("beforeend", `<div id="splash-error">${banner("error", title, ` ${text}`,
     `<div class="actions"><button type="button" class="btn btn--primary" id="retry-boot">Try again</button></div>`)}</div>`);
-  $("#retry-boot").addEventListener("click", boot);
-  $("#retry-boot").focus({ preventScroll: true });
+  $("#retry-boot", document).addEventListener("click", boot);
+  $("#retry-boot", document).focus({ preventScroll: true });
 }
 
 function hideSplash() {
-  const splash = $("#splash");
+  const splash = $("#splash", document);
   if (!splash) return;
   splash.classList.add("splash--out");
   setTimeout(() => splash.remove(), reducedMotion() ? 0 : SPLASH_FADE_MS);
