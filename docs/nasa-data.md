@@ -30,7 +30,7 @@ Both resources below are NASA resources named in the official challenge statemen
 | Processing applied | Observation/model output (POWER) → transformation (monthly means, counts over thresholds, FAO-56 Penman-Monteith ET₀ from temperature, radiation, dew point and wind (Hargreaves only for days missing those), decade comparison — catalog in `docs/indicators.md`) → inference (rotation suggestions in `rotations.py`) |
 | Synthetic data? | No |
 | Role in the solution | Core evidence for every rotation card (water balance, frost/heat risk, heavy-rain erosion risk, trends). Without it the tool cannot describe the field's climate or justify any suggestion |
-| Small test done | Yes — Málaga (36.72, −4.42): 7,670 daily records 2005–2025 (team test); 3-day API check on 2026-11-14 confirmed version, units and fill value. Demo samples: `data/samples/` (#8) |
+| Small test done | Yes — Málaga (36.72, −4.42): 7,670 daily records 2005–2025 (team test); 3-day API check on 2026-11-14 confirmed version, units and fill value. Demo samples: `data/samples/` (#8). Same product pre-fetched on 2026-11-15 for 4 towns of the demo script (`data/samples/prefetch_points.csv`, see `data/README.md`) — no new dataset |
 
 ### D-02 · MODIS/Terra Vegetation Indices 16-Day L3 Global 250 m SIN Grid V061 (MOD13Q1)
 | Field | Value |
@@ -49,7 +49,7 @@ Both resources below are NASA resources named in the official challenge statemen
 | Processing applied | Observation (satellite composite) → transformation (scale, monthly mean) → inference (`likely_bare` flag) |
 | Synthetic data? | No |
 | Role in the solution | Identifies the bare-soil window of the current rotation → evidence for cover-crop and erosion-reduction strategies. Without it, bare periods would be assumed, not observed |
-| Small test done | Yes — Málaga (36.72, −4.42): 45 composites for 2024–2025, ~25 s first call (team test). Demo path uses pre-loaded data (#8) |
+| Small test done | Yes — Málaga (36.72, −4.42): 45 composites for 2024–2025, ~25 s first call (team test). Demo path uses pre-loaded data (#8). Same product pre-fetched on 2026-11-15 for 7 towns the app finds with "Town or area" (`data/samples/prefetch_points.csv`, NDVI pattern checked per town in `data/README.md`) — no new dataset |
 
 ### Official resources not used (and why)
 | Resource | Why not (yet) | What we use instead |
