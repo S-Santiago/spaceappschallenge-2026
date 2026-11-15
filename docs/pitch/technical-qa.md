@@ -52,7 +52,25 @@ SMAP soil moisture, GPM IMERG rain, ECOSTRESS and Landsat need an Earthdata logi
 - `/security-review` was run on the engine and the "limits" branches with no findings. Everything the app shows from the API is HTML-escaped.
 - **Notifications stay on the phone.** Heavy-rain warnings are local notifications: no push server, no subscription, nothing leaves the phone. The app asks for permission only after the farmer taps "Warn me". Tested on a real Android phone. iPhone support for web notifications is limited.
 - **Offline:** the app shell, the last analyses and the predictions are kept on the phone, so results open again without a connection. The demo fields' NASA data is pre-loaded on the server, so the demo does not depend on NASA being reachable.
-- **Hosting:** public demo on Hugging Face Spaces (Docker, free tier, HTTPS). It sleeps only after ~48 h without visits; we open it before the pitch. The disk is temporary, which is fine because the database is rebuilt from committed seeds (decision 0006).
+- **Hosting:** public demo on Google Cloud Run in Madrid (`europe-southwest1`, HTTPS, Space Apps Google Cloud offer, #76), one instance always on, so there is no cold start. The disk is temporary, which is fine because the database is rebuilt from committed seeds at every start. Hugging Face Spaces (decision 0006) was dropped: Docker there is no longer free.
+
+## Speed and quality on the public link ("Is it really light? Does it work on a cheap phone?")
+Measured on 15 Nov 2026 (~11:30) on the public URL, `https://farmlens-530581375456.europe-southwest1.run.app`, revision with `main` at `bf3a43f`. Screenshots: `docs/pitch/lighthouse/`.
+
+| What | Result | How it was measured |
+|---|---|---|
+| Lighthouse Performance · Accessibility · Best Practices | **100 · 100 · 100** | Lighthouse 13.6, mobile, simulated Slow 4G (150 ms, 1.6 Mbit/s) + CPU 4×, private window |
+| First paint · main content · ready to tap | 0.9 s · 1.5 s · 1.5 s | Same run (FCP, LCP, Time to Interactive); total blocking time 30 ms, layout shift 0 |
+| Page weight on first visit | **145 KB in 17 files, 97 KB of it JavaScript** | Same run (compressed transfer); project budget is < 200 KB of JS |
+| First load to a usable form, empty cache | **4.4 s** | Headless Chrome, Pixel 5 screen, every request delayed as Slow 4G + CPU 4× (stricter than Lighthouse's estimate) |
+| Demo field: tap "Analyze" → results | **0.3–0.8 s** (server answer 44–51 ms) | Same throttled browser, all 3 demo fields; "What to expect" tab 0.2–0.3 s |
+| Pre-fetched town (Fuente de Piedra, #87) | **50–61 ms** server answer, satellite data already in | 3 calls to `POST /api/analyze` from a home connection in Spain |
+| Brand-new map point | 3.8 s with satellite data in this run | One point east of Málaga; MODIS can still take 1–3 minutes when ORNL is busy, and the app says so |
+| Installable | Yes, Chrome reports no installability problems | Chrome's own check (manifest + service worker); Lighthouse 12+ has no PWA score any more |
+| Offline after one visit | App opens, "You're offline" banner, a saved demo field result opens | Same browser, network cut, page reloaded |
+| Cold start | None: minimum instances = 1 | Cloud Run setting; it would only apply if min instances were set to 0 |
+
+Lighthouse found nothing to fix (every weighted audit passes). These are numbers from one session, not an average: say "about".
 
 ## Science lens ("Is it sound? What is the resolution?")
 - POWER meteorology: ½° × ⅝° (≈ 55 km at Málaga), MERRA-2 reanalysis, API v2.10.3. MODIS: 250 m, 16-day composites (MOD13Q1 v061).
