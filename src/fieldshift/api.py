@@ -10,17 +10,18 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import os
+import time
 import unicodedata
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
-from . import climate, db, modis, power, predictions, rotations
+from . import climate, db, modis, power, predictions, progress, rotations
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = Path(os.environ.get("FIELDSHIFT_WEB_DIR") or ROOT / "web")
@@ -33,6 +34,10 @@ PROFILE_VERSION = hashlib.sha1(Path(climate.__file__).read_bytes()).hexdigest()[
 POWER_TIMEOUT_S = float(os.environ.get("FIELDSHIFT_POWER_TIMEOUT_S", 60))
 MODIS_WAIT_S = float(os.environ.get("FIELDSHIFT_MODIS_WAIT_S", 3))
 _inflight: dict[tuple[str, float, float], asyncio.Task] = {}  # one download per source and point
+# A failed MODIS download is remembered for a while, so the PWA's polls get `failed: ["ndvi"]` instead of
+# restarting it over and over; the farmer can still ask for a new try (POST /api/analyze?retry=ndvi).
+MODIS_FAIL_MEMORY_S = float(os.environ.get("FIELDSHIFT_MODIS_FAIL_MEMORY_S", 600))
+_modis_failed: dict[tuple[float, float], float] = {}  # point -> time.monotonic() of the last MODIS failure
 
 Lang = Literal["en", "es"]
 
@@ -102,39 +107,69 @@ def _fetch(source: str, lat: float, lon: float) -> asyncio.Task:
     task = _inflight.get(key)
     if task is None:
         fetch = power.fetch_daily if source == "power" else modis.fetch_ndvi
-        task = _inflight[key] = asyncio.create_task(fetch(lat, lon))
-        task.add_done_callback(lambda t: (_inflight.pop(key, None), t.cancelled() or t.exception()))
+        entry = progress.start(source, lat, lon)
+        token = progress.current.set(entry)  # the task copies this context: modis.py reports its batches
+        try:
+            task = _inflight[key] = asyncio.create_task(fetch(lat, lon))
+        finally:
+            progress.current.reset(token)
+
+        def done(t: asyncio.Task) -> None:
+            _inflight.pop(key, None)
+            failed = t.cancelled() or t.exception() is not None
+            progress.finish(entry, ok=not failed)
+            if failed and source == "modis":
+                _modis_failed[key[1:]] = time.monotonic()
+
+        task.add_done_callback(done)
     return task
 
 
-async def _profile(lat: float, lon: float) -> tuple[dict, list[str]]:
-    """Shape 1 profile and the sources still downloading (["ndvi"] while MODIS is slow)."""
+def _modis_recently_failed(lat: float, lon: float) -> bool:
+    point = (round(lat, 2), round(lon, 2))
+    failed_at = _modis_failed.get(point)
+    if failed_at is not None and time.monotonic() - failed_at >= MODIS_FAIL_MEMORY_S:
+        _modis_failed.pop(point, None)
+        return False
+    return failed_at is not None
+
+
+async def _profile(lat: float, lon: float, retry_ndvi: bool = False) -> tuple[dict, list[str], list[str]]:
+    """Shape 1 profile, the sources still downloading (["ndvi"] while MODIS is slow) and the sources that
+    failed (["ndvi"] after a MODIS failure, for MODIS_FAIL_MEMORY_S unless `retry_ndvi`)."""
     profile = db.get_profile(lat, lon, version=PROFILE_VERSION)
     if profile is not None:
-        return profile, []
+        return profile, [], []
 
-    power_task, modis_task = _fetch("power", lat, lon), _fetch("modis", lat, lon)
+    if retry_ndvi:
+        _modis_failed.pop((round(lat, 2), round(lon, 2)), None)
+    power_task = _fetch("power", lat, lon)
+    modis_task = None if _modis_recently_failed(lat, lon) else _fetch("modis", lat, lon)
     try:
         power_data = await asyncio.wait_for(asyncio.shield(power_task), POWER_TIMEOUT_S)
     except Exception as exc:  # NASA POWER down, unreachable or too slow
         raise HTTPException(503, "NASA climate data is not available for this point right now. "
                                  "Try again in a few minutes or use a demo field.") from exc
+    if modis_task is None:  # failed a short while ago: answer from POWER only, do not store (retry later)
+        return climate.build_profile(lat, lon, power_data, None), [], ["ndvi"]
     try:
         modis_data = await asyncio.wait_for(asyncio.shield(modis_task), MODIS_WAIT_S)
-    except asyncio.TimeoutError:
-        modis_data = None  # still downloading: answer without satellite greenness, do not store
-    except Exception:
-        modis_data = None  # MODIS failed: NDVI is optional
+    except asyncio.TimeoutError:  # still downloading: answer without satellite greenness, do not store
+        return climate.build_profile(lat, lon, power_data, None), ["ndvi"], []
+    except Exception:  # MODIS failed: NDVI is optional; remembered by _fetch, not stored so it can be retried
+        _modis_failed[(round(lat, 2), round(lon, 2))] = time.monotonic()
+        return climate.build_profile(lat, lon, power_data, None), [], ["ndvi"]
 
     profile = climate.build_profile(lat, lon, power_data, modis_data)
-    if modis_data is not None or modis_task.done():
-        db.save_profile(lat, lon, profile, version=PROFILE_VERSION)
-        return profile, []
-    return profile, ["ndvi"]
+    db.save_profile(lat, lon, profile, version=PROFILE_VERSION)
+    return profile, [], []
 
 
 @app.post("/api/analyze")
-async def analyze(req: AnalyzeRequest) -> dict:
+async def analyze(
+    req: AnalyzeRequest,
+    retry: Literal["ndvi"] | None = Query(None, description="`ndvi`: start the MODIS download again after a failure"),
+) -> dict:
     """Shape 1 climate profile + Shape 2 strategies (current rotation + up to 3 alternatives)."""
     if req.field is not None:
         location = db.get_location(req.field)
@@ -144,7 +179,7 @@ async def analyze(req: AnalyzeRequest) -> dict:
     else:
         lat, lon = req.lat, req.lon
 
-    profile, pending = await _profile(lat, lon)
+    profile, pending, failed = await _profile(lat, lon, retry_ndvi=retry == "ndvi")
     try:
         strategies = rotations.compare(profile, req.rotation, db.get_engine_crops(), req.priorities.model_dump(),
                                        irrigated=req.irrigation != "none", slope=req.slope, lang=req.lang)
@@ -156,6 +191,7 @@ async def analyze(req: AnalyzeRequest) -> dict:
     analysis_id = db.save_analysis(lat, lon, req.model_dump(), strategies)
     return {"analysis_id": analysis_id, "profile": profile, "strategies": strategies,
             "pending": pending,  # ["ndvi"]: bare-soil months unknown yet, ask again in a few minutes
+            "failed": failed,  # ["ndvi"]: the MODIS download failed; results use POWER only (retry=ndvi to try again)
             "disclaimer": rotations.DISCLAIMER[req.lang],
             "score_limits": {k: v[req.lang] for k, v in rotations.SCORE_LIMITS.items()}}
 
@@ -194,6 +230,18 @@ async def get_predictions(
     for alert in result["alerts"] or []:
         alert["level"] = predictions.raise_for_slope(alert["level"], slope)
     return result
+
+
+@app.get("/api/progress")
+def get_progress(
+    response: Response,
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+) -> dict:
+    """Live progress of the NASA downloads for a new map point (counters only, never cached). Poll every ~2 s."""
+    response.headers["Cache-Control"] = "no-store"
+    stored = {source: db.has_raw(source, lat, lon) for source in ("power", "modis")}  # demo fields, earlier points
+    return progress.snapshot(lat, lon, stored=stored, tries_max=modis.RETRIES)
 
 
 @app.get("/api/analyses/{analysis_id}")

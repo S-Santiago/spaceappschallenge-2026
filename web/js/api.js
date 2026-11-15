@@ -54,8 +54,9 @@ export const getFields = () => request("/api/fields");
 export const getCrops = () => request("/api/crops?lang=en");
 
 /** Demo fields answer from pre-loaded data; a new map point may wait for NASA (POWER + MODIS). */
-export function analyze(inputs, { freePoint = false } = {}) {
-  return send("/api/analyze", {
+/** `retry: "ndvi"` asks the API to start the satellite download again after it failed. */
+export function analyze(inputs, { freePoint = false, retry } = {}) {
+  return send(retry ? `/api/analyze?retry=${encodeURIComponent(retry)}` : "/api/analyze", {
     method: "POST", body: inputs, headers: { "X-FarmLens-Key": analysisKey(inputs) }, timeoutMs: freePoint ? 75000 : 20000,
   });
 }
@@ -81,3 +82,7 @@ export const searchPlaces = (params) =>
 export function getPredictions(inputs, { freePoint = false } = {}) {
   return send(`/api/predictions?${predictionsQuery(inputs)}`, { timeoutMs: freePoint ? 75000 : 20000 });
 }
+
+/** Live progress of the NASA downloads for a map point (counters only). Network only: sw.js never caches it. */
+export const getProgress = ({ lat, lon }) =>
+  request(`/api/progress?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`, { timeoutMs: 8000 });

@@ -9,8 +9,10 @@ import {
   levelText, limitsDetails, ndviMissing, num, plainEvidence, trendFacts,
 } from "./format.js";
 import { icon, withIcon } from "./icons.js";
-import { quietLoader, stageMark, stageStates, storyLoader } from "./scene.js";
+import { quietLoader, stageMark, storyLoader } from "./scene.js";
 import { findPlace, inMalaga, mountMap, roundPoint } from "./map.js";
+import { PENDING_RETRY_MS, ndviBanner, ndviStatus, shouldPoll } from "./ndvi-status.js";
+import { PROGRESS_POLL_MS, analysisSteps, announcement, formatElapsed, modisLine, shouldPollProgress } from "./progress-steps.js";
 
 const app = document.getElementById("app");
 
@@ -48,11 +50,10 @@ const SCORE_ROWS = [
   ["risk", "shield", "Weather risk (higher = safer)"],
 ];
 const FAMILY_LABEL = { cereal: "Cereal", legume: "Legume", oilseed: "Oilseed", forage: "Forage", cover: "Cover crop", fallow: "Fallow", other: "Other" };
-const STAGES = ["Getting NASA data…", "Checking satellite photos of your field…", "Comparing rotations…"];
 const FINALE_AFTER_MS = 800; // the loader was on screen long enough to be seen
-const FINALE_MS = 300;
+const FINALE_MS = 300;        // plots grow, then the results appear (styles.css .progress--story)
 const LIVE_DELAY_MS = 100;
-const LOADER_DELAY_MS = 250; // instant answers (demo fields) never show the loader       // plots grow, then the results appear (styles.css .progress--story)
+const LOADER_DELAY_MS = 250;  // instant answers (demo fields) never show the loader
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const LITTLE_COVER_NDVI = 0.35; // calendar word "Little cover" between Bare (<0.25) and Green (docs/indicators.md I-09)
 
@@ -136,9 +137,16 @@ function stepNav(n) {
 
 const BANNER_ICON = { error: "warning", warn: "warning", ok: "info" };
 
-function banner(kind, title, text, actions = "") {
-  return `<div class="banner banner--${kind}" role="${kind === "error" ? "alert" : "status"}">${icon(BANNER_ICON[kind] || "info")}` +
+function banner(kind, title, text, actions = "", iconName = BANNER_ICON[kind] || "info") {
+  return `<div class="banner banner--${kind}" role="${kind === "error" ? "alert" : "status"}">${icon(iconName)}` +
     `<div><strong>${esc(title)}</strong>${esc(text)}${actions}</div></div>`;
+}
+
+
+/** One loader row: mark (icon, aria-hidden) + label + what is happening in words (state never by colour only). */
+function stepRow(s) {
+  return `<li class="${s.state}"><span class="mark" aria-hidden="true">${s.state === "failed" ? icon("warning") : stageMark(s.state === "waiting" ? "" : s.state)}</span>` +
+    `<span>${esc(s.label)}${s.detail ? `<br><span class="step-detail">${esc(s.detail)}</span>` : ""}</span></li>`;
 }
 
 // ------------------------------------------------------------------ boot
@@ -436,45 +444,54 @@ async function runAnalysis(next = "#/results") {
   state.busy = true;
   buttons.forEach((b) => { b.disabled = true; });
   app.querySelectorAll(".js-analyze").forEach((b) => { b.textContent = "Analyzing…"; });
-  feedback.innerHTML = storyLoader(STAGES);
+  // The steps follow what the server is really doing (GET /api/progress every 2 s, progress-steps.js), not a timer;
+  // the field story scene follows the first step not done yet (data-stage, DESIGN.md "Loading").
+  // Demo fields answer at once from stored data: no polling, the steps are simply all done.
+  feedback.innerHTML = storyLoader(analysisSteps(null).map((s) => esc(s.label)));
   reveal(feedback);
   const panel = feedback.querySelector(".progress");
   const showLoader = setTimeout(() => panel.classList.add("is-shown"), LOADER_DELAY_MS);
-  const items = [...panel.querySelectorAll(".stages li")];
-  let shown = -1;
-  // Each stage is announced once in the live region; the scene follows data-stage (DESIGN.md "Loading").
-  const setStage = (i) => {
-    if (i <= shown) return; // stages only go forward (the timer keeps ticking during the finale)
-    shown = i;
-    panel.dataset.stage = String(i);
-    stageStates(items.length, i).forEach((st, j) => {
-      items[j].className = st;
-      items[j].querySelector(".mark").innerHTML = stageMark(st);
-    });
-    // A live region added in the same task as its text is often not read: fill it on the next turn of the loop.
-    if (i < items.length) setTimeout(() => { const live = $("#stage-live"); if (live) live.textContent = STAGES[i]; }, LIVE_DELAY_MS);
+  const list = panel.querySelector(".stages");
+  let steps = null;
+  const draw = (progress, opts) => {
+    const next = analysisSteps(progress, opts);
+    list.innerHTML = next.map(stepRow).join("");
+    const stage = next.findIndex((s) => s.state !== "done" && s.state !== "failed");
+    panel.dataset.stage = String(stage === -1 ? next.length : stage);
+    const say = announcement(steps, next);
+    // A live region filled in the same task as it appears is often not read: announce on the next turn.
+    if (say) setTimeout(() => { const live = $("#stage-live"); if (live) live.textContent = say; }, LIVE_DELAY_MS);
+    steps = next;
   };
-  // The API does the three stages in one request (POWER, then MODIS, then the rotation engine), so the list
-  // follows the typical timing: POWER answers in ~2 s, MODIS is the slow one for a new point.
-  setStage(0);
+  draw(null);
   const started = Date.now();
+  let lastProgress = null;
+  let polling = free;
+  const point = inputs(); // lat/lon of the map point
+  (async () => {
+    while (polling) {
+      try {
+        const progress = await api.getProgress(point);
+        if (polling) { lastProgress = progress; draw(progress); }
+      } catch { /* offline or slow: keep the last steps, the analysis request decides */ }
+      await new Promise((r) => setTimeout(r, PROGRESS_POLL_MS));
+    }
+  })();
   const tick = setInterval(() => {
-    const s = Math.round((Date.now() - started) / 1000);
-    if (s >= 2) setStage(1);
     const el = $("#elapsed");
-    if (el && s >= 3) el.textContent = `${s} seconds · ${free ? "A new place takes up to 1 minute the first time." : "Still working…"}`;
-  }, 500);
+    if (el && free) el.textContent = `Time so far: ${formatElapsed((Date.now() - started) / 1000)}`;
+  }, 1000);
 
   const body = inputs();
   try {
     const { data, saved } = await api.analyze(body, { freePoint: free });
-    setStage(2);
+    polling = false;
+    draw(lastProgress, { answered: true, data });
     // The answer is here. After a visible wait, let the plots grow (<= 300 ms, CSS) before the results replace the
     // loader; an instant answer (demo fields, saved results) goes straight on, with no added delay.
     if (Date.now() - started > FINALE_AFTER_MS && !reducedMotion()) await new Promise((r) => setTimeout(r, FINALE_MS));
     state.result = { data, inputs: body, at: saved || new Date().toISOString(), saved: saved !== null, label: free ? `your point (${fmtCoords(body.lat, body.lon)})` : fieldInfo()?.name || "your field" };
     watchPending(state.result);
-    setStage(3);
     location.hash = next;
   } catch (err) {
     const msg = errorMessage(err.kind || "server", { freePoint: free });
@@ -492,6 +509,7 @@ async function runAnalysis(next = "#/results") {
       goStep(1);
     });
   } finally {
+    polling = false;
     clearInterval(tick);
     clearTimeout(showLoader);
     state.busy = false;
@@ -505,27 +523,123 @@ async function runAnalysis(next = "#/results") {
 
 // A new map point can come back with `pending: ["ndvi"]`: the API answered from NASA POWER while the slow
 // MODIS greenness download goes on in the background (docs/work-plan.md, "Points that are not demo fields").
-// Ask again quietly every 30 s (up to 4 min) and redraw the results when the greenness has arrived.
-const PENDING_RETRY_MS = 30000;
-const PENDING_TRIES = 8;
+// Ask again quietly every 30 s (up to 4 min, ndvi-status.js). The banner always says what is really happening:
+// downloading, didn't arrive (server `failed` or no more tries) with "Try again", or "added" (with a check icon) when it lands.
 
-function isPending(result) {
-  return (result?.data?.pending || []).includes("ndvi");
+const satelliteStatus = (result) => ndviStatus(result?.data, { exhausted: result?.exhausted, arrived: result?.arrived });
+
+function satelliteBanner(result) {
+  const b = ndviBanner(satelliteStatus(result));
+  if (!b) return "";
+  const actions = b.actions ? `<div class="actions"><button type="button" class="btn btn--primary" id="ndvi-retry">Try again</button>${
+    state.fields.length ? `<button type="button" class="btn btn--block" id="ndvi-demo">Use an example field</button>` : ""}</div>` : "";
+  // The live MODIS line opts out of the banner's status region (aria-live="off"): readable, not read out every poll.
+  const live = satelliteStatus(result) === "downloading" ? `<p id="ndvi-progress" aria-live="off"></p>` : "";
+  return banner(b.kind, b.title, b.text, live + actions, b.icon);
 }
 
-function watchPending(result, tries = 0) {
-  if (!isPending(result) || tries >= PENDING_TRIES) return;
-  setTimeout(async () => {
-    if (state.result !== result) return; // a newer analysis replaced this one
-    try {
-      const { data, saved } = await api.analyze(result.inputs, { freePoint: true });
-      if (state.result !== result || saved !== null) return; // offline: keep what we have
-      result.data = data;
-      if (!isPending(result) && location.hash === "#/results") renderResults();
-      if (!isPending(result)) state.predictions = null; // bare months known now: alerts may change
-    } catch { /* keep the results we have; try again below */ }
-    watchPending(result, tries + 1);
-  }, PENDING_RETRY_MS);
+function bindSatelliteBanner() {
+  $("#ndvi-retry")?.addEventListener("click", retrySatellite);
+  $("#ndvi-demo")?.addEventListener("click", () => {
+    window.addEventListener("hashchange", () => { // after route() has drawn the form
+      const first = app.querySelector(`input[name="field"][value="${state.fields[0].slug}"]`);
+      if (!first) return;
+      first.checked = true;
+      first.dispatchEvent(new Event("change", { bubbles: true }));
+    }, { once: true });
+    location.hash = "#/";
+  });
+}
+
+/** Status changed: a full redraw when the photos arrived (calendar, limits), else only the banner. */
+function showSatellite(result, full) {
+  if (state.result !== result || !["#/results", "#/expect"].includes(location.hash)) return;
+  if (full) { renderResults(location.hash === "#/expect" ? "expect" : "results"); return; }
+  const box = $("#ndvi-banner");
+  if (!box) return;
+  box.innerHTML = satelliteBanner(result);
+  bindSatelliteBanner();
+  watchProgress(result);
+}
+
+function takeAnswer(result, data) {
+  const before = satelliteStatus(result);
+  result.data = data;
+  if (ndviStatus(data) === null && before !== null) { result.arrived = true; state.predictions = null; } // alerts may change
+  return satelliteStatus(result) !== before;
+}
+
+function watchPending(result) {
+  clearTimeout(result.timer);
+  result.tries ??= 0;
+  if (ndviStatus(result.data) !== "downloading") return;
+  if (!shouldPoll(result.data, result.tries)) { // no more tries: nothing is loading any more, say so
+    result.exhausted = true;
+    showSatellite(result, false);
+    return;
+  }
+  result.timer = setTimeout(() => askAgain(result), PENDING_RETRY_MS);
+}
+
+async function askAgain(result) {
+  clearTimeout(result.timer);
+  if (state.result !== result) return; // a newer analysis replaced this one
+  result.tries += 1;
+  try {
+    const { data, saved } = await api.analyze(result.inputs, { freePoint: true });
+    if (state.result !== result) return;
+    if (saved === null && takeAnswer(result, data)) showSatellite(result, result.arrived); // offline copy: keep ours
+  } catch { /* keep the results we have; try again below */ }
+  watchPending(result);
+  watchProgress(result); // still downloading (e.g. a new download started): keep the live line going
+}
+
+const onResults = () => ["#/results", "#/expect"].includes(location.hash);
+
+/**
+ * While the photos download, show the real MODIS batches in the banner (GET /api/progress every 2 s). Stops when
+ * MODIS is done or failed (then asks for the results at once instead of waiting for the 30 s re-ask) or when the
+ * farmer leaves the results; renderResults starts it again when they come back.
+ */
+function watchProgress(result) {
+  const gen = (result.progressGen = (result.progressGen || 0) + 1);
+  clearTimeout(result.progressTimer);
+  const tick = async () => {
+    const current = () => state.result === result && result.progressGen === gen;
+    if (!current() || !shouldPollProgress(null, { downloading: satelliteStatus(result) === "downloading", onResults: onResults() })) return;
+    let progress = null;
+    try { progress = await api.getProgress(result.inputs); } catch { /* offline: try again on the next tick */ }
+    if (!current()) return;
+    if (progress) {
+      const el = $("#ndvi-progress");
+      const line = `${modisLine(progress.modis)} · ${formatElapsed(progress.modis.elapsed_s)}`;
+      if (el && el.textContent !== line) el.textContent = line;
+      if (!shouldPollProgress(progress, { downloading: true, onResults: true })) { askAgain(result); return; }
+    }
+    result.progressTimer = setTimeout(tick, PROGRESS_POLL_MS);
+  };
+  tick();
+}
+
+/** "Try again" after the photos didn't arrive: the API starts a new MODIS download (`retry=ndvi`). */
+async function retrySatellite(event) {
+  const result = state.result;
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = "Trying again…";
+  try {
+    const { data, saved } = await api.analyze(result.inputs, { freePoint: true, retry: "ndvi" });
+    if (state.result !== result) return;
+    if (saved === null) {
+      takeAnswer(result, data);
+      result.tries = 0;
+      result.exhausted = false;
+      showSatellite(result, result.arrived);
+      watchPending(result);
+      return;
+    }
+  } catch { /* offline or server down: the "didn't arrive" banner stays, with the button */ }
+  if (btn.isConnected) { btn.disabled = false; btn.textContent = "Try again"; }
 }
 
 // ------------------------------------------------------------------ results screen
@@ -552,7 +666,7 @@ function renderResults(tab = "results") {
   const weights = PRIORITIES.every(([k]) => !used.priorities[k])
     ? "all your priorities are 0, so they count the same" // rotations.overall() falls back to equal weights
     : PRIORITIES.map(([k, , l]) => `${l} ${used.priorities[k]}`).join(" · ");
-  const loadingNdvi = isPending(state.result);
+  const ndvi = satelliteStatus(state.result);
   const noNdvi = ndviMissing(profile);
 
   // DESIGN.md "Tags": only the alternative with the highest overall score gets "Best match for your priorities".
@@ -613,8 +727,8 @@ function renderResults(tab = "results") {
   const trends = trendFacts(profile.trends);
   const loc = profile.location || {};
   const limits = [...(profile.limits?.en || [])];
-  if (noNdvi) limits.unshift(loadingNdvi
-    ? "Satellite photos (MODIS) were still loading for this point, so we can't tell the bare months yet."
+  if (noNdvi) limits.unshift(ndvi === "downloading"
+    ? "Satellite photos (MODIS) were still downloading for this point, so we can't tell the bare months yet."
     : "No satellite photos (MODIS) for this point, so we can't tell the bare months.");
 
   const head = `
@@ -624,16 +738,18 @@ function renderResults(tab = "results") {
     <p class="small muted">Based on 21 years of NASA data (2005–2025). Not a forecast. Checked ${esc(formatDate(at))}.</p>
   </div>
   ${state.result.saved ? savedBanner(at) : ""}
-  ${loadingNdvi
-    ? banner("warn", "Satellite photos are still loading.", " Rain, heat and frost are ready. Bare months appear in 1–2 minutes. Keep this page open.")
-    : noNdvi ? banner("warn", "No satellite photos for this point.", " We can't tell when the field is bare. Rain, heat and frost still work.") : ""}
+  <div id="ndvi-banner">${ndvi ? satelliteBanner(state.result)
+    : noNdvi ? banner("warn", "No satellite photos for this point.", " We can't tell when the field is bare. Rain, heat and frost still work.") : ""}</div>
   <div class="tabs" role="tablist" aria-label="Results">${TABS.map(([id, text]) => `
     <button type="button" class="tab" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="panel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${text}</button>`).join("")}
   </div>`;
+  state.result.arrived = false; // "Satellite photos added" shows once, not on every redraw
 
   if (tab === "expect") {
     app.innerHTML = `${head}<div id="panel" role="tabpanel" aria-labelledby="tab-expect" tabindex="-1"></div>`;
     bindTabs();
+    bindSatelliteBanner();
+    watchProgress(state.result);
     loadExpect();
     return;
   }
@@ -674,6 +790,8 @@ function renderResults(tab = "results") {
   </section>
   </div>`;
   bindTabs();
+  bindSatelliteBanner();
+  watchProgress(state.result);
   $("[data-goto]")?.addEventListener("click", (e) => {
     const card = document.getElementById(e.currentTarget.dataset.goto);
     card.scrollIntoView({ block: "start" });
