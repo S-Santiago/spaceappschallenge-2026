@@ -33,4 +33,4 @@ def test_demo_fields_load_offline_and_fast():
 
 def test_samples_stay_small():
     size = sum(f.stat().st_size for f in db.SAMPLES_DIR.iterdir() if f.is_file())
-    assert size < 5 * 1024 * 1024
+    assert size < 8 * 1024 * 1024  # budget in data/README.md

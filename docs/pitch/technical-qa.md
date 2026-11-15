@@ -27,6 +27,7 @@ All of these are team assumptions, documented with sources in `docs/indicators.m
 - **It is about the area, not the plot.** POWER is a model/reanalysis grid cell of about 55 km; it does not see valleys, slopes or sea breeze.
 - **Soil wetness is a model value** (`GWETROOT`), not a satellite measurement.
 - **Greenness covers only 2024–2025,** and a 250 m pixel can mix several plots.
+- **Speed of a new point (say it honestly):** these towns were pre-fetched from NASA before the demo (Fuente de Piedra, Sierra de Yeguas, Teba and Villanueva del Rosario fully; Almargen, Mollina and Archidona satellite only); a brand-new point downloads live and the satellite photos take 1–3 minutes. Pre-fetching is caching real NASA data, not mock data (`data/README.md`).
 - **Ten years against ten years is a change, not a proven climate trend.** Example: Vega de Antequera had 14.6 % less rain and 13 more days above 35 °C per year in 2016–2025 than in 2005–2014.
 - **Income is illustrative:** a low/medium/high label, not real prices.
 - **Not a forecast:** everything is "based on 21 years of NASA data (2005–2025), not a weather forecast".
