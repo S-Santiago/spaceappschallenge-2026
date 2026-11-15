@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en" data-type="software" data-radius="soft" data-buttons="solid" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FarmLens: crop rotation planner for small farms in Málaga</title>
+<meta name="description" content="Compare your current crop rotation with three others on your phone, scored with 21 years of NASA climate and satellite data for your field.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FarmLens: crop rotation planner for small farms in Málaga">
+<meta property="og:description" content="Four rotations for one field, scored with 21 years of NASA data.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#fafaf7">
+<link rel="canonical" href="https://farmlens-530581375456.europe-southwest1.run.app/pitch/">
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<style>
+:root {
+  --p-bg: #fafaf7; --p-surface: #efeee7; --p-ink: #1e231c; --p-muted: #4a5046;
+  --p-accent: #2e5b44; --p-accent-ink: #fafaf7; --p-action: #2e5b44; --p-action-ink: #fafaf7;
+  --p-inv-bg: #1e231c; --p-inv-surface: #2b3029; --p-inv-ink: #fafaf7; --p-inv-muted: #9ea19c;
+  --p-inv-accent: #fafaf7; --p-inv-accent-ink: #1e231c; --p-inv-action: #fafaf7; --p-inv-action-ink: #1e231c;
+  --font-display: "Familjen Grotesk", system-ui, sans-serif;
+  --font-text: "Familjen Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+}
+</style>
+<link rel="stylesheet" href="assets/diagrams/diagram.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js">
+<link rel="modulepreload" href="assets/moments/lib.js">
+<link rel="modulepreload" href="assets/moments/counter-rolls/moment.js">
+<!-- page CSS: only inside the visuals (the app's own screens drawn as live HTML), plus one --p-h per card group -->
+<style>
+/* the app's screens: FarmLens's own palette (DESIGN.md) */
+.fl { --fl-ink: #242a26; --fl-muted: #4b504d; --fl-line: #cfd0cf; --fl-ground: #f5f4ed; --fl-panel: #ffffff; --fl-pine: #285943; --fl-soft: #e5ebe8; }
+.d-win { background: var(--fl-ground); color: var(--fl-ink); border-radius: 12px; overflow: hidden; font: 400 14px/1.4 var(--font-text); box-shadow: 0 0 0 1px rgb(0 0 0 / .07), 0 24px 60px -28px rgb(0 0 0 / .45); text-align: left; }
+.d-win__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid var(--fl-line); font-size: 13px; color: var(--fl-muted); }
+.d-win__dots { display: flex; gap: 6px; } .d-win__dots i { width: 10px; height: 10px; border-radius: 50%; background: #dcdfe2; }
+.d-win__body { display: grid; grid-template-columns: 150px 1fr; min-height: 440px; }
+.d-side { padding: 14px 10px; border-right: 1px solid var(--fl-line); display: grid; align-content: start; gap: 2px; font-size: 13px; color: var(--fl-muted); }
+.d-side > span { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border-radius: 7px; }
+.d-side > span.is-on { background: var(--fl-soft); color: var(--fl-pine); font-weight: 500; }
+.d-side > span i { width: 14px; height: 14px; border-radius: 4px; background: currentColor; opacity: .3; flex: none; }
+.d-side .d-side__label { color: #7d8379; height: 26px; margin-top: 8px; }
+.d-main { padding: 16px 18px; display: grid; align-content: start; gap: 12px; min-width: 0; padding-right: var(--ly-cut-room, 18px); }
+.d-main__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.d-main__head h4 { font: 600 16px/1.2 var(--font-text); margin: 0; color: inherit; }
+.d-btn { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 7px; background: var(--fl-pine); color: #fff; font-size: 13px; font-weight: 500; }
+.d-rows { display: grid; border-top: 1px solid var(--fl-line); }
+.d-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 48px 72px; align-items: center; gap: 12px; padding: 10px 2px; border-bottom: 1px solid var(--fl-line); font-size: 13px; }
+.d-row b { display: block; font-weight: 500; color: var(--fl-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-row small { display: block; color: #6b7167; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-row .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.d-strip { display: grid; grid-auto-rows: 1fr; gap: 2px; width: 30px; height: 30px; border-radius: 6px; overflow: hidden; }
+.d-strip i { display: block; }
+.f-cereal { background: #e3c26a; } .f-legume { background: #9cc27a; } .f-oilseed { background: #efa445; } .f-forage { background: #b9d38c; } .f-cover { background: #7fbfa6; }
+.d-chip { justify-self: end; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; font-size: 13px; font-weight: 500; background: var(--fl-soft); color: var(--fl-pine); white-space: nowrap; }
+.d-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.d-chip--fair { background: #fbf1dc; color: #7c560f; }
+.d-chip--high { background: #f8e4de; color: #8f3a22; }
+.d-card { background: #fff; color: var(--fl-ink); border-radius: 12px; padding: 14px 16px; font: 400 14px/1.4 var(--font-text); text-align: left; box-shadow: 0 0 0 1px rgb(0 0 0 / .07), 0 18px 44px -20px rgb(0 0 0 / .45); }
+.d-card h5 { margin: 0 0 4px; font: 600 14px/1.3 var(--font-text); }
+.d-card p { margin: 0; color: #4d5349; font-size: 13px; }
+.d-card__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.d-note__line { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; color: #3d4247; border-top: 1px solid rgb(0 0 0 / .06); }
+.d-note__line:first-of-type { border-top: 0; }
+.d-note__line i { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--fl-soft); color: var(--fl-pine); font-style: normal; font-size: 13px; font-weight: 700; }
+.d-note__line i.warn { background: #fbf1dc; color: #7c560f; }
+.d-note__line b { font-weight: 500; color: var(--fl-ink); }
+.d-bar { height: 6px; border-radius: 99px; background: #e7e5dc; overflow: hidden; margin-top: 10px; }
+.d-bar > i { display: block; height: 100%; width: var(--v, 40%); border-radius: inherit; background: var(--d-accent, var(--fl-pine)); }
+.d-weeks { display: grid; grid-template-columns: repeat(13, 1fr); align-items: end; gap: 3px; height: 72px; margin-top: 10px; }
+.d-weeks i { display: block; background: #1f6fb2; border-radius: 2px 2px 0 0; height: var(--h); opacity: .8; }
+.d-weeks i.now { opacity: 1; box-shadow: 0 0 0 2px #1e231c; }
+.hero__proof { font-size: var(--t-small); color: var(--muted); }
+/* the lit ground behind the hero window: the page's surface with one soft light */
+.hero__art { background: radial-gradient(70% 60% at 18% 12%, #fff, transparent 70%), radial-gradient(60% 50% at 90% 100%, #dfe6dc, transparent 70%), var(--p-surface); }
+.hero__art > .ly-piece--note { left: var(--s-6); bottom: var(--s-6); width: 300px; z-index: 2; }
+@media (max-width: 1023px) { .hero__art > .ly-piece--note { left: var(--s-4); bottom: var(--s-4); width: 270px; } }
+@media (max-width: 639px) { .hero__art > .ly-piece--main { width: calc(100% - 2 * var(--s-4)); } .d-main { padding-right: 16px; } .d-win__body { grid-template-columns: 1fr; } .d-side { display: none; } .d-row { grid-template-columns: 30px minmax(0, 1fr) 72px; } .d-row .num { display: none; } }
+
+/* app-frame (sections-library.md, app-frame): the list beside the open rotation, one window */
+.app.ui { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-top: var(--s-7); background: var(--fl-ground); border: 1px solid var(--fl-line); border-radius: 12px; box-shadow: 0 24px 60px -32px rgb(0 0 0 / .35); }
+.app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.app > .app__pane + .app__pane { border-left: 1px solid var(--fl-line); }
+.app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--fl-ground)); pointer-events: none; }
+.app .d-main { padding-right: 18px; }
+.app .d-row.is-on { background: var(--fl-soft); }
+.app .d-row small { white-space: normal; }
+.app-open { padding: 18px 22px; display: grid; gap: 14px; align-content: start; font: 400 14px/1.45 var(--font-text); color: var(--fl-ink); }
+.app-open h4 { margin: 0; font: 600 18px/1.25 var(--font-text); }
+.app-open .tagline { display: inline-flex; align-self: start; justify-self: start; height: 24px; padding: 0 10px; align-items: center; border-radius: 99px; background: var(--fl-pine); color: #fff; font-size: 13px; font-weight: 500; }
+.app-open .years { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; border-radius: 8px; overflow: hidden; }
+.app-open .years span { padding: 8px 10px; font-size: 13px; line-height: 1.25; color: #1e231c; }
+.app-open .years b { display: block; font-weight: 600; }
+.app-open .scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0; }
+.app-open .scores div { display: grid; gap: 4px; font-size: 13px; }
+.app-open .scores dt { color: var(--fl-muted); } .app-open .scores dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.app-open h5 { margin: 4px 0 0; font: 600 14px/1.3 var(--font-text); color: var(--fl-pine); }
+.app-open ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; color: #3d4247; }
+@media (min-width: 1024px) and (max-width: 1279px) { .app.ui { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+@media (max-width: 1023px) {
+  .app.ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .app > .app__pane--list { max-height: 252px; }
+  .app > .app__pane--list::after { display: none; }
+  .app .d-win__body { grid-template-columns: minmax(0, 1fr); }
+  .app .d-side { display: none; }
+  .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--fl-line); }
+}
+@media (max-width: 639px) {
+  .app.ui { grid-template-rows: minmax(0, 1fr); }
+  .app > .app__pane--list { display: none; }
+  .app > .app__pane + .app__pane { border-top: 0; }
+  .app-open .scores { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* the four "what to expect" tiles: one panel height for the group */
+#expect .panel { --p-h: 300px; background: radial-gradient(80% 70% at 20% 0%, #fff, transparent 70%), var(--p-surface); }
+#expect .stage > .at-rise { --ax: 24px; --ay: 32px; --fit-max: 340px; }
+/* tablet: the 2x2 stays two-up so each screen of the two-screen section holds one full row (no hole between them) */
+@media (min-width: 640px) and (max-width: 1023px) { #expect .grid > .card { grid-column: span 6; } #expect .panel { --p-h: 560px; } #expect .stage > .at-rise { --ax: 16px; --fit-max: 300px; } #data .frame--split { aspect-ratio: 16 / 9; } }
+@media (max-width: 639px) { #expect .panel { --p-h: 190px; } }
+/* close--word: the name hand-set per width so it runs line to line without being cut */
+.close__word { font-size: 17.5vw; line-height: 1.05; }
+@media (min-width: 1440px) { .close__word { font-size: 252px; } }
+@media (max-width: 639px) { .close__word { font-size: 15.5vw; } }
+
+/* the data sources diagram panel */
+#data .frame--split { background: radial-gradient(70% 60% at 30% 10%, #fff, transparent 70%), var(--p-surface); }
+/* the four figures stacked on the left line (a row of figures cannot keep every start on a column line) */
+#data .stats { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-6); }
+#data .stats > div { flex-direction: column; gap: 2px; }
+#data .stat .t-stat { font-size: 28px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<!-- type: software (a phone web app: FarmLens)
+     deal: hero collage, nav nav-centre, close close-word, footer footer-columns, rhythm surface-pairs,
+           buttons solid, mark arc, palette: the client's own colours (start.mjs brand: DESIGN.md pine and
+           near-white, the app's icon), type familjen; grounds none; effect none (docs/ui-skills.md and
+           docs/ux-guidelines.md: no WebGL on a page farmers may open on low-end phones)
+     moments: counter-rolls in #data (the figures of the data sources), re-dealt with --contexts 4 so no
+              WebGL moment can be dealt -->
+<header class="nav nav--centre">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#app">Skip to content</a>
+    <a class="nav__logo" href="#top"><span class="mark" data-mark="arc" aria-hidden="true"></span>FarmLens</a>
+    <nav class="nav__links" aria-label="Main">
+      <div class="nav__item"><a class="nav__link" href="#app">How it works</a></div>
+      <div class="nav__item"><a class="nav__link" href="#expect">What to expect</a></div>
+      <div class="nav__item"><a class="nav__link" href="#data">Data</a></div>
+      <div class="nav__item"><a class="nav__link" href="#questions">Questions</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="../">Open the app</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--collage" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="hero__text span-5">
+        <h1 id="hero-h">Crop rotation planner for small farms in Málaga</h1>
+        <p class="hero__lead">FarmLens compares the rotation you grow today with three others for your field, using 21 years of NASA climate and satellite data. It runs on any phone, in four short steps.</p>
+        <div class="btn-row"><a class="btn btn--primary" href="../">Open the app<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="#app">See a field's results</a></div>
+        <p class="hero__proof">Built on NASA POWER and MODIS data, 2005 to 2025.</p>
+      </div>
+      <div class="hero__art fl span-6 start-7" role="img" aria-label="FarmLens comparing four rotations for Vega de Antequera: the legume break scores 76, the current wheat and sunflower rotation 66; a card warns of heavy rain on bare soil in November">
+        <div class="ly-piece ly-piece--main d-win" aria-hidden="true" data-ui="">
+          <div class="d-win__bar"><span class="d-win__dots"><i></i><i></i><i></i></span><span>FarmLens · Vega de Antequera</span></div>
+          <div class="d-win__body">
+            <div class="d-side">
+              <span><i></i>Your field</span><span class="is-on"><i></i>Rotations</span><span><i></i>What to expect</span><span><i></i>Data</span>
+              <span class="d-side__label">Demo fields</span><span><i></i>Antequera</span><span><i></i>Campillos</span><span><i></i>Guadalhorce</span>
+            </div>
+            <div class="d-main">
+              <div class="d-main__head"><h4>Rotation options</h4><span class="d-btn">Analyze</span></div>
+              <div class="d-rows">
+                <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-oilseed"></i></span><div><b>Your current rotation</b><small>Durum wheat, wheat, sunflower</small></div><span class="num">66</span><span class="d-chip d-chip--fair">Fair</span></div>
+                <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-legume"></i></span><div><b>Legume break</b><small>Durum wheat, wheat, pea</small></div><span class="num">76</span><span class="d-chip">Good</span></div>
+                <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-forage"></i></span><div><b>Forage</b><small>Wheat, wheat, subterranean clover</small></div><span class="num">75</span><span class="d-chip">Good</span></div>
+                <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-cover"></i></span><div><b>Cover crop</b><small>Sunflower year plus crimson clover</small></div><span class="num">73</span><span class="d-chip">Good</span></div>
+                <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-oilseed"></i></span><div><b>Campillos, current</b><small>Durum wheat, barley, sunflower</small></div><span class="num">65</span><span class="d-chip d-chip--fair">Fair</span></div>
+                <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-legume"></i></span><div><b>Guadalhorce, water-saving</b><small>Barley, faba bean</small></div><span class="num">72</span><span class="d-chip">Good</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ly-piece ly-piece--note d-card" aria-hidden="true" data-ly-steps="700">
+          <div class="d-card__row"><h5>November, Antequera</h5><span class="d-chip d-chip--high" data-step data-step-at="4">High</span></div>
+          <div class="d-note__line" data-step><i class="warn">!</i><span>Field usually <b>bare after the sunflower</b></span></div>
+          <div class="d-note__line" data-step><i class="warn">!</i><span>Heavy rain in <b>11 of 21</b> Novembers</span></div>
+          <div class="d-note__line" data-step><i>✓</i><span>A cover crop or stubble helps</span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section" id="app" aria-labelledby="app-h">
+    <div class="wrap">
+      <div class="grid">
+        <h2 id="app-h" class="span-5">Four rotations for one field, side by side</h2>
+        <div class="span-6 start-7 stack-4">
+          <p class="t-lead muted">Pick your field, say what you grow and what matters to you. FarmLens scores each rotation and writes why, the evidence, the benefits, what it does not know and what to check locally.</p>
+          <a class="link" href="#data">See where the numbers come from</a>
+        </div>
+      </div>
+      <div class="ui app fl fill" role="img" aria-label="The FarmLens results window: twelve rotations for three demo fields on the left, the legume break for Vega de Antequera open on the right with its scores, evidence and risks" data-ui-pause-host>
+        <div class="app__pane app__pane--list" aria-hidden="true">
+          <div class="d-main" data-ui="">
+            <div class="d-main__head"><h4>Rotations</h4><span class="d-btn">Analyze</span></div>
+            <div class="d-rows">
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-oilseed"></i></span><div><b>Antequera · current</b><small>Durum wheat, wheat, sunflower</small></div><span class="num">66</span><span class="d-chip d-chip--fair">Fair</span></div>
+              <div class="d-row is-on"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-legume"></i></span><div><b>Antequera · legume break</b><small>Durum wheat, wheat, pea</small></div><span class="num">76</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-forage"></i></span><div><b>Antequera · forage</b><small>Wheat, wheat, subterranean clover</small></div><span class="num">75</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-cover"></i></span><div><b>Antequera · cover crop</b><small>Plus crimson clover</small></div><span class="num">73</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-oilseed"></i></span><div><b>Campillos · current</b><small>Durum wheat, barley, sunflower</small></div><span class="num">65</span><span class="d-chip d-chip--fair">Fair</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-legume"></i></span><div><b>Campillos · legume break</b><small>Durum wheat, barley, pea</small></div><span class="num">74</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-forage"></i></span><div><b>Campillos · forage</b><small>Wheat, barley, sainfoin</small></div><span class="num">72</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-cereal"></i><i class="f-cover"></i></span><div><b>Campillos · cover crop</b><small>Plus crimson clover</small></div><span class="num">71</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-legume"></i></span><div><b>Guadalhorce · current</b><small>Maize, faba bean</small></div><span class="num">63</span><span class="d-chip d-chip--fair">Fair</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-cereal"></i><i class="f-legume"></i></span><div><b>Guadalhorce · water-saving</b><small>Barley, faba bean</small></div><span class="num">72</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-legume"></i><i class="f-legume"></i></span><div><b>Guadalhorce · legume break</b><small>Pea, faba bean</small></div><span class="num">70</span><span class="d-chip">Good</span></div>
+              <div class="d-row"><span class="d-strip"><i class="f-forage"></i><i class="f-legume"></i></span><div><b>Guadalhorce · forage</b><small>Vetch-oat forage, faba bean</small></div><span class="num">66</span><span class="d-chip d-chip--fair">Fair</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="app__pane app__pane--open" aria-hidden="true">
+          <div class="app-open" data-ui="">
+            <span class="tagline">Best fit for your priorities</span>
+            <h4>Legume break · Vega de Antequera</h4>
+            <div class="years"><span class="f-cereal">Year 1<b>Durum wheat</b></span><span class="f-cereal">Year 2<b>Durum wheat</b></span><span class="f-legume">Year 3<b>Pea</b></span></div>
+            <p>Adds pea, a legume that takes nitrogen from the air and can help break the cereal pest cycle.</p>
+            <dl class="scores"><div><dt>Water</dt><dd>64 · Fair</dd></div><div><dt>Soil health</dt><dd>69 · Good</dd></div><div><dt>Income</dt><dd>70 · Good</dd></div><div><dt>Climate safety</dt><dd>100 · Good</dd></div></dl>
+            <h5>Why we suggest it</h5>
+            <ul><li>Pea: rain December to May averages 293 mm, plus about 69 mm stored in the soil, for a water need of 350 to 500 mm.</li><li>Rain 2016 to 2025 was 15% lower than in 2005 to 2014.</li></ul>
+            <h5>Benefits</h5>
+            <ul><li>Can reduce nitrogen fertiliser for the next crop.</li><li>Less bare soil in the heavy-rain months than your current rotation.</li></ul>
+            <h5>What we don't know yet</h5>
+            <ul><li>Local prices and costs: the income score is illustrative.</li><li>A soil test for this field.</li><li>Real soil water at sowing.</li></ul>
+            <h5>Check locally before deciding</h5>
+            <ul><li>Weed control and harvest machinery for pea.</li><li>NASA data describe the area, about 50 km, not your plot.</li></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section g2" id="expect" aria-labelledby="expect-h">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head">
+          <h2 id="expect-h">What to expect on your field. <span class="muted">Counted from 21 years of NASA data, never a forecast.</span></h2>
+        </div>
+        <div class="grid">
+          <article class="card card--row card--open span-6">
+            <h3>Storm alerts for bare crop fields</h3>
+            <p>In Vega de Antequera the field is usually bare after the sunflower, and November brought heavy rain in 11 of 21 years.</p>
+            <div class="panel fl" role="img" aria-label="An alert card: November, high; heavy rain in 11 of 21 Novembers while the field is bare">
+              <div class="stage"><div class="at-rise fit"><div class="d-card" aria-hidden="true">
+                <div class="d-card__row"><h5>Heavy rain on bare soil</h5><span class="d-chip d-chip--high">High</span></div>
+                <div class="d-note__line"><i class="warn">!</i><span><b>November</b>, heavy rain in 11 of 21 years</span></div>
+                <div class="d-note__line"><i class="warn">!</i><span><b>October</b>, heavy rain in 8 of 21 years</span></div>
+                <div class="d-note__line"><i>✓</i><span>A cover crop or stubble helps</span></div>
+              </div></div></div>
+            </div>
+          </article>
+          <article class="card card--row card--open span-6">
+            <h3>Rain chances for all 52 weeks</h3>
+            <p>For the week of 26 November it rained in 16 of the last 21 years, in 9 of them more than 10 mm.</p>
+            <div class="panel fl" role="img" aria-label="Thirteen weekly bars from 3 September to 26 November, the share of years with rain each week; the week of 26 November marked: rain in 16 of 21 years">
+              <div class="stage"><div class="at-rise fit"><div class="d-card" aria-hidden="true">
+                <div class="d-card__row"><h5>Rain week by week</h5><span class="d-chip">16 of 21</span></div>
+                <p>Week of 26 Nov, Vega de Antequera</p>
+                <div class="d-weeks"><i style="--h:33%"></i><i style="--h:52%"></i><i style="--h:52%"></i><i style="--h:57%"></i><i style="--h:33%"></i><i style="--h:57%"></i><i style="--h:67%"></i><i style="--h:71%"></i><i style="--h:71%"></i><i style="--h:57%"></i><i style="--h:57%"></i><i style="--h:57%"></i><i class="now" style="--h:76%"></i></div>
+              </div></div></div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-6">
+          <h3>Frost dates for your crops</h3>
+          <p>In 19 of the last 21 years the last frost in Vega de Antequera came on or before 14 March.</p>
+          <div class="panel fl" role="img" aria-label="A frost card: last frost on or before 14 March in 19 of 21 years; first frost on or after 3 December">
+            <div class="stage"><div class="at-rise fit"><div class="d-card" aria-hidden="true">
+              <div class="d-card__row"><h5>Last and first frost</h5><span class="d-chip">19 of 21</span></div>
+              <div class="d-note__line"><i>❄</i><span>Spring: last frost by <b>14 March</b></span></div>
+              <div class="d-note__line"><i>❄</i><span>Autumn: first frost from <b>3 December</b></span></div>
+              <div class="d-note__line"><i class="warn">!</i><span>Valley bottoms can freeze later</span></div>
+            </div></div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-6">
+          <h3>Very hot days for your crops</h3>
+          <p>About 22 days a year pass 35 °C, mostly June to August, 13 more than in 2005 to 2014.</p>
+          <div class="panel fl" role="img" aria-label="A heat card: about 22 days over 35 °C a year; July about 10, August about 9, June about 2">
+            <div class="stage"><div class="at-rise fit"><div class="d-card" aria-hidden="true">
+              <div class="d-card__row"><h5>Days over 35 °C</h5><span class="d-chip d-chip--fair">22 a year</span></div>
+              <p>July about 10 days</p><div class="d-bar" style="--v: 100%; --d-accent: #b3541e"><i></i></div>
+              <p style="margin-top:8px">August about 9 days</p><div class="d-bar" style="--v: 90%; --d-accent: #b3541e"><i></i></div>
+              <p style="margin-top:8px">June about 2 days</p><div class="d-bar" style="--v: 20%; --d-accent: #b3541e"><i></i></div>
+            </div></div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="data" aria-labelledby="data-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-5">
+          <h2 id="data-h">Crop data from NASA POWER and MODIS</h2>
+          <p class="t-lead" style="margin-top:var(--s-5)">Daily temperature, rain and soil wetness come from NASA POWER for 2005 to 2025. Field greenness comes from MODIS for 2024 and 2025. FarmLens adds a crop catalogue with a source for every value.</p>
+          <div class="stats" data-moment="counter-rolls">
+            <div class="stat"><p class="t-stat">21</p><p class="t-small muted">years of daily NASA data per field</p></div>
+            <div class="stat"><p class="t-stat">7,670</p><p class="t-small muted">days of weather read for each field</p></div>
+            <div class="stat"><p class="t-stat">250 m</p><p class="t-small muted">the square MODIS sees on your field</p></div>
+            <div class="stat"><p class="t-stat">3</p><p class="t-small muted">demo fields that work without coverage</p></div>
+          </div>
+        </div>
+        <div class="frame frame--split span-6 start-7">
+          <div class="dg" data-diagram><script type="application/json">{"layout": "bowtie", "alt": "NASA POWER climate data, MODIS greenness and the crop catalogue go into FarmLens, which gives rotation scores, rain chances, frost dates and storm alerts.", "sources": [{"label": "NASA POWER", "sub": "Rain, heat"}, {"label": "MODIS", "sub": "Greenness"}, {"label": "Crops", "sub": "Traits"}], "core": {"label": "FarmLens"}, "targets": [{"label": "Rotations", "sub": "Current plus 3"}, {"label": "Rain", "sub": "52 weeks"}, {"label": "Frost", "sub": "Spring, autumn"}, {"label": "Storms", "sub": "Bare soil"}]}</script></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section ground-surface" id="questions" aria-labelledby="questions-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-5 stack-4">
+          <h2 id="questions-h">Questions</h2>
+          <p class="t-lead muted">What farmers and advisers ask first.</p>
+          <a class="link" href="https://github.com/S-Santiago/spaceappschallenge-2026">Read the code on GitHub</a>
+          <div class="fl" role="img" aria-label="The note FarmLens shows on every result: based on 21 years of NASA data, not a weather forecast; frost in valley bottoms can come later" style="margin-top:var(--s-5)"><div class="d-card" aria-hidden="true" data-ui="">
+            <div class="d-card__row"><h5>Shown with every result</h5><span class="d-chip">2005–2025</span></div>
+            <div class="d-note__line"><i>i</i><span>Based on <b>21 years</b> of NASA data, not a weather forecast</span></div>
+            <div class="d-note__line"><i>i</i><span>Climate for an area of <b>about 50 km</b>, not your plot</span></div>
+            <div class="d-note__line"><i class="warn">!</i><span>Valley bottoms can freeze later than shown</span></div>
+          </div></div>
+        </div>
+        <div class="faq span-6 start-7">
+          <div class="faq__item"><h3>Is FarmLens a weather forecast?</h3><p>No. It counts what happened in 21 years of NASA data for the area around your field, so you can plan a rotation for a normal year.</p></div>
+          <div class="faq__item"><h3>How exact is FarmLens for my plot?</h3><p>Climate values describe an area of about 50 km and greenness a 250 m square. Valleys, slopes and the coast can differ.</p></div>
+          <div class="faq__item"><h3>Does FarmLens tell me which crop to plant?</h3><p>No. It compares four rotations and lists what to check with a local adviser. You decide.</p></div>
+          <div class="faq__item"><h3>Does the app work without coverage?</h3><p>The three demo fields open without a connection after the first visit. A new point on the map needs one.</p></div>
+          <div class="faq__item"><h3>Is the app in Spanish?</h3><p>Not yet. This first version is in English; a Spanish version is the next step.</p></div>
+          <div class="faq__item"><h3>What does the app cost?</h3><p>Nothing. It opens in the phone's browser, and the code is open under the MIT licence.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--word">
+      <div class="section-head--split">
+        <div><h2 id="close-h">Compare rotations for your field</h2><p class="t-lead">Free, no account, in the phone's browser.</p></div>
+        <a class="btn btn--primary" href="../">Open the app<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+      </div>
+      <p class="close__word" aria-hidden="true">FarmLens</p>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top"><span class="mark" data-mark="arc" aria-hidden="true"></span>FarmLens</a>
+          <p class="footer__lede">Crop rotations planned with NASA data.</p>
+        </div>
+        <div class="span-2 footer__col"><h3>How it works</h3><ul><li><a href="#app">Rotations</a></li><li><a href="#expect">What to expect</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Data</h3><ul><li><a href="#data">NASA sources</a></li><li><a href="#questions">Limits</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Questions</h3><ul><li><a href="#questions">Forecast or not</a></li><li><a href="#questions">Offline use</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Project</h3><ul><li><a href="https://github.com/S-Santiago/spaceappschallenge-2026">Code on GitHub</a></li><li><a href="../">The app</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 FarmLens team · NASA Space Apps Challenge, Málaga · Not endorsed by NASA</span>
+        <div class="socials"></div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+<script type="module" src="assets/diagrams/mount.js"></script>
+</body>
+</html>
