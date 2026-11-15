@@ -134,3 +134,17 @@ def test_build_profile_shape_1_without_modis():
     assert set(p["field_limits"]) == fields
     for text in p["field_limits"].values():
         assert text["en"] and text["es"]
+
+
+def test_sources_cite_version_period_and_date_accessed():
+    # POWER asks to cite service, version and date accessed; MODIS the product version (docs/nasa-data.md)
+    days = _year(2010, BASE)
+    power = {"meta": {"api_version": "v2.10.3", "period": "2005-2025", "accessed": "2026-11-14"}, "days": days}
+    modis = {"meta": {"period": "2024-2025", "accessed": "2026-11-15"}, "points": []}
+    p = climate.build_profile(36.72, -4.42, power, modis)
+    assert p["sources"] == [
+        "NASA POWER Daily API v2.10.3, data 2005-2025 (MERRA-2, ~50 km grid), accessed 14 Nov 2026",
+        "MODIS/Terra MOD13Q1 v061 via ORNL DAAC, data 2024-2025 (NDVI, 250 m), accessed 15 Nov 2026",
+    ]
+    old = climate.build_profile(36.72, -4.42, {"meta": {"period": "2005-2025"}, "days": days}, None)
+    assert old["sources"] == ["NASA POWER Daily API, data 2005-2025 (MERRA-2, ~50 km grid)"]

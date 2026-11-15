@@ -7,6 +7,7 @@ The service returns at most 10 composites per request, so we split the period an
 from __future__ import annotations
 
 import asyncio
+from datetime import date
 
 import httpx
 
@@ -83,6 +84,7 @@ async def fetch_ndvi(lat: float, lon: float) -> dict:
             "band": BAND,
             "pixel_size_m": 250,
             "period": f"{YEARS[0]}-{YEARS[-1]}",
+            "accessed": date.today().isoformat(),  # citation: product version and date accessed
         },
         "points": points,
     }
