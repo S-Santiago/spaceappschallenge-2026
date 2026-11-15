@@ -19,9 +19,9 @@ Everything in (or used by) this project that the team did not create: libraries,
 | uvicorn | 0.54.0 | ASGI server that runs the API | BSD-3-Clause | https://github.com/encode/uvicorn | No |
 | starlette (via fastapi) | 1.10.0 | Web toolkit under FastAPI; also serves the PWA static files | BSD-3-Clause | https://github.com/encode/starlette | No |
 | pydantic (via fastapi) | 2.14.3 | Validates API request bodies | MIT | https://github.com/pydantic/pydantic | No |
-| Docker image `python:3.12-slim` (public demo only, not in the repo) | 3.12.16 on Debian (tag `3.12-slim`, built 2026-11-05) | Base image of `Dockerfile` for the hosted demo (decision [0006](decisions/0006-public-demo-hosting.md)) | Python: PSF-2.0; image build files: MIT (docker-library/python); Debian base packages under their own licenses (mostly GPL/LGPL/BSD system tools, run as separate programs, not linked into our code) | https://hub.docker.com/_/python | No. Our code stays MIT; the image is built by the host, never committed |
-| huggingface_hub (`hf` CLI) — CI only, not shipped in the app | 1.33.0 | Uploads the demo to the Hugging Face Space (`.github/workflows/deploy-space.yml`) | Apache-2.0 | https://github.com/huggingface/huggingface_hub | No |
-| GitHub Actions `actions/checkout`, `actions/setup-python` — CI only | v4, v5 | Check out the repo and install Python in the deploy workflow | MIT | https://github.com/actions/checkout · https://github.com/actions/setup-python | No |
+| Docker image `python:3.12-slim` (public demo only, not in the repo) | 3.12.16 on Debian (tag `3.12-slim`, built 2026-11-05) | Base image of `Dockerfile` for the hosted demo on Cloud Run (decisions [0006](decisions/0006-public-demo-hosting.md), [0008](decisions/0008-public-demo-cloud-run.md)) | Python: PSF-2.0; image build files: MIT (docker-library/python); Debian base packages under their own licenses (mostly GPL/LGPL/BSD system tools, run as separate programs, not linked into our code) | https://hub.docker.com/_/python | No. Our code stays MIT; the image is built by the host, never committed |
+
+> Removed on 2026-11-15 with the Hugging Face deploy workflow (decision 0008): huggingface_hub (`hf` CLI) and the GitHub Actions `actions/checkout` / `actions/setup-python` (CI only, never shipped).
 
 > Removed on 2026-11-14 with the Streamlit test harness (decision 0004): streamlit, folium, streamlit-folium, altair, the CDN copy of Leaflet loaded by folium and the Material Symbols icon font. None of them ships with the app any more.
 

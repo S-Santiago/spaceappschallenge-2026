@@ -21,7 +21,7 @@ Primary users are farmers with at most a low/mid-range phone and poor mobile dat
 | API | FastAPI | `src/fieldshift/api.py` | @HectorLopGar-Dev | ✅ built (#36, PR #47) |
 | App (PWA) | HTML + CSS + vanilla JS modules, manifest, hand-written service worker, no build step | `web/` | @S-Santiago | ✅ #35 · #14 · #40 (real API, loading/error states, offline analyses and predictions; real-phone check pending) |
 | ~~Internal test harness~~ | ~~Streamlit~~ | ~~`src/app.py`~~ | @S-Santiago | Retired 2026-11-14 (decision 0004) |
-| Hosting | Hugging Face Spaces (Docker), auto-deploy from `main` via GitHub Actions — [0006](decisions/0006-public-demo-hosting.md) | `Dockerfile`, `.github/workflows/deploy-space.yml`, `deploy/` | @S-Santiago | ✅ #75 |
+| Hosting | Google Cloud Run (`europe-southwest1`, min 1 / max 2 instances, CPU always allocated), manual deploy from `main` — [0008](decisions/0008-public-demo-cloud-run.md) · https://farmlens-530581375456.europe-southwest1.run.app | `Dockerfile`, `.dockerignore` | @HaoJunnnzhang (deploy) · @S-Santiago | ✅ #75 · #76 |
 
 ## Data flow
 ```

@@ -29,8 +29,9 @@ Run `/submission-check` or ask the `submission-auditor` agent. Official NASA dea
 - [ ] Demo tested on a real low/mid-range phone over mobile data (360 px, no horizontal scroll, demo field < 3 s).
 - [ ] UX launch route: all 7 stages **GO** (`/ux-review`).
 - [ ] Red alert clear: no placeholder text/data, no dead buttons, no technical errors on screen (`Error`, `undefined`, `NaN`, `None`, tracebacks), no color-only states.
-- [ ] Public demo link opened **5 minutes before judging and before the pitch** (the Hugging Face Space sleeps after ~48 h idle; README §5 gives the cold-start time).
-- [ ] `main` frozen from Sun 15 Nov 15:00 (every merge redeploys the public demo).
+- [ ] Public demo link opened **5 minutes before judging and before the pitch** (Cloud Run keeps one instance warm, but check it answers).
+- [ ] Public demo redeployed from the final `main` after the 15:00 freeze (Cloud Run does not redeploy on merge).
+- [ ] `main` frozen from Sun 15 Nov 15:00 (the public demo is redeployed once from it).
 - [ ] No organizer event material or NASA logos committed.
 - [ ] Built / simulated / future clearly separated in README and demo.
 - [ ] Repo is public.

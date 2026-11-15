@@ -8,7 +8,7 @@
 - Work is organised in sprints: `docs/sprint-plan.md` (Scrum Master: @sebasbarrabaja-cmyk). Check the current milestone before picking a task.
 - **Target users: farmers with at most a low/mid-range phone, slow or unstable mobile data and little tech experience.** Everything user-facing must be **mobile-first and lightweight** (see `docs/ux-guidelines.md` → "Mobile-first, low-end phones"). Desktop is secondary.
 - **Local servers.** API + PWA: `PYTHONPATH=src uvicorn fieldshift.api:app --reload` from the repo root, always on `localhost:8000` (API docs at `/docs`). **8000 is the only allowed port** because the backup Cloudflare tunnel points at it: never start the API on another port (8001, 8002…); if 8000 is busy, stop the process holding it and restart the API on 8000.
-- **Public demo:** Hugging Face Spaces (Docker), redeployed automatically on every merge to `main` (`.github/workflows/deploy-space.yml`, decision `0006`). The container uses the host's `$PORT` (7860); locally the API stays on 8000.
+- **Public demo:** https://farmlens-530581375456.europe-southwest1.run.app — Google Cloud Run (`europe-southwest1`, Space Apps Google Cloud offer, decision `0008`), built from the root `Dockerfile`. **Not redeployed automatically**: after a merge to `main`, ask a teammate with Cloud access to run `gcloud run deploy farmlens --source . --region europe-southwest1`. The container uses Cloud Run's `$PORT` (8080); locally the API stays on 8000.
 - Project license: **MIT** (`LICENSE`, `docs/decisions/0003-project-license.md`). Every dependency and asset must stay compatible with it.
 
 ## Language

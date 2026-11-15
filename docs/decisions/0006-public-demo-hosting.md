@@ -1,7 +1,7 @@
 # 0006 · Public demo hosting: Hugging Face Spaces (Docker)
 
 - **Date:** 2026-11-14 17:58
-- **Status:** accepted
+- **Status:** superseded by [0008](0008-public-demo-cloud-run.md) (2026-11-15): the Space was created with the static SDK, which cannot run the Python API, and Docker was not available on that account
 - **Deciders:** app owner @S-Santiago, with the team (API owner @HectorLopGar-Dev)
 
 ## Context
