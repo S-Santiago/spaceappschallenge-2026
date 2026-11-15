@@ -36,6 +36,6 @@ Run `/submission-check` or ask the `submission-auditor` agent. Official NASA dea
 - [ ] Repo is public.
 
 ## Local pitch (Málaga)
-- [ ] Final duration/format/Q&A rules confirmed with the organization before the technical test (16:30–17:15).
+- [ ] Final duration/format/Q&A rules confirmed with the organization at the 12:30 on-stage briefing, before the local submission check (16:45–17:15).
 - [ ] Tested on the real projector/laptop.
 - [ ] Q&A rehearsed (see `docs/pitch/README.md`).
