@@ -10,6 +10,7 @@ ROTATION = ["durum_wheat", "durum_wheat", "sunflower"]
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("FIELDSHIFT_DB", str(tmp_path / "api.db"))
+    monkeypatch.setattr(api, "_modis_failed", {})  # MODIS failures are remembered per process
     db._ready.clear()
 
     def no_network(*args, **kwargs):
@@ -220,3 +221,55 @@ def test_predictions_power_down_is_a_friendly_503(client, monkeypatch):
     resp = client.get("/api/predictions", params={"lat": 41.0, "lon": -2.0})
     assert resp.status_code == 503
     assert "connection refused" not in resp.json()["detail"]
+
+
+def test_failed_modis_is_not_restarted_by_polls_until_retry(client, monkeypatch):
+    import asyncio
+    monkeypatch.setattr(api, "MODIS_WAIT_S", 0.05)
+    calls = {"modis": 0}
+    state = {"fail": False}
+
+    async def fast_power(lat, lon):
+        return _sample("power")
+
+    async def failing_modis(lat, lon):
+        calls["modis"] += 1
+        while not state["fail"]:
+            await asyncio.sleep(0.01)
+        raise httpx.HTTPStatusError("busy", request=httpx.Request("GET", "https://x"),
+                                    response=httpx.Response(503))
+
+    monkeypatch.setattr(api.power, "fetch_daily", fast_power)
+    monkeypatch.setattr(api.modis, "fetch_ndvi", failing_modis)
+    body = {"lat": 40.1, "lon": -3.1, "rotation": ["durum_wheat", "sunflower"]}
+
+    with TestClient(api.app) as c:
+        first = c.post("/api/analyze", json=body).json()
+        assert first["pending"] == ["ndvi"] and first["failed"] == []
+
+        state["fail"] = True
+        c.portal.call(asyncio.sleep, 0.1)  # the background download fails after the first answer
+        for _ in range(3):  # the PWA's polls: honest "failed", no new download
+            poll = c.post("/api/analyze", json=body).json()
+            assert poll["pending"] == [] and poll["failed"] == ["ndvi"]
+            assert poll["strategies"][0]["id"] == "current"  # results still built from POWER
+        assert calls["modis"] == 1
+        assert db.get_profile(40.1, -3.1) is None  # not stored, so a later try can still add NDVI
+
+        state["fail"] = False
+        retried = c.post("/api/analyze", params={"retry": "ndvi"}, json=body).json()
+        assert retried["pending"] == ["ndvi"] and calls["modis"] == 2  # "Try again" starts a new download
+
+
+def test_failed_modis_is_forgotten_after_the_memory_window(client, monkeypatch):
+    monkeypatch.setattr(api, "_modis_failed", {(40.2, -3.2): 0.0})  # failed long ago
+    monkeypatch.setattr(api, "MODIS_FAIL_MEMORY_S", 600)
+    monkeypatch.setattr(api.time, "monotonic", lambda: 601.0)
+    assert api._modis_recently_failed(40.2, -3.2) is False
+    monkeypatch.setattr(api, "_modis_failed", {(40.2, -3.2): 500.0})
+    assert api._modis_recently_failed(40.2, -3.2) is True
+
+
+def test_analyze_rejects_an_unknown_retry_source(client):
+    resp = client.post("/api/analyze", params={"retry": "power"}, json={"field": "campillos", "rotation": ["barley"]})
+    assert resp.status_code == 422

@@ -18,7 +18,7 @@ const ANALYSES = "farmlens-analyses-v1";
 const MAX_ANALYSES = 30;
 const SHELL_FILES = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
-  "js/app.js", "js/api.js", "js/format.js", "js/map.js", "js/malaga-area.js", "js/expect.js", "js/expect-format.js",
+  "js/app.js", "js/api.js", "js/ndvi-status.js", "js/format.js", "js/map.js", "js/malaga-area.js", "js/expect.js", "js/expect-format.js",
   "js/notify.js", "js/notify-format.js", "js/icons.js", "js/scene.js",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];

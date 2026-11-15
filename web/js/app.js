@@ -11,6 +11,7 @@ import {
 import { icon, withIcon } from "./icons.js";
 import { quietLoader, stageMark, stageStates, storyLoader } from "./scene.js";
 import { findPlace, inMalaga, mountMap, roundPoint } from "./map.js";
+import { PENDING_RETRY_MS, ndviBanner, ndviStatus, shouldPoll } from "./ndvi-status.js";
 
 const app = document.getElementById("app");
 
@@ -136,8 +137,8 @@ function stepNav(n) {
 
 const BANNER_ICON = { error: "warning", warn: "warning", ok: "info" };
 
-function banner(kind, title, text, actions = "") {
-  return `<div class="banner banner--${kind}" role="${kind === "error" ? "alert" : "status"}">${icon(BANNER_ICON[kind] || "info")}` +
+function banner(kind, title, text, actions = "", iconName = BANNER_ICON[kind] || "info") {
+  return `<div class="banner banner--${kind}" role="${kind === "error" ? "alert" : "status"}">${icon(iconName)}` +
     `<div><strong>${esc(title)}</strong>${esc(text)}${actions}</div></div>`;
 }
 
@@ -505,27 +506,89 @@ async function runAnalysis(next = "#/results") {
 
 // A new map point can come back with `pending: ["ndvi"]`: the API answered from NASA POWER while the slow
 // MODIS greenness download goes on in the background (docs/work-plan.md, "Points that are not demo fields").
-// Ask again quietly every 30 s (up to 4 min) and redraw the results when the greenness has arrived.
-const PENDING_RETRY_MS = 30000;
-const PENDING_TRIES = 8;
+// Ask again quietly every 30 s (up to 4 min, ndvi-status.js). The banner always says what is really happening:
+// downloading, didn't arrive (server `failed` or no more tries) with "Try again", or "added" (with a check icon) when it lands.
 
-function isPending(result) {
-  return (result?.data?.pending || []).includes("ndvi");
+const satelliteStatus = (result) => ndviStatus(result?.data, { exhausted: result?.exhausted, arrived: result?.arrived });
+
+function satelliteBanner(result) {
+  const b = ndviBanner(satelliteStatus(result));
+  if (!b) return "";
+  const actions = b.actions ? `<div class="actions"><button type="button" class="btn btn--primary" id="ndvi-retry">Try again</button>${
+    state.fields.length ? `<button type="button" class="btn btn--block" id="ndvi-demo">Use an example field</button>` : ""}</div>` : "";
+  return banner(b.kind, b.title, b.text, actions, b.icon);
 }
 
-function watchPending(result, tries = 0) {
-  if (!isPending(result) || tries >= PENDING_TRIES) return;
-  setTimeout(async () => {
+function bindSatelliteBanner() {
+  $("#ndvi-retry")?.addEventListener("click", retrySatellite);
+  $("#ndvi-demo")?.addEventListener("click", () => {
+    window.addEventListener("hashchange", () => { // after route() has drawn the form
+      const first = app.querySelector(`input[name="field"][value="${state.fields[0].slug}"]`);
+      if (!first) return;
+      first.checked = true;
+      first.dispatchEvent(new Event("change", { bubbles: true }));
+    }, { once: true });
+    location.hash = "#/";
+  });
+}
+
+/** Status changed: a full redraw when the photos arrived (calendar, limits), else only the banner. */
+function showSatellite(result, full) {
+  if (state.result !== result || !["#/results", "#/expect"].includes(location.hash)) return;
+  if (full) { renderResults(location.hash === "#/expect" ? "expect" : "results"); return; }
+  const box = $("#ndvi-banner");
+  if (!box) return;
+  box.innerHTML = satelliteBanner(result);
+  bindSatelliteBanner();
+}
+
+function takeAnswer(result, data) {
+  const before = satelliteStatus(result);
+  result.data = data;
+  if (ndviStatus(data) === null && before !== null) { result.arrived = true; state.predictions = null; } // alerts may change
+  return satelliteStatus(result) !== before;
+}
+
+function watchPending(result) {
+  clearTimeout(result.timer);
+  result.tries ??= 0;
+  if (ndviStatus(result.data) !== "downloading") return;
+  if (!shouldPoll(result.data, result.tries)) { // no more tries: nothing is loading any more, say so
+    result.exhausted = true;
+    showSatellite(result, false);
+    return;
+  }
+  result.timer = setTimeout(async () => {
     if (state.result !== result) return; // a newer analysis replaced this one
+    result.tries += 1;
     try {
       const { data, saved } = await api.analyze(result.inputs, { freePoint: true });
-      if (state.result !== result || saved !== null) return; // offline: keep what we have
-      result.data = data;
-      if (!isPending(result) && location.hash === "#/results") renderResults();
-      if (!isPending(result)) state.predictions = null; // bare months known now: alerts may change
+      if (state.result !== result) return;
+      if (saved === null && takeAnswer(result, data)) showSatellite(result, result.arrived); // offline copy: keep ours
     } catch { /* keep the results we have; try again below */ }
-    watchPending(result, tries + 1);
+    watchPending(result);
   }, PENDING_RETRY_MS);
+}
+
+/** "Try again" after the photos didn't arrive: the API starts a new MODIS download (`retry=ndvi`). */
+async function retrySatellite(event) {
+  const result = state.result;
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = "Trying again…";
+  try {
+    const { data, saved } = await api.analyze(result.inputs, { freePoint: true, retry: "ndvi" });
+    if (state.result !== result) return;
+    if (saved === null) {
+      takeAnswer(result, data);
+      result.tries = 0;
+      result.exhausted = false;
+      showSatellite(result, result.arrived);
+      watchPending(result);
+      return;
+    }
+  } catch { /* offline or server down: the "didn't arrive" banner stays, with the button */ }
+  if (btn.isConnected) { btn.disabled = false; btn.textContent = "Try again"; }
 }
 
 // ------------------------------------------------------------------ results screen
@@ -552,7 +615,7 @@ function renderResults(tab = "results") {
   const weights = PRIORITIES.every(([k]) => !used.priorities[k])
     ? "all your priorities are 0, so they count the same" // rotations.overall() falls back to equal weights
     : PRIORITIES.map(([k, , l]) => `${l} ${used.priorities[k]}`).join(" · ");
-  const loadingNdvi = isPending(state.result);
+  const ndvi = satelliteStatus(state.result);
   const noNdvi = ndviMissing(profile);
 
   // DESIGN.md "Tags": only the alternative with the highest overall score gets "Best match for your priorities".
@@ -613,8 +676,8 @@ function renderResults(tab = "results") {
   const trends = trendFacts(profile.trends);
   const loc = profile.location || {};
   const limits = [...(profile.limits?.en || [])];
-  if (noNdvi) limits.unshift(loadingNdvi
-    ? "Satellite photos (MODIS) were still loading for this point, so we can't tell the bare months yet."
+  if (noNdvi) limits.unshift(ndvi === "downloading"
+    ? "Satellite photos (MODIS) were still downloading for this point, so we can't tell the bare months yet."
     : "No satellite photos (MODIS) for this point, so we can't tell the bare months.");
 
   const head = `
@@ -624,16 +687,17 @@ function renderResults(tab = "results") {
     <p class="small muted">Based on 21 years of NASA data (2005–2025). Not a forecast. Checked ${esc(formatDate(at))}.</p>
   </div>
   ${state.result.saved ? savedBanner(at) : ""}
-  ${loadingNdvi
-    ? banner("warn", "Satellite photos are still loading.", " Rain, heat and frost are ready. Bare months appear in 1–2 minutes. Keep this page open.")
-    : noNdvi ? banner("warn", "No satellite photos for this point.", " We can't tell when the field is bare. Rain, heat and frost still work.") : ""}
+  <div id="ndvi-banner">${ndvi ? satelliteBanner(state.result)
+    : noNdvi ? banner("warn", "No satellite photos for this point.", " We can't tell when the field is bare. Rain, heat and frost still work.") : ""}</div>
   <div class="tabs" role="tablist" aria-label="Results">${TABS.map(([id, text]) => `
     <button type="button" class="tab" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="panel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${text}</button>`).join("")}
   </div>`;
+  state.result.arrived = false; // "Satellite photos added" shows once, not on every redraw
 
   if (tab === "expect") {
     app.innerHTML = `${head}<div id="panel" role="tabpanel" aria-labelledby="tab-expect" tabindex="-1"></div>`;
     bindTabs();
+    bindSatelliteBanner();
     loadExpect();
     return;
   }
@@ -674,6 +738,7 @@ function renderResults(tab = "results") {
   </section>
   </div>`;
   bindTabs();
+  bindSatelliteBanner();
   $("[data-goto]")?.addEventListener("click", (e) => {
     const card = document.getElementById(e.currentTarget.dataset.goto);
     card.scrollIntoView({ block: "start" });
