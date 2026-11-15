@@ -6,7 +6,8 @@
 
 import { icon } from "./icons.js";
 
-/** The scene. `variant`: "story" (analysis, reacts to data-stage), "start" (app start), "map", "expect". */
+/** The scene. `variant`: "story" (analysis, reacts to data-stage), "splash" (start-up screen; the same markup is
+ * written statically in web/index.html so it paints before any JS, and a test keeps the two equal), "map", "expect". */
 export function fieldScene(variant = "story") {
   const sky = variant === "map" ? "" : `
   <path class="orbit" d="M-10 40Q164-10 338 40"/>
