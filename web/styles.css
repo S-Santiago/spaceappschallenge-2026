@@ -73,6 +73,8 @@
   --mark: 24px;
   --spin: 18px;
   --spin-w: 3px;
+  --dot: 6px;
+  --scene-quiet: 200px; /* width of the lighter loader scene */
   --radio: 24px;
   --swatch: 16px;
   --chevron: 9px;
@@ -107,6 +109,15 @@
   /* ---- motion (feedback only) */
   --fast: 140ms;
   --spin-time: 0.9s;
+  --orbit-time: 3.2s;   /* loader: satellite pass */
+  --scan-time: 1.6s;    /* loader: satellite beam */
+  --grow-time: 180ms;   /* loader: one plot grows; four with --grow-step stagger stay <= 300 ms */
+  --grow-step: 40ms;
+  --grow-once: 600ms;   /* app start: the plots grow once */
+  --grow-once-step: 150ms;
+  --enter-time: 240ms;  /* results fade/slide in after an analysis */
+  --enter-shift: 8px;
+  --sprout: 0.25;       /* plot height before the rotations are compared */
   --press: 0.98;
   --disabled: 0.6;
 
@@ -327,6 +338,7 @@ select, .crop-select, .crop-input, .place-search input {
 .stages li { display: flex; gap: var(--s3); align-items: center; color: var(--ink); }
 .stages li.active { font-weight: 700; }
 .stages li.done .mark { color: var(--accent); }
+.mark .dot { width: var(--dot); height: var(--dot); border-radius: 50%; background: var(--line); }
 .mark { width: var(--mark); height: var(--mark); flex: none; display: grid; place-items: center; }
 .mark .icon { width: var(--mark); height: var(--mark); }
 .spin {
@@ -334,6 +346,44 @@ select, .crop-select, .crop-input, .place-search input {
   border-radius: 50%; animation: spin var(--spin-time) linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Field story scene (scene.js): decorative, aria-hidden; only transform and opacity move. Stage 0 NASA data:
+   the satellite passes. Stage 1 satellite photos: its beam scans. Stage 2 comparing rotations: the plots grow. */
+.scene { display: block; width: 100%; height: auto; margin-bottom: var(--s3); border-radius: var(--r-md); background: var(--ground); }
+.scene .orbit { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 5; }
+.scene .sat rect { fill: var(--accent); }
+.scene .beam { fill: var(--accent-tint-strong); opacity: 0; }
+.scene .cloud, .scene .sun { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.scene .cloud { stroke: var(--accent); }
+.scene .sun { stroke: var(--ochre-dark); }
+.scene .soil { fill: var(--f-fallow); }
+.scene .plot { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(var(--sprout)); stroke: var(--strip-ink); stroke-opacity: 0.35; }
+.scene .plot--cereal { fill: var(--f-cereal); }
+.scene .plot--legume { fill: var(--f-legume); }
+.progress--story[data-stage="0"] .sat, .progress--story[data-stage="1"] .sat { animation: orbit var(--orbit-time) linear infinite; }
+.progress--story[data-stage="1"] .beam { opacity: 1; animation: scan var(--scan-time) ease-in-out infinite alternate; }
+.progress--story[data-stage="2"] .plot, .progress--story[data-stage="3"] .plot {
+  transform: scaleY(1); transition: transform var(--grow-time) ease-out;
+}
+.progress--story .plot:nth-child(2) { transition-delay: var(--grow-step); }
+.progress--story .plot:nth-child(3) { transition-delay: calc(2 * var(--grow-step)); }
+.progress--story .plot:nth-child(4) { transition-delay: calc(3 * var(--grow-step)); }
+@keyframes orbit { from { transform: translateX(-190px); } to { transform: translateX(190px); } }
+@keyframes scan { from { opacity: 0.25; } to { opacity: 1; } }
+/* Lighter variants: app start (plots grow once), map (field only), What to expect (sky and field, still). */
+.progress--quiet { display: grid; justify-items: center; gap: var(--s2); text-align: center; }
+.progress--quiet .scene { max-width: var(--scene-quiet); margin: 0; }
+.scene--start .plot { transform: scaleY(1); animation: grow-once var(--grow-once) ease-out both; }
+.scene--start .plot:nth-child(2) { animation-delay: var(--grow-once-step); }
+.scene--start .plot:nth-child(3) { animation-delay: calc(2 * var(--grow-once-step)); }
+.scene--start .plot:nth-child(4) { animation-delay: calc(3 * var(--grow-once-step)); }
+.scene--expect .plot, .scene--map .plot { transform: scaleY(1); }
+.scene--expect .sat, .scene--expect .orbit, .scene--start .sat { opacity: 0; }
+@keyframes grow-once { from { transform: scaleY(var(--sprout)); } to { transform: scaleY(1); } }
+.map > .progress--quiet { margin: var(--s4); border: 0; }
+/* Results after an analysis (app.js enter()) */
+.enter > * { animation: enter var(--enter-time) ease-out both; }
+@keyframes enter { from { opacity: 0; transform: translateY(var(--enter-shift)); } to { opacity: 1; transform: none; } }
 
 /* ---- results: the answer block */
 .answer {
