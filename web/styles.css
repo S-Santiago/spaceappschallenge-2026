@@ -339,6 +339,8 @@ select, .crop-select, .crop-input, .place-search input {
 .stages li.active { font-weight: 700; }
 .stages li.done .mark { color: var(--accent); }
 .mark .dot { width: var(--dot); height: var(--dot); border-radius: 50%; background: var(--line); }
+.stages .step-detail { font-weight: 400; } /* what is happening, in words (18 px like the body) */
+#ndvi-progress { margin-top: var(--s2); }
 .mark { width: var(--mark); height: var(--mark); flex: none; display: grid; place-items: center; }
 .mark .icon { width: var(--mark); height: var(--mark); }
 .spin {

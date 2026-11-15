@@ -82,3 +82,7 @@ export const searchPlaces = (params) =>
 export function getPredictions(inputs, { freePoint = false } = {}) {
   return send(`/api/predictions?${predictionsQuery(inputs)}`, { timeoutMs: freePoint ? 75000 : 20000 });
 }
+
+/** Live progress of the NASA downloads for a map point (counters only). Network only: sw.js never caches it. */
+export const getProgress = ({ lat, lon }) =>
+  request(`/api/progress?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`, { timeoutMs: 8000 });
