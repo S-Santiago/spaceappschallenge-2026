@@ -250,6 +250,18 @@ def _round(value: float | None, digits: int) -> float | None:
     return None if value is None else round(value, digits)
 
 
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def _source(name: str, period: str | None, detail: str, accessed: str | None) -> str:
+    """Citation line for "Where the data comes from": service and version, data period, date accessed."""
+    text = f"{name.strip()}, data {period} ({detail})" if period else f"{name.strip()} ({detail})"
+    if accessed:
+        d = date.fromisoformat(accessed)
+        text += f", accessed {d.day} {_MONTHS[d.month - 1]} {d.year}"
+    return text
+
+
 def build_profile(lat: float, lon: float, power_data: dict, modis_data: dict | None) -> dict:
     """Shape 1 climate profile from the raw POWER and MODIS payloads."""
     elevation = power_data["meta"].get("elevation_m") or 0.0
@@ -270,9 +282,13 @@ def build_profile(lat: float, lon: float, power_data: dict, modis_data: dict | N
             "ndvi": _round(ndvi.get(m), 2),
             "likely_bare": likely_bare(ndvi.get(m)),
         })
-    sources = [f"NASA POWER {power_data['meta'].get('period', '')} (MERRA-2, ~50 km grid)".replace("  ", " ")]
+    pm = power_data["meta"]
+    sources = [_source(f"NASA POWER Daily API {pm.get('api_version', '')}", pm.get("period"), "MERRA-2, ~50 km grid",
+                       pm.get("accessed"))]
     if modis_data:
-        sources.append(f"MODIS MOD13Q1 {modis_data['meta'].get('period', '')} (NDVI, 250 m)")
+        mm = modis_data["meta"]
+        sources.append(_source("MODIS/Terra MOD13Q1 v061 via ORNL DAAC", mm.get("period"), "NDVI, 250 m",
+                               mm.get("accessed")))
     return {
         "location": {"lat": round(lat, 2), "lon": round(lon, 2), "elevation_m": power_data["meta"].get("elevation_m")},
         "months": months,

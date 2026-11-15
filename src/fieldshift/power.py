@@ -6,6 +6,8 @@ No login or key required. Source data: MERRA-2 (meteorology), ~0.5° x 0.625° g
 
 from __future__ import annotations
 
+from datetime import date
+
 import httpx
 
 from . import cache
@@ -53,6 +55,7 @@ async def fetch_daily(lat: float, lon: float) -> dict:
             "sources": raw["header"].get("sources", []),
             "elevation_m": raw["geometry"]["coordinates"][2],
             "period": f"{START_YEAR}-{END_YEAR}",
+            "accessed": date.today().isoformat(),  # citation: POWER asks for version and date accessed
             "parameters": raw.get("parameters", {}),
         },
         "days": days,
