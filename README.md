@@ -68,8 +68,8 @@ At least one NASA resource listed by the challenge is **mandatory** for Global A
 
 ## 5. How to run it
 
-**Public demo (no install, no login):** PUBLIC_URL — open it on a phone and tap *Add to Home screen* to install the app.
-Hosted free on Hugging Face Spaces ([decision 0006](docs/decisions/0006-public-demo-hosting.md)). If nobody opened it for ~48 h it is asleep: the first visit then takes about COLD_START while it wakes up; after that the demo fields answer in well under a second.
+**Public demo (no install, no login):** **https://farmlens-530581375456.europe-southwest1.run.app** — open it on a phone and tap *Add to Home screen* to install the app.
+Hosted on Google Cloud Run in Madrid (`europe-southwest1`) with the NASA Space Apps Google Cloud offer ([decision 0008](docs/decisions/0008-public-demo-cloud-run.md)). One instance is always running, so there is no cold start: demo fields and pre-fetched towns answer in about 0.1 s.
 
 **Run locally** (Python 3.11+):
 
@@ -88,9 +88,9 @@ Then open http://localhost:8000 on a phone-sized window. One service runs the AP
 
 **Tests:** `pip install -r requirements-dev.txt`, then `PYTHONPATH=src pytest` (engine, API and PWA checks) and `node --test "tests/web/*.test.mjs"` (PWA helpers, Node 18+, no packages).
 
-**Deploying the public demo:** automatic. Every merge to `main` runs [`.github/workflows/deploy-space.yml`](.github/workflows/deploy-space.yml), which uploads the code to the Hugging Face Space; the Space rebuilds in about 2–4 minutes. To redeploy by hand: GitHub → *Actions* → *Deploy public demo* → *Run workflow*. Settings (repo admin): Actions secret `HF_TOKEN`, Actions variable `HF_SPACE`. **`main` freezes on Sun 15 Nov at 15:00** — any later merge would redeploy the judged demo. Same image locally: `docker build -t farmlens . && docker run --rm -p 8000:7860 farmlens`.
+**Deploying the public demo:** built from the [`Dockerfile`](Dockerfile) at the root and deployed **by hand** from an up-to-date `main` by a teammate with access to the Google Cloud project (`gcloud run deploy farmlens --source . --region europe-southwest1`, ~3 min; settings in [decision 0008](docs/decisions/0008-public-demo-cloud-run.md)). A merge to `main` does **not** redeploy by itself: after merging, ask for a redeploy in the deployment issue. **`main` freezes on Sun 15 Nov at 15:00**; the last redeploy happens right after. Same image locally: `docker build -t farmlens . && docker run --rm -p 8000:8080 farmlens`.
 
-**Backup link:** if the Space is down, a teammate runs the app locally on port 8000 and the team's Cloudflare tunnel exposes it (works only while that laptop is awake).
+**Backup link:** if Cloud Run is down, a teammate runs the app locally on port 8000 and the team's Cloudflare tunnel exposes it (works only while that laptop is awake).
 
 ## 6. Repository map
 
@@ -99,16 +99,15 @@ Then open http://localhost:8000 on a phone-sized window. One service runs the AP
 ├── .claude/            # Claude Code agents & skills used by the team (see docs/tools.md)
 │   ├── agents/
 │   └── skills/
-├── .github/            # Issue & PR templates; workflows/deploy-space.yml deploys the public demo
+├── .github/            # Issue & PR templates
 ├── assets/             # Images/icons we created or can legally reuse (see docs/third-party.md)
-├── deploy/             # Hugging Face Space header (README copied into the Space on deploy)
 ├── data/               # Data folder — raw/processed are git-ignored; see data/README.md
 ├── docs/               # ALL documentation (index: docs/README.md)
 ├── notebooks/          # Exploratory analysis
 ├── src/
 │   └── fieldshift/     # API (api.py), NASA clients (power.py, modis.py), indicators, rotation engine, predictions, DB
 ├── web/                # Mobile web app (PWA): HTML/CSS/JS modules, service worker, no build step
-├── Dockerfile          # Image of the public demo (API + PWA), decision 0006
+├── Dockerfile          # Image of the public demo (API + PWA) on Cloud Run, decision 0008
 ├── CLAUDE.md           # Instructions for AI agents working in this repo
 ├── CONTRIBUTING.md     # Team workflow
 └── README.md
