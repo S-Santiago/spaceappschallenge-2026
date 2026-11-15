@@ -51,7 +51,8 @@ const FAMILY_LABEL = { cereal: "Cereal", legume: "Legume", oilseed: "Oilseed", f
 const STAGES = ["Getting NASA data…", "Checking satellite photos of your field…", "Comparing rotations…"];
 const FINALE_AFTER_MS = 800; // the loader was on screen long enough to be seen
 const FINALE_MS = 300;
-const LIVE_DELAY_MS = 100;       // plots grow, then the results appear (styles.css .progress--story)
+const LIVE_DELAY_MS = 100;
+const LOADER_DELAY_MS = 250; // instant answers (demo fields) never show the loader       // plots grow, then the results appear (styles.css .progress--story)
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const LITTLE_COVER_NDVI = 0.35; // calendar word "Little cover" between Bare (<0.25) and Green (docs/indicators.md I-09)
 
@@ -438,6 +439,7 @@ async function runAnalysis(next = "#/results") {
   feedback.innerHTML = storyLoader(STAGES);
   reveal(feedback);
   const panel = feedback.querySelector(".progress");
+  const showLoader = setTimeout(() => panel.classList.add("is-shown"), LOADER_DELAY_MS);
   const items = [...panel.querySelectorAll(".stages li")];
   let shown = -1;
   // Each stage is announced once in the live region; the scene follows data-stage (DESIGN.md "Loading").
@@ -491,6 +493,7 @@ async function runAnalysis(next = "#/results") {
     });
   } finally {
     clearInterval(tick);
+    clearTimeout(showLoader);
     state.busy = false;
     buttons.forEach((b) => {
       if (!b.isConnected) return;
